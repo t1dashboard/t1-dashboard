@@ -1,25 +1,25 @@
 /**
- * Swiss Rationalism: Clean data presentation for T3 week work orders not in Ready status
+ * Swiss Rationalism: Clean data presentation for T1 week work orders not in Ready status
  */
 
 import { useMemo } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDate, isT3Week } from "@/lib/dateUtils";
+import { formatDate, isNextWeek } from "@/lib/dateUtils";
 
-interface T3NotInReadyTabProps {
+interface T1NotInReadyTabProps {
   workOrders: WorkOrder[];
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
-export default function T3NotInReadyTab({ workOrders }: T3NotInReadyTabProps) {
-  const t3NotReadyOrders = useMemo(() => {
+export default function T1NotInReadyTab({ workOrders }: T1NotInReadyTabProps) {
+  const t1NotReadyOrders = useMemo(() => {
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const isReady = wo["Status"]?.toUpperCase() === "READY";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
-      return !isCancelled && !isCMCC && !isReady && isT3Week(wo["Sched. Start Date"]);
+      return !isCancelled && !isCMCC && !isReady && isNextWeek(wo["Sched. Start Date"]);
     });
     
     // Sort alphabetically by data center
@@ -30,11 +30,11 @@ export default function T3NotInReadyTab({ workOrders }: T3NotInReadyTabProps) {
     });
   }, [workOrders]);
 
-  if (t3NotReadyOrders.length === 0) {
+  if (t1NotReadyOrders.length === 0) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <p className="text-muted-foreground">No T3 work orders found that are not in Ready status</p>
+          <p className="text-muted-foreground">No T1 work orders found that are not in Ready status</p>
         </CardContent>
       </Card>
     );
@@ -43,9 +43,9 @@ export default function T3NotInReadyTab({ workOrders }: T3NotInReadyTabProps) {
   return (
     <Card>
       <CardHeader className="border-b border-border pb-4">
-        <CardTitle className="text-xl font-medium">T3 Not in Ready</CardTitle>
+        <CardTitle className="text-xl font-medium">T1 Not in Ready</CardTitle>
         <p className="text-sm text-muted-foreground mt-1">
-          {t3NotReadyOrders.length} work orders not in Ready status
+          {t1NotReadyOrders.length} work orders not in Ready status
         </p>
       </CardHeader>
       <CardContent className="p-0">
@@ -62,7 +62,7 @@ export default function T3NotInReadyTab({ workOrders }: T3NotInReadyTabProps) {
               </tr>
             </thead>
             <tbody>
-              {t3NotReadyOrders.map((wo) => (
+              {t1NotReadyOrders.map((wo) => (
                 <tr 
                   key={wo["Work Order"]} 
                   className="border-b border-border/50 hover:bg-muted/20 transition-colors"

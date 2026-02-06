@@ -17,6 +17,7 @@ import { WorkOrder, ScheduledLabor } from "@/types/workOrder";
 import WorkLoadTab from "@/components/WorkLoadTab";
 import RiskIdentificationTab from "@/components/RiskIdentificationTab";
 import LOTOReviewTab from "@/components/LOTOReviewTab";
+import T1NotInReadyTab from "@/components/T1NotInReadyTab";
 import T2NotInReadyTab from "@/components/T2NotInReadyTab";
 import T3NotInReadyTab from "@/components/T3NotInReadyTab";
 import { getNextWeekRange, getT2WeekRange, getT3WeekRange } from "@/lib/dateUtils";
@@ -30,7 +31,7 @@ export default function Home() {
     const saved = localStorage.getItem('t1-scheduled-labor');
     return saved ? JSON.parse(saved) : [];
   });
-  const [activeTab, setActiveTab] = useState("workload");
+  const [activeTab, setActiveTab] = useState("t3notready");
 
   const nextWeekRange = useMemo(() => {
     const { start, end } = getNextWeekRange();
@@ -212,13 +213,26 @@ export default function Home() {
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+              <TabsList className="grid w-full grid-cols-6 h-auto p-1">
+                <TabsTrigger value="t3notready" className="py-3">T3 Not in Ready</TabsTrigger>
+                <TabsTrigger value="t2notready" className="py-3">T2 Not in Ready</TabsTrigger>
+                <TabsTrigger value="t1notready" className="py-3">T1 Not in Ready</TabsTrigger>
                 <TabsTrigger value="workload" className="py-3">T1 Workload</TabsTrigger>
                 <TabsTrigger value="risk" className="py-3">Risk Identification</TabsTrigger>
                 <TabsTrigger value="loto" className="py-3">LOTO Review</TabsTrigger>
-                <TabsTrigger value="t2notready" className="py-3">T2 Not in Ready</TabsTrigger>
-                <TabsTrigger value="t3notready" className="py-3">T3 Not in Ready</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="t3notready" className="mt-6">
+                <T3NotInReadyTab workOrders={workOrders} />
+              </TabsContent>
+
+              <TabsContent value="t2notready" className="mt-6">
+                <T2NotInReadyTab workOrders={workOrders} />
+              </TabsContent>
+
+              <TabsContent value="t1notready" className="mt-6">
+                <T1NotInReadyTab workOrders={workOrders} />
+              </TabsContent>
 
               <TabsContent value="workload" className="mt-6">
                 <WorkLoadTab workOrders={workOrders} />
@@ -230,14 +244,6 @@ export default function Home() {
 
               <TabsContent value="loto" className="mt-6">
                 <LOTOReviewTab workOrders={workOrders} scheduledLabor={scheduledLabor} />
-              </TabsContent>
-
-              <TabsContent value="t2notready" className="mt-6">
-                <T2NotInReadyTab workOrders={workOrders} />
-              </TabsContent>
-
-              <TabsContent value="t3notready" className="mt-6">
-                <T3NotInReadyTab workOrders={workOrders} />
               </TabsContent>
             </Tabs>
           </>

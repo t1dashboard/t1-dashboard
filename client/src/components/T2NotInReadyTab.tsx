@@ -18,7 +18,7 @@ export default function T2NotInReadyTab({ workOrders }: T2NotInReadyTabProps) {
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const isReady = wo["Status"]?.toUpperCase() === "READY";
-      const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC DAILY WORK ORDERS");
+      const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
       return !isCancelled && !isCMCC && !isReady && isT2Week(wo["Sched. Start Date"]);
     });
     

@@ -22,7 +22,7 @@ export default function LOTOReviewTab({ workOrders, scheduledLabor }: LOTOReview
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const desc = wo["Description"]?.toUpperCase() || "";
-      const isCMCC = desc.includes("CMCC DAILY WORK ORDERS");
+      const isCMCC = desc.includes("CMCC");
       const hasLOTOorPTW = desc.includes("LOTO") || desc.includes("PTW");
       return !isCancelled && !isCMCC && hasLOTOorPTW && isNextWeek(wo["Sched. Start Date"]);
     });

@@ -22,7 +22,7 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
     // Filter for next week's work orders only, excluding cancelled and CMCC Daily Work Orders
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
-      const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC DAILY WORK ORDERS");
+      const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
       return !isCancelled && !isCMCC && wo["Sched. Start Date"] && wo["Sched. Start Date"] !== "" && isNextWeek(wo["Sched. Start Date"]);
     });
 

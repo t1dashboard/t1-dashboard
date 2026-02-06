@@ -18,7 +18,7 @@ export default function RiskIdentificationTab({ workOrders }: RiskIdentification
   const riskWorkOrders = useMemo(() => {
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
-      const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC DAILY WORK ORDERS");
+      const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
       const ehsLOR = wo["EHS LOR"];
       const opLOR = wo["Operational LOR"];
       const hasRisk = ehsLOR === "Medium" || ehsLOR === "High" || opLOR === "Medium" || opLOR === "High";
