@@ -64,6 +64,7 @@ export default function LOTOReviewTab({ workOrders, scheduledLabor }: LOTOReview
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">EHS LOR</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Operational LOR</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">All Scheduled Labor</th>
@@ -92,6 +93,7 @@ export default function LOTOReviewTab({ workOrders, scheduledLabor }: LOTOReview
                     {new Date(wo["Sched. Start Date"]).toLocaleDateString()}
                   </td>
                   <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
+                  <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
                   <td className="py-3 px-4">
                     <Badge variant={getLORBadgeVariant(wo["EHS LOR"])} className="text-xs">
                       {wo["EHS LOR"]}

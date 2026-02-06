@@ -69,6 +69,7 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -94,6 +95,7 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
                           {new Date(wo["Sched. Start Date"]).toLocaleDateString()}
                         </td>
                         <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
+                        <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
                       </tr>
                     ))}
                   </tbody>
