@@ -23,6 +23,13 @@ export default function LOTOReviewTab({ workOrders, scheduledLabor }: LOTOReview
       return desc.includes("LOTO") || desc.includes("PTW");
     });
 
+    // Sort alphabetically by data center
+    filtered.sort((a, b) => {
+      const dcA = a["Data Center"] || "";
+      const dcB = b["Data Center"] || "";
+      return dcA.localeCompare(dcB);
+    });
+
     // Create a set of work order numbers from scheduled labor
     const scheduledSet = new Set(scheduledLabor.map(sl => sl.workOrderNumber));
 

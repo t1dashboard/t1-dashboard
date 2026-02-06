@@ -15,13 +15,20 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 
 export default function RiskIdentificationTab({ workOrders }: RiskIdentificationTabProps) {
   const riskWorkOrders = useMemo(() => {
-    return workOrders.filter((wo) => {
+    const filtered = workOrders.filter((wo) => {
       const ehsLOR = wo["EHS LOR"];
       const opLOR = wo["Operational LOR"];
       return (
         ehsLOR === "Medium" || ehsLOR === "High" ||
         opLOR === "Medium" || opLOR === "High"
       );
+    });
+    
+    // Sort alphabetically by data center
+    return filtered.sort((a, b) => {
+      const dcA = a["Data Center"] || "";
+      const dcB = b["Data Center"] || "";
+      return dcA.localeCompare(dcB);
     });
   }, [workOrders]);
 
