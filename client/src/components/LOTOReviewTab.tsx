@@ -18,12 +18,13 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 
 export default function LOTOReviewTab({ workOrders, scheduledLabor }: LOTOReviewTabProps) {
   const lotoWorkOrders = useMemo(() => {
-    // Filter work orders containing LOTO or PTW in description and scheduled for next week, excluding cancelled
+    // Filter work orders containing LOTO or PTW in description and scheduled for next week, excluding cancelled and CMCC
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const desc = wo["Description"]?.toUpperCase() || "";
+      const isCMCC = desc.includes("CMCC DAILY WORK ORDERS");
       const hasLOTOorPTW = desc.includes("LOTO") || desc.includes("PTW");
-      return !isCancelled && hasLOTOorPTW && isNextWeek(wo["Sched. Start Date"]);
+      return !isCancelled && !isCMCC && hasLOTOorPTW && isNextWeek(wo["Sched. Start Date"]);
     });
 
     // Sort alphabetically by data center
