@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { WorkOrder, ScheduledLabor } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatDate } from "@/lib/dateUtils";
 
 interface LOTOReviewTabProps {
   workOrders: WorkOrder[];
@@ -90,7 +91,7 @@ export default function LOTOReviewTab({ workOrders, scheduledLabor }: LOTOReview
                   <td className="py-3 px-4 text-sm">{wo["Description"]}</td>
                   <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
                   <td className="py-3 px-4 text-sm">
-                    {new Date(wo["Sched. Start Date"]).toLocaleDateString()}
+                    {formatDate(wo["Sched. Start Date"])}
                   </td>
                   <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
                   <td className="py-3 px-4 text-sm">{wo["Status"]}</td>

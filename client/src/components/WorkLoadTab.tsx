@@ -5,6 +5,7 @@
 import { useMemo } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatDate, parseExcelDate } from "@/lib/dateUtils";
 
 interface WorkLoadTabProps {
   workOrders: WorkOrder[];
@@ -28,10 +29,12 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
     });
 
     filtered.forEach((wo) => {
-      const schedDate = new Date(wo["Sched. Start Date"]);
-      const dayName = schedDate.toLocaleDateString("en-US", { weekday: "long" });
-      if (grouped[dayName]) {
-        grouped[dayName].push(wo);
+      const schedDate = parseExcelDate(wo["Sched. Start Date"]);
+      if (schedDate) {
+        const dayName = schedDate.toLocaleDateString("en-US", { weekday: "long" });
+        if (grouped[dayName]) {
+          grouped[dayName].push(wo);
+        }
       }
     });
 
@@ -92,7 +95,7 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
                         <td className="py-3 px-4 text-sm">{wo["Description"]}</td>
                         <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
                         <td className="py-3 px-4 text-sm">
-                          {new Date(wo["Sched. Start Date"]).toLocaleDateString()}
+                          {formatDate(wo["Sched. Start Date"])}
                         </td>
                         <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
                         <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
