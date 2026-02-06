@@ -16,13 +16,9 @@ const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "S
 
 export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
   const workloadByDay = useMemo(() => {
-    // Filter for next week (Feb 10-16, 2026)
-    const nextWeekStart = new Date("2026-02-10");
-    const nextWeekEnd = new Date("2026-02-16");
-    
+    // Use all work orders with valid scheduled start dates
     const filtered = workOrders.filter((wo) => {
-      const schedDate = new Date(wo["Sched. Start Date"]);
-      return schedDate >= nextWeekStart && schedDate <= nextWeekEnd;
+      return wo["Sched. Start Date"] && wo["Sched. Start Date"] !== "";
     });
 
     // Group by day of week
