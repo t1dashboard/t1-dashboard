@@ -17,7 +17,8 @@ import { WorkOrder, ScheduledLabor } from "@/types/workOrder";
 import WorkLoadTab from "@/components/WorkLoadTab";
 import RiskIdentificationTab from "@/components/RiskIdentificationTab";
 import LOTOReviewTab from "@/components/LOTOReviewTab";
-import { getNextWeekRange } from "@/lib/dateUtils";
+import T3NotInReadyTab from "@/components/T3NotInReadyTab";
+import { getNextWeekRange, getT3WeekRange } from "@/lib/dateUtils";
 
 export default function Home() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => {
@@ -32,6 +33,11 @@ export default function Home() {
 
   const nextWeekRange = useMemo(() => {
     const { start, end } = getNextWeekRange();
+    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  }, []);
+
+  const t3WeekRange = useMemo(() => {
+    const { start, end } = getT3WeekRange();
     return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   }, []);
 
@@ -87,8 +93,8 @@ export default function Home() {
       {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container py-6">
-          <h1 className="text-foreground font-medium">T1 Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">Next Week: {nextWeekRange}</p>
+          <h1 className="text-foreground font-medium">T1-T3 Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">T1: {nextWeekRange} | T3: {t3WeekRange}</p>
         </div>
       </header>
 
@@ -200,10 +206,11 @@ export default function Home() {
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3 h-auto p-1">
-                <TabsTrigger value="workload" className="py-3">Work Load</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+                <TabsTrigger value="workload" className="py-3">T1 Workload</TabsTrigger>
                 <TabsTrigger value="risk" className="py-3">Risk Identification</TabsTrigger>
                 <TabsTrigger value="loto" className="py-3">LOTO Review</TabsTrigger>
+                <TabsTrigger value="t3notready" className="py-3">T3 Not in Ready</TabsTrigger>
               </TabsList>
 
               <TabsContent value="workload" className="mt-6">
@@ -216,6 +223,10 @@ export default function Home() {
 
               <TabsContent value="loto" className="mt-6">
                 <LOTOReviewTab workOrders={workOrders} scheduledLabor={scheduledLabor} />
+              </TabsContent>
+
+              <TabsContent value="t3notready" className="mt-6">
+                <T3NotInReadyTab workOrders={workOrders} />
               </TabsContent>
             </Tabs>
           </>
