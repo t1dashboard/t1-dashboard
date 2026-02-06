@@ -71,6 +71,44 @@ export function isNextWeek(date: any): boolean {
 }
 
 /**
+ * Get the start and end dates for T2 week (2 weeks out, Monday to Sunday)
+ */
+export function getT2WeekRange(): { start: Date, end: Date } {
+  const today = new Date();
+  const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  
+  // Calculate days until next Monday
+  const daysUntilNextMonday = currentDay === 0 ? 1 : (8 - currentDay);
+  
+  // Next Monday
+  const nextMonday = new Date(today);
+  nextMonday.setDate(today.getDate() + daysUntilNextMonday);
+  nextMonday.setHours(0, 0, 0, 0);
+  
+  // T2 Monday (1 week after next Monday)
+  const t2Monday = new Date(nextMonday);
+  t2Monday.setDate(nextMonday.getDate() + 7);
+  
+  // T2 Sunday (6 days after T2 Monday)
+  const t2Sunday = new Date(t2Monday);
+  t2Sunday.setDate(t2Monday.getDate() + 6);
+  t2Sunday.setHours(23, 59, 59, 999);
+  
+  return { start: t2Monday, end: t2Sunday };
+}
+
+/**
+ * Check if a date falls within T2 week
+ */
+export function isT2Week(date: any): boolean {
+  const parsed = parseExcelDate(date);
+  if (!parsed) return false;
+  
+  const { start, end } = getT2WeekRange();
+  return parsed >= start && parsed <= end;
+}
+
+/**
  * Get the start and end dates for T3 week (3 weeks out, Monday to Sunday)
  */
 export function getT3WeekRange(): { start: Date, end: Date } {
