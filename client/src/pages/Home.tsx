@@ -7,7 +7,7 @@
  * - Hairline dividers (0.5px) between rows
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,9 +19,25 @@ import RiskIdentificationTab from "@/components/RiskIdentificationTab";
 import LOTOReviewTab from "@/components/LOTOReviewTab";
 
 export default function Home() {
-  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
-  const [scheduledLabor, setScheduledLabor] = useState<ScheduledLabor[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => {
+    const saved = localStorage.getItem('t1-work-orders');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [scheduledLabor, setScheduledLabor] = useState<ScheduledLabor[]>(() => {
+    const saved = localStorage.getItem('t1-scheduled-labor');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [activeTab, setActiveTab] = useState("workload");
+
+  // Persist work orders to localStorage
+  useEffect(() => {
+    localStorage.setItem('t1-work-orders', JSON.stringify(workOrders));
+  }, [workOrders]);
+
+  // Persist scheduled labor to localStorage
+  useEffect(() => {
+    localStorage.setItem('t1-scheduled-labor', JSON.stringify(scheduledLabor));
+  }, [scheduledLabor]);
 
   const handleWorkOrderUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
