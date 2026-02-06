@@ -7,7 +7,7 @@ import { useMemo } from "react";
 import { WorkOrder, ScheduledLabor } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDate, isNextWeek } from "@/lib/dateUtils";
 
 interface LOTOReviewTabProps {
   workOrders: WorkOrder[];
@@ -18,10 +18,11 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 
 export default function LOTOReviewTab({ workOrders, scheduledLabor }: LOTOReviewTabProps) {
   const lotoWorkOrders = useMemo(() => {
-    // Filter work orders containing LOTO or PTW in description
+    // Filter work orders containing LOTO or PTW in description and scheduled for next week
     const filtered = workOrders.filter((wo) => {
       const desc = wo["Description"]?.toUpperCase() || "";
-      return desc.includes("LOTO") || desc.includes("PTW");
+      const hasLOTOorPTW = desc.includes("LOTO") || desc.includes("PTW");
+      return hasLOTOorPTW && isNextWeek(wo["Sched. Start Date"]);
     });
 
     // Sort alphabetically by data center

@@ -7,7 +7,7 @@
  * - Hairline dividers (0.5px) between rows
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import { WorkOrder, ScheduledLabor } from "@/types/workOrder";
 import WorkLoadTab from "@/components/WorkLoadTab";
 import RiskIdentificationTab from "@/components/RiskIdentificationTab";
 import LOTOReviewTab from "@/components/LOTOReviewTab";
+import { getNextWeekRange } from "@/lib/dateUtils";
 
 export default function Home() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => {
@@ -28,6 +29,11 @@ export default function Home() {
     return saved ? JSON.parse(saved) : [];
   });
   const [activeTab, setActiveTab] = useState("workload");
+
+  const nextWeekRange = useMemo(() => {
+    const { start, end } = getNextWeekRange();
+    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  }, []);
 
   // Persist work orders to localStorage
   useEffect(() => {
@@ -82,7 +88,7 @@ export default function Home() {
       <header className="border-b border-border bg-card">
         <div className="container py-6">
           <h1 className="text-foreground font-medium">T1 Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">Work order management and risk assessment</p>
+          <p className="text-muted-foreground text-sm mt-1">Next Week: {nextWeekRange}</p>
         </div>
       </header>
 

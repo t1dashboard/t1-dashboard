@@ -6,7 +6,7 @@
 import { useMemo } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDate, parseExcelDate } from "@/lib/dateUtils";
+import { formatDate, parseExcelDate, isNextWeek, getNextWeekRange } from "@/lib/dateUtils";
 import { isNightShift } from "@/lib/nightShiftEmployees";
 
 interface WorkLoadTabProps {
@@ -19,9 +19,9 @@ const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "S
 
 export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
   const workloadByDay = useMemo(() => {
-    // Use all work orders with valid scheduled start dates
+    // Filter for next week's work orders only
     const filtered = workOrders.filter((wo) => {
-      return wo["Sched. Start Date"] && wo["Sched. Start Date"] !== "";
+      return wo["Sched. Start Date"] && wo["Sched. Start Date"] !== "" && isNextWeek(wo["Sched. Start Date"]);
     });
 
     // Group by day of week and shift

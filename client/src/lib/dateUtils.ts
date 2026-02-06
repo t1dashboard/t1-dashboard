@@ -35,3 +35,37 @@ export function formatDate(date: any): string {
     day: '2-digit'
   });
 }
+
+/**
+ * Get the start and end dates for next week (Monday to Sunday)
+ */
+export function getNextWeekRange(): { start: Date, end: Date } {
+  const today = new Date();
+  const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  
+  // Calculate days until next Monday
+  const daysUntilNextMonday = currentDay === 0 ? 1 : (8 - currentDay);
+  
+  // Next Monday
+  const nextMonday = new Date(today);
+  nextMonday.setDate(today.getDate() + daysUntilNextMonday);
+  nextMonday.setHours(0, 0, 0, 0);
+  
+  // Next Sunday (6 days after Monday)
+  const nextSunday = new Date(nextMonday);
+  nextSunday.setDate(nextMonday.getDate() + 6);
+  nextSunday.setHours(23, 59, 59, 999);
+  
+  return { start: nextMonday, end: nextSunday };
+}
+
+/**
+ * Check if a date falls within next week
+ */
+export function isNextWeek(date: any): boolean {
+  const parsed = parseExcelDate(date);
+  if (!parsed) return false;
+  
+  const { start, end } = getNextWeekRange();
+  return parsed >= start && parsed <= end;
+}

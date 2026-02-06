@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDate, isNextWeek } from "@/lib/dateUtils";
 
 interface RiskIdentificationTabProps {
   workOrders: WorkOrder[];
@@ -19,10 +19,8 @@ export default function RiskIdentificationTab({ workOrders }: RiskIdentification
     const filtered = workOrders.filter((wo) => {
       const ehsLOR = wo["EHS LOR"];
       const opLOR = wo["Operational LOR"];
-      return (
-        ehsLOR === "Medium" || ehsLOR === "High" ||
-        opLOR === "Medium" || opLOR === "High"
-      );
+      const hasRisk = ehsLOR === "Medium" || ehsLOR === "High" || opLOR === "Medium" || opLOR === "High";
+      return hasRisk && isNextWeek(wo["Sched. Start Date"]);
     });
     
     // Sort alphabetically by data center
