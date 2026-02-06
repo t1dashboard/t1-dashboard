@@ -17,10 +17,11 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 export default function RiskIdentificationTab({ workOrders }: RiskIdentificationTabProps) {
   const riskWorkOrders = useMemo(() => {
     const filtered = workOrders.filter((wo) => {
+      const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const ehsLOR = wo["EHS LOR"];
       const opLOR = wo["Operational LOR"];
       const hasRisk = ehsLOR === "Medium" || ehsLOR === "High" || opLOR === "Medium" || opLOR === "High";
-      return hasRisk && isNextWeek(wo["Sched. Start Date"]);
+      return !isCancelled && hasRisk && isNextWeek(wo["Sched. Start Date"]);
     });
     
     // Sort alphabetically by data center

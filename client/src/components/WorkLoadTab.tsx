@@ -19,9 +19,10 @@ const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "S
 
 export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
   const workloadByDay = useMemo(() => {
-    // Filter for next week's work orders only
+    // Filter for next week's work orders only, excluding cancelled
     const filtered = workOrders.filter((wo) => {
-      return wo["Sched. Start Date"] && wo["Sched. Start Date"] !== "" && isNextWeek(wo["Sched. Start Date"]);
+      const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
+      return !isCancelled && wo["Sched. Start Date"] && wo["Sched. Start Date"] !== "" && isNextWeek(wo["Sched. Start Date"]);
     });
 
     // Group by day of week and shift
