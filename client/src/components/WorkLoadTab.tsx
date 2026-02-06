@@ -35,7 +35,7 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
       if (schedDate) {
         const dayName = schedDate.toLocaleDateString("en-US", { weekday: "long" });
         if (grouped[dayName]) {
-          const shift = isNightShift(wo["Assigned To Name"]) ? 'night' : 'day';
+          const shift = isNightShift(wo["Shift"]) ? 'night' : 'day';
           grouped[dayName][shift].push(wo);
         }
       }
