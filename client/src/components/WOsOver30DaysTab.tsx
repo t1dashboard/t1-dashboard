@@ -5,23 +5,54 @@
 import { useMemo } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDate, parseExcelDate } from "@/lib/dateUtils";
 
 interface WOsOver30DaysTabProps {
   workOrders: WorkOrder[];
-  over30DaysList: number[];
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
-export default function WOsOver30DaysTab({ workOrders, over30DaysList }: WOsOver30DaysTabProps) {
+export default function WOsOver30DaysTab({ workOrders }: WOsOver30DaysTabProps) {
   const over30DaysOrders = useMemo(() => {
+    const today = new Date();
+    const thirtyDaysFromNow = new Date(today);
+    thirtyDaysFromNow.setDate(today.getDate() + 30);
+
     const filtered = workOrders.filter((wo) => {
+      // Basic filters
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
-      const isInList = over30DaysList.includes(wo["Work Order"]);
       
-      return !isCancelled && !isCMCC && isInList;
+      // Type Code must be corrective
+      const isCorrective = wo["Type Code"]?.toUpperCase().includes("CORRECTIVE");
+      
+      // Status must be Planning or Ready to Schedule
+      const status = wo["Status"]?.toUpperCase();
+      const isValidStatus = status === "PLANNING" || status === "READY TO SCHEDULE";
+      
+      // Schedule start date must be >30 days from today
+      const schedDate = parseExcelDate(wo["Sched. Start Date"]);
+      const isOver30Days = schedDate && schedDate > thirtyDaysFromNow;
+      
+      // Deferral Code Selected must be "No"
+      const deferralCode = wo["Deferral Reason Selected"]?.toUpperCase();
+      const hasDeferralNo = deferralCode === "NO";
+      
+      // Trade must not be CFT
+      const trade = wo["Trade"]?.toUpperCase();
+      const isNotCFT = trade !== "CFT";
+      
+      // Shift must equal GNSF
+      const shift = wo["Shift"]?.toUpperCase();
+      const isGNSF = shift === "GNSF";
+      
+      // Work order number must be numeric only (no letters)
+      const woNumber = String(wo["Work Order"]);
+      const isNumericOnly = /^\d+$/.test(woNumber);
+      
+      return !isCancelled && !isCMCC && isCorrective && isValidStatus && 
+             isOver30Days && hasDeferralNo && isNotCFT && isGNSF && isNumericOnly;
     });
     
     // Sort alphabetically by data center

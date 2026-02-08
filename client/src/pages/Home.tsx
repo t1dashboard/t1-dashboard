@@ -21,10 +21,7 @@ export default function Home() {
     const saved = localStorage.getItem('t1-scheduled-labor');
     return saved ? JSON.parse(saved) : [];
   });
-  const [over30DaysList, setOver30DaysList] = useState<number[]>(() => {
-    const saved = localStorage.getItem('t1-over30days');
-    return saved ? JSON.parse(saved) : [];
-  });
+
   const [activeView, setActiveView] = useState<ActiveView>("upload");
 
   // Persist work orders to localStorage
@@ -37,10 +34,7 @@ export default function Home() {
     localStorage.setItem('t1-scheduled-labor', JSON.stringify(scheduledLabor));
   }, [scheduledLabor]);
 
-  // Persist over 30 days list to localStorage
-  useEffect(() => {
-    localStorage.setItem('t1-over30days', JSON.stringify(over30DaysList));
-  }, [over30DaysList]);
+
 
   const handleWorkOrderUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,25 +74,7 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  const handleOver30DaysUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const data = event.target?.result;
-      const workbook = XLSX.read(data, { type: "binary" });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const json = XLSX.utils.sheet_to_json(worksheet);
-      
-      // Extract work order numbers from the first column
-      const woNumbers: number[] = json.map((row: any) => Object.values(row)[0] as number);
-      
-      setOver30DaysList(woNumbers);
-    };
-    reader.readAsBinaryString(file);
-  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -164,7 +140,7 @@ export default function Home() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 gap-6">
                   {/* Work Order Upload */}
                   <div>
                     <label className="block text-sm font-medium mb-2">Work Order Information</label>
@@ -203,24 +179,7 @@ export default function Home() {
                     )}
                   </div>
 
-                  {/* Over 30 Days Upload */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">WOs &gt;30 Days</label>
-                    <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors">
-                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                      <span className="text-sm text-muted-foreground">Click to upload</span>
-                      <span className="text-xs text-muted-foreground mt-1">No deferral code list</span>
-                      <input
-                        type="file"
-                        accept=".xlsx,.xls"
-                        onChange={handleOver30DaysUpload}
-                        className="hidden"
-                      />
-                    </label>
-                    {over30DaysList.length > 0 && (
-                      <p className="text-xs text-green-600 mt-2">✓ {over30DaysList.length} work orders loaded</p>
-                    )}
-                  </div>
+
                 </div>
 
                 <Card className="bg-muted/30">
@@ -234,7 +193,7 @@ export default function Home() {
                         <ul className="space-y-1 list-disc list-inside">
                           <li>Upload the work order information spreadsheet first</li>
                           <li>Scheduled labor file: work orders in this list will be marked as "No" in LOTO Review</li>
-                          <li>WOs &gt;30 Days file: work orders to display in the &gt;30 Days tab</li>
+                          <li>WOs &gt;30 Days tab automatically filters corrective work orders based on criteria</li>
                         </ul>
                       </div>
                     </div>
@@ -249,7 +208,7 @@ export default function Home() {
           )}
 
           {activeView === "t4t8" && workOrders.length > 0 && (
-            <T4T8Dashboard workOrders={workOrders} over30DaysList={over30DaysList} />
+            <T4T8Dashboard workOrders={workOrders} />
           )}
 
           {activeView !== "upload" && workOrders.length === 0 && (
