@@ -100,8 +100,17 @@ export default function Home() {
       {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container py-6">
-          <h1 className="text-foreground font-medium">T1-T3 Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">T1: {nextWeekRange} | T2: {t2WeekRange} | T3: {t3WeekRange}</p>
+          <div className="flex items-center gap-4">
+            <img 
+              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663323432951/sSrXWBeiFceveLgv.png" 
+              alt="Logo" 
+              className="h-12 w-auto"
+            />
+            <div>
+              <h1 className="text-foreground font-medium">T1-T3 Dashboard</h1>
+              <p className="text-muted-foreground text-sm mt-1">T1: {nextWeekRange} | T2: {t2WeekRange} | T3: {t3WeekRange}</p>
+            </div>
+          </div>
         </div>
       </header>
 
