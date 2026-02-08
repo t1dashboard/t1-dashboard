@@ -6,23 +6,22 @@ import { useMemo } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/dateUtils";
-import { isOlderThanDays } from "@/lib/t4t8DateUtils";
 
 interface WOsOver30DaysTabProps {
   workOrders: WorkOrder[];
+  over30DaysList: number[];
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
-export default function WOsOver30DaysTab({ workOrders }: WOsOver30DaysTabProps) {
+export default function WOsOver30DaysTab({ workOrders, over30DaysList }: WOsOver30DaysTabProps) {
   const over30DaysOrders = useMemo(() => {
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
-      const hasDeferralCode = wo["Deferral Reason Selected"] && wo["Deferral Reason Selected"] !== "";
-      const isOld = isOlderThanDays(wo["Date Created"], 30);
+      const isInList = over30DaysList.includes(wo["Work Order"]);
       
-      return !isCancelled && !isCMCC && !hasDeferralCode && isOld;
+      return !isCancelled && !isCMCC && isInList;
     });
     
     // Sort alphabetically by data center

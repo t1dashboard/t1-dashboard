@@ -12,9 +12,10 @@ import { useState, useEffect } from "react";
 
 interface T4T8DashboardProps {
   workOrders: WorkOrder[];
+  over30DaysList: number[];
 }
 
-export default function T4T8Dashboard({ workOrders }: T4T8DashboardProps) {
+export default function T4T8Dashboard({ workOrders, over30DaysList }: T4T8DashboardProps) {
   const [activeTab, setActiveTab] = useState("t1notready");
 
   // Handle redirect for >90 days tab
@@ -50,7 +51,7 @@ export default function T4T8Dashboard({ workOrders }: T4T8DashboardProps) {
         </TabsContent>
 
         <TabsContent value="over30days" className="mt-6">
-          <WOsOver30DaysTab workOrders={workOrders} />
+          <WOsOver30DaysTab workOrders={workOrders} over30DaysList={over30DaysList} />
         </TabsContent>
 
         <TabsContent value="over90days" className="mt-6">

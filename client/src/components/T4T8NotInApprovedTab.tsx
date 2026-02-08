@@ -18,9 +18,9 @@ export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTa
   const t4t8NotApprovedOrders = useMemo(() => {
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
-      const isApproved = wo["Status"]?.toUpperCase() === "APPROVED";
+      const isPlanning = wo["Status"]?.toUpperCase() === "PLANNING";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
-      return !isCancelled && !isCMCC && !isApproved && isT4T8Week(wo["Sched. Start Date"]);
+      return !isCancelled && !isCMCC && isPlanning && isT4T8Week(wo["Sched. Start Date"]);
     });
     
     // Sort alphabetically by data center
