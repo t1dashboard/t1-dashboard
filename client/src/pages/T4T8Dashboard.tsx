@@ -1,0 +1,62 @@
+/**
+ * Swiss Rationalism: T4-T8 Dashboard page
+ */
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WorkOrder } from "@/types/workOrder";
+import T1NotInReadyTab from "@/components/T1NotInReadyTab";
+import T4T8NotInApprovedTab from "@/components/T4T8NotInApprovedTab";
+import WOsOver30DaysTab from "@/components/WOsOver30DaysTab";
+import WOsOver90DaysTab from "@/components/WOsOver90DaysTab";
+import { useState, useEffect } from "react";
+
+interface T4T8DashboardProps {
+  workOrders: WorkOrder[];
+}
+
+export default function T4T8Dashboard({ workOrders }: T4T8DashboardProps) {
+  const [activeTab, setActiveTab] = useState("t1notready");
+
+  // Handle redirect for >90 days tab
+  useEffect(() => {
+    if (activeTab === "over90days") {
+      window.location.href = "https://workdash-uzwepqa5.manus.space/pending";
+    }
+  }, [activeTab]);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-medium text-foreground">T4-T8 Dashboard</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Extended planning and aging work order tracking
+        </p>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+          <TabsTrigger value="t1notready" className="py-3">T1 Not in Ready</TabsTrigger>
+          <TabsTrigger value="t4t8notapproved" className="py-3">T4-T8 Not in Approved</TabsTrigger>
+          <TabsTrigger value="over30days" className="py-3">WOs &gt;30 Days</TabsTrigger>
+          <TabsTrigger value="over90days" className="py-3">&gt;90 Days with Deferral</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="t1notready" className="mt-6">
+          <T1NotInReadyTab workOrders={workOrders} />
+        </TabsContent>
+
+        <TabsContent value="t4t8notapproved" className="mt-6">
+          <T4T8NotInApprovedTab workOrders={workOrders} />
+        </TabsContent>
+
+        <TabsContent value="over30days" className="mt-6">
+          <WOsOver30DaysTab workOrders={workOrders} />
+        </TabsContent>
+
+        <TabsContent value="over90days" className="mt-6">
+          <WOsOver90DaysTab workOrders={workOrders} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

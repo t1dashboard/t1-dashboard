@@ -26,6 +26,7 @@ export interface WorkOrder {
   "Assigned To": string;
   "Date Created": string;
   "Trade": string;
+  "Deferral Reason Selected": string;
 }
 
 export interface ScheduledLabor {
