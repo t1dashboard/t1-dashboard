@@ -24,8 +24,8 @@ export default function WOsOver30DaysTab({ workOrders }: WOsOver30DaysTabProps) 
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
       
-      // Type Code must be corrective
-      const isCorrective = wo["Type Code"]?.toUpperCase().includes("CORRECTIVE");
+      // Type must be Corrective Maintenance
+      const isCorrective = wo["Type"]?.toUpperCase().includes("CORRECTIVE");
       
       // Status must be Planning or Ready to Schedule
       const status = wo["Status"]?.toUpperCase();
@@ -39,9 +39,8 @@ export default function WOsOver30DaysTab({ workOrders }: WOsOver30DaysTabProps) 
       const deferralCode = wo["Deferral Reason Selected"]?.toUpperCase();
       const hasDeferralNo = deferralCode === "NO";
       
-      // Trade must not be CFT
-      const trade = wo["Trade"]?.toUpperCase();
-      const isNotCFT = trade !== "CFT";
+      // Trade column doesn't exist in data, skip this filter
+      const isNotCFT = true;
       
       // Shift must equal GNSF
       const shift = wo["Shift"]?.toUpperCase();
@@ -52,7 +51,7 @@ export default function WOsOver30DaysTab({ workOrders }: WOsOver30DaysTabProps) 
       const isNumericOnly = /^\d+$/.test(woNumber);
       
       return !isCancelled && !isCMCC && isCorrective && isValidStatus && 
-             isOver30Days && hasDeferralNo && isNotCFT && isGNSF && isNumericOnly;
+             isOver30Days && hasDeferralNo && isGNSF && isNumericOnly;
     });
     
     // Sort alphabetically by data center

@@ -1,7 +1,7 @@
 export interface WorkOrder {
   "Work Order": number;
   "Status": string;
-  "Type Code": string;
+  "Type": string;
   "Priority": string;
   "Data Center": string;
   "Description": string;
@@ -25,7 +25,7 @@ export interface WorkOrder {
   "PM Code": string;
   "Assigned To": string;
   "Date Created": string;
-  "Trade": string;
+
   "Deferral Reason Selected": string;
 }
 
