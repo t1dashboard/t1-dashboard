@@ -84,6 +84,16 @@ export default function WOsOver30DaysTab({ workOrders }: WOsOver30DaysTabProps) 
 
   return (
     <div className="space-y-6">
+      {/* Summary Card */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardContent className="py-6">
+          <div className="text-center">
+            <div className="text-4xl font-bold text-primary">{totalCount}</div>
+            <div className="text-sm text-muted-foreground mt-2">Total Work Orders &gt;30 Days with No Deferral Code</div>
+            <div className="text-xs text-muted-foreground mt-1">{Object.keys(groupedOrders).length} Data Centers</div>
+          </div>
+        </CardContent>
+      </Card>
       {Object.entries(groupedOrders).map(([dataCenter, orders]) => (
         <Card key={dataCenter}>
           <CardHeader className="border-b border-border pb-4">
