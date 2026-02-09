@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDate, isNextWeek } from "@/lib/dateUtils";
 import { toast } from "sonner";
+import { Lock, Unlock } from "lucide-react";
 
 interface ScheduleLockTabProps {
   workOrders: WorkOrder[];
@@ -19,6 +20,14 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
   const [selectedWorkOrders, setSelectedWorkOrders] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
+  const [lockedWorkOrders, setLockedWorkOrders] = useState<Set<string>>(new Set());
+
+  // Load locked work orders from localStorage
+  useEffect(() => {
+    const locks = JSON.parse(localStorage.getItem("scheduleLocks") || "[]");
+    const lockedNumbers = new Set<string>(locks.map((lock: any) => String(lock.workOrderNumber)));
+    setLockedWorkOrders(lockedNumbers);
+  }, []);
 
   const t1WorkOrders = useMemo(() => {
     const filtered = workOrders.filter((wo) => {
@@ -91,6 +100,11 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
     const existingLocks = JSON.parse(localStorage.getItem("scheduleLocks") || "[]");
     const updatedLocks = [...existingLocks, ...lockedOrders];
     localStorage.setItem("scheduleLocks", JSON.stringify(updatedLocks));
+
+    // Update locked work orders state
+    const newLockedNumbers = new Set(lockedWorkOrders);
+    selectedWorkOrders.forEach(wo => newLockedNumbers.add(wo));
+    setLockedWorkOrders(newLockedNumbers);
 
     toast.success(`Locked ${selectedWorkOrders.size} work orders for week of ${lockWeek}`);
     setSelectedWorkOrders(new Set());
@@ -170,9 +184,16 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
                     >
                       <td className="py-3 px-4">
                         <Checkbox
-                          checked={isSelected}
+                          checked={selectedWorkOrders.has(woNumber)}
                           onCheckedChange={() => handleToggleWorkOrder(woNumber)}
                         />
+                      </td>
+                      <td className="py-3 px-4">
+                        {lockedWorkOrders.has(woNumber) ? (
+                          <Lock className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Unlock className="h-4 w-4 text-red-600" />
+                        )}
                       </td>
                       <td className="py-3 px-4">
                         <a
