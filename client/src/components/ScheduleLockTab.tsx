@@ -65,6 +65,29 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
     setSelectAll(newSelected.size === t1WorkOrders.length);
   };
 
+  const handleUnlockSchedule = () => {
+    if (selectedWorkOrders.size === 0) {
+      toast.error("Please select at least one work order to unlock");
+      return;
+    }
+
+    // Remove selected work orders from localStorage
+    const existingLocks = JSON.parse(localStorage.getItem("scheduleLocks") || "[]");
+    const updatedLocks = existingLocks.filter(
+      (lock: any) => !selectedWorkOrders.has(String(lock.workOrderNumber))
+    );
+    localStorage.setItem("scheduleLocks", JSON.stringify(updatedLocks));
+
+    // Update locked work orders state
+    const newLockedNumbers = new Set(lockedWorkOrders);
+    selectedWorkOrders.forEach(wo => newLockedNumbers.delete(wo));
+    setLockedWorkOrders(newLockedNumbers);
+
+    toast.success(`Unlocked ${selectedWorkOrders.size} work orders`);
+    setSelectedWorkOrders(new Set());
+    setSelectAll(false);
+  };
+
   const handleLockSchedule = () => {
     if (selectedWorkOrders.size === 0) {
       toast.error("Please select at least one work order to lock");
@@ -134,13 +157,22 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
               {selectedWorkOrders.size} of {t1WorkOrders.length} work orders selected
             </div>
           </div>
-          <Button 
-            onClick={handleLockSchedule}
-            disabled={selectedWorkOrders.size === 0}
-            className="bg-primary hover:bg-primary/90"
-          >
-            Lock Schedule
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleLockSchedule}
+              disabled={selectedWorkOrders.size === 0}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Lock Schedule
+            </Button>
+            <Button 
+              onClick={handleUnlockSchedule}
+              disabled={selectedWorkOrders.size === 0}
+              variant="destructive"
+            >
+              Unlock Selected
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
