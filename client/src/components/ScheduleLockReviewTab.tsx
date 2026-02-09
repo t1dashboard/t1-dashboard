@@ -6,28 +6,19 @@ import { useMemo } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, parseExcelDate } from "@/lib/dateUtils";
+import { trpc } from "@/lib/trpc";
+import { Loader2 } from "lucide-react";
 
 interface ScheduleLockReviewTabProps {
   workOrders: WorkOrder[];
 }
 
-interface LockedWorkOrder {
-  workOrderNumber: string | number;
-  description: string;
-  dataCenter: string;
-  schedStartDate: any;
-  assignedTo: string;
-  status: string;
-  type: string;
-  equipmentDescription: string;
-  priority: string;
-  shift: string;
-  lockWeek: string;
-}
-
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
 export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReviewTabProps) {
+  // Fetch locked work orders from API
+  const { data: lockedWorkOrdersData = [], isLoading } = trpc.scheduleLocks.list.useQuery();
+
   const { unplannedWorkOrders, incompleteLockedOrders } = useMemo(() => {
     // Get previous week's date range
     const today = new Date();
@@ -42,16 +33,13 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     const lastSunday = new Date(lastMonday);
     lastSunday.setDate(lastMonday.getDate() + 6);
 
-    // Get locked work orders from localStorage
-    const lockedOrders: LockedWorkOrder[] = JSON.parse(localStorage.getItem("scheduleLocks") || "[]");
-    
     // Filter for previous week's locked orders
-    const previousWeekLocked = lockedOrders.filter(locked => {
+    const previousWeekLocked = lockedWorkOrdersData.filter(locked => {
       const lockDate = new Date(locked.lockWeek);
       return lockDate >= lastMonday && lockDate <= lastSunday;
     });
 
-    const lockedWONumbers = new Set(previousWeekLocked.map(wo => String(wo.workOrderNumber)));
+    const lockedWONumbers = new Set(previousWeekLocked.map(wo => wo.workOrderNumber));
 
     // Find unplanned work orders (scheduled for previous week but not locked)
     const unplanned = workOrders.filter((wo) => {
@@ -74,7 +62,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     // Find incomplete locked orders (locked but not Work Complete or Closed)
     const incomplete = previousWeekLocked.filter(locked => {
       // Find current status from work orders
-      const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
+      const currentWO = workOrders.find(wo => String(wo["Work Order"]) === locked.workOrderNumber);
       if (!currentWO) return true; // If not found, consider incomplete
       
       const status = currentWO["Status"]?.toUpperCase() || "";
@@ -89,7 +77,17 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       unplannedWorkOrders: unplanned,
       incompleteLockedOrders: incomplete
     };
-  }, [workOrders]);
+  }, [workOrders, lockedWorkOrdersData]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="py-12 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -212,7 +210,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                   <tbody>
                     {incompleteLockedOrders.map((locked) => {
                       // Get current status from work orders
-                      const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
+                      const currentWO = workOrders.find(wo => String(wo["Work Order"]) === locked.workOrderNumber);
                       const currentStatus = currentWO?.["Status"] || locked.status;
                       
                       return (
@@ -238,7 +236,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                           <td className="py-3 px-4 text-sm font-medium">{locked.dataCenter}</td>
                           <td className="py-3 px-4 text-sm">{locked.priority}</td>
                           <td className="py-3 px-4 text-sm">{locked.shift}</td>
-                          <td className="py-3 px-4 text-sm">{locked.assignedTo}</td>
+                          <td className="py-3 px-4 text-sm">{locked.assignedToName}</td>
                           <td className="py-3 px-4 text-sm">{formatDate(locked.schedStartDate)}</td>
                         </tr>
                       );

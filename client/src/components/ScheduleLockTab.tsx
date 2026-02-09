@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDate, isNextWeek } from "@/lib/dateUtils";
 import { toast } from "sonner";
-import { Lock, Unlock } from "lucide-react";
+import { Lock, Unlock, Loader2 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 interface ScheduleLockTabProps {
   workOrders: WorkOrder[];
@@ -20,14 +21,38 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
   const [selectedWorkOrders, setSelectedWorkOrders] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
-  const [lockedWorkOrders, setLockedWorkOrders] = useState<Set<string>>(new Set());
 
-  // Load locked work orders from localStorage
-  useEffect(() => {
-    const locks = JSON.parse(localStorage.getItem("scheduleLocks") || "[]");
-    const lockedNumbers = new Set<string>(locks.map((lock: any) => String(lock.workOrderNumber)));
-    setLockedWorkOrders(lockedNumbers);
-  }, []);
+  // Fetch locked work orders from API
+  const { data: lockedWorkOrdersData = [], isLoading, refetch } = trpc.scheduleLocks.list.useQuery();
+  const lockedWorkOrders = useMemo(() => 
+    new Set(lockedWorkOrdersData.map(lock => lock.workOrderNumber)),
+    [lockedWorkOrdersData]
+  );
+
+  // Mutations
+  const lockMutation = trpc.scheduleLocks.lock.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Locked ${data.count} work orders`);
+      refetch();
+      setSelectedWorkOrders(new Set());
+      setSelectAll(false);
+    },
+    onError: (error) => {
+      toast.error(`Failed to lock work orders: ${error.message}`);
+    },
+  });
+
+  const unlockMutation = trpc.scheduleLocks.unlock.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Unlocked ${data.count} work orders`);
+      refetch();
+      setSelectedWorkOrders(new Set());
+      setSelectAll(false);
+    },
+    onError: (error) => {
+      toast.error(`Failed to unlock work orders: ${error.message}`);
+    },
+  });
 
   const t1WorkOrders = useMemo(() => {
     const filtered = workOrders.filter((wo) => {
@@ -71,21 +96,9 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
       return;
     }
 
-    // Remove selected work orders from localStorage
-    const existingLocks = JSON.parse(localStorage.getItem("scheduleLocks") || "[]");
-    const updatedLocks = existingLocks.filter(
-      (lock: any) => !selectedWorkOrders.has(String(lock.workOrderNumber))
-    );
-    localStorage.setItem("scheduleLocks", JSON.stringify(updatedLocks));
-
-    // Update locked work orders state
-    const newLockedNumbers = new Set(lockedWorkOrders);
-    selectedWorkOrders.forEach(wo => newLockedNumbers.delete(wo));
-    setLockedWorkOrders(newLockedNumbers);
-
-    toast.success(`Unlocked ${selectedWorkOrders.size} work orders`);
-    setSelectedWorkOrders(new Set());
-    setSelectAll(false);
+    unlockMutation.mutate({
+      workOrderNumbers: Array.from(selectedWorkOrders),
+    });
   };
 
   const handleLockSchedule = () => {
@@ -106,37 +119,35 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
     const lockedOrders = t1WorkOrders
       .filter(wo => selectedWorkOrders.has(String(wo["Work Order"])))
       .map(wo => ({
-        workOrderNumber: wo["Work Order"],
-        description: wo["Description"],
-        dataCenter: wo["Data Center"],
-        schedStartDate: wo["Sched. Start Date"],
-        assignedTo: wo["Assigned To Name"],
-        status: wo["Status"],
-        type: wo["Type"],
-        equipmentDescription: wo["Equipment Description"],
-        priority: wo["Priority"],
-        shift: wo["Shift"],
+        workOrderNumber: String(wo["Work Order"]),
+        description: wo["Description"] || "",
+        dataCenter: wo["Data Center"] || "",
+        schedStartDate: wo["Sched. Start Date"] || "",
+        assignedTo: wo["Assigned To Name"] || "",
+        status: wo["Status"] || "",
+        type: wo["Type"] || "",
+        equipmentDescription: wo["Equipment Description"] || "",
+        priority: wo["Priority"] || "",
+        shift: wo["Shift"] || "",
         lockWeek: lockWeek
       }));
 
-    // Store in localStorage
-    const existingLocks = JSON.parse(localStorage.getItem("scheduleLocks") || "[]");
-    const updatedLocks = [...existingLocks, ...lockedOrders];
-    localStorage.setItem("scheduleLocks", JSON.stringify(updatedLocks));
-
-    // Update locked work orders state
-    const newLockedNumbers = new Set(lockedWorkOrders);
-    selectedWorkOrders.forEach(wo => newLockedNumbers.add(wo));
-    setLockedWorkOrders(newLockedNumbers);
-
-    toast.success(`Locked ${selectedWorkOrders.size} work orders for week of ${lockWeek}`);
-    setSelectedWorkOrders(new Set());
-    setSelectAll(false);
+    lockMutation.mutate({ locks: lockedOrders });
   };
 
   useEffect(() => {
     setSelectAll(selectedWorkOrders.size === t1WorkOrders.length && t1WorkOrders.length > 0);
   }, [selectedWorkOrders, t1WorkOrders]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="py-12 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (t1WorkOrders.length === 0) {
     return (
@@ -160,17 +171,31 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
           <div className="flex gap-2">
             <Button 
               onClick={handleLockSchedule}
-              disabled={selectedWorkOrders.size === 0}
+              disabled={selectedWorkOrders.size === 0 || lockMutation.isPending}
               className="bg-primary hover:bg-primary/90"
             >
-              Lock Schedule
+              {lockMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Locking...
+                </>
+              ) : (
+                "Lock Schedule"
+              )}
             </Button>
             <Button 
               onClick={handleUnlockSchedule}
-              disabled={selectedWorkOrders.size === 0}
+              disabled={selectedWorkOrders.size === 0 || unlockMutation.isPending}
               variant="destructive"
             >
-              Unlock Selected
+              {unlockMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Unlocking...
+                </>
+              ) : (
+                "Unlock Selected"
+              )}
             </Button>
           </div>
         </CardContent>
@@ -194,6 +219,7 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
                       onCheckedChange={handleSelectAll}
                     />
                   </th>
+                  <th className="text-left py-3 px-4 w-12"></th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Description</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
