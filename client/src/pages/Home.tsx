@@ -70,9 +70,9 @@ export default function Home() {
       const worksheet = workbook.Sheets[sheetName];
       const json = XLSX.utils.sheet_to_json(worksheet);
       
-      // Extract work order numbers from the first column
+      // Extract work order numbers from the "Work Order" column
       const laborData: ScheduledLabor[] = json.map((row: any) => ({
-        workOrderNumber: String(Object.values(row)[0])
+        workOrderNumber: String(row['Work Order'] || Object.values(row)[0])
       }));
       
       setScheduledLabor(laborData);

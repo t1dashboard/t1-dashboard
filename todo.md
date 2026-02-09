@@ -2,6 +2,7 @@
 
 ## Current Issue
 - [x] Fix LOTO Review column logic - scheduled labor work order numbers need to be converted to strings for proper matching
+- [x] Fix scheduled labor parsing - need to read from "Work Order" column instead of first column
 
 ## Completed Features
 - [x] Swiss Rationalism design implementation
