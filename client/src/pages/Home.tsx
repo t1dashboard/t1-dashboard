@@ -2,99 +2,58 @@
  * Swiss Rationalism: Main dashboard with sidebar navigation
  */
 
-import { useState, ChangeEvent } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useState, useEffect, ChangeEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Upload, FileSpreadsheet } from "lucide-react";
 import * as XLSX from "xlsx";
-import { WorkOrder, ScheduledLabor, dbToWorkOrder, dbToScheduledLabor } from "@/types/workOrder";
+import { WorkOrder, ScheduledLabor } from "@/types/workOrder";
 import T1T3Dashboard from "./T1T3Dashboard";
 import T4T8Dashboard from "./T4T8Dashboard";
 import ScheduleLockTab from "@/components/ScheduleLockTab";
 import ScheduleLockReviewTab from "@/components/ScheduleLockReviewTab";
-import { trpc } from "@/lib/trpc";
-import { toast } from "sonner";
 
 type ActiveView = "upload" | "schedule-lock" | "schedule-lock-review" | "t1t3" | "t4t8";
 
 export default function Home() {
-  const { user, loading: authLoading } = useAuth();
-  const [activeView, setActiveView] = useState<ActiveView>("upload");
-  const [isUploading, setIsUploading] = useState(false);
-
-  // Fetch data from API and convert to legacy format
-  const { data: workOrdersDB = [], isLoading: workOrdersLoading, refetch: refetchWorkOrders } = trpc.workOrders.list.useQuery();
-  const { data: scheduledLaborDB = [], isLoading: laborLoading, refetch: refetchLabor } = trpc.scheduledLabor.list.useQuery();
-
-  // Convert database format to legacy format for existing components
-  const workOrders: WorkOrder[] = workOrdersDB.map(dbToWorkOrder);
-  const scheduledLabor: ScheduledLabor[] = scheduledLaborDB.map(dbToScheduledLabor);
-
-  // Mutations
-  const uploadWorkOrdersMutation = trpc.workOrders.upload.useMutation({
-    onSuccess: (data) => {
-      toast.success(`Uploaded ${data.count} work orders successfully`);
-      refetchWorkOrders();
-      if (workOrders.length > 0) {
-        setActiveView("t1t3");
-      }
-      setIsUploading(false);
-    },
-    onError: (error) => {
-      toast.error(`Failed to upload work orders: ${error.message}`);
-      setIsUploading(false);
-    },
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => {
+    const saved = localStorage.getItem('t1-work-orders');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [scheduledLabor, setScheduledLabor] = useState<ScheduledLabor[]>(() => {
+    const saved = localStorage.getItem('t1-scheduled-labor');
+    return saved ? JSON.parse(saved) : [];
   });
 
-  const uploadScheduledLaborMutation = trpc.scheduledLabor.upload.useMutation({
-    onSuccess: (data) => {
-      toast.success(`Uploaded ${data.count} scheduled labor records successfully`);
-      refetchLabor();
-      setIsUploading(false);
-    },
-    onError: (error) => {
-      toast.error(`Failed to upload scheduled labor: ${error.message}`);
-      setIsUploading(false);
-    },
+  const [activeView, setActiveView] = useState<ActiveView>(() => {
+    // Default to t1t3 if data exists, otherwise upload
+    const saved = localStorage.getItem('t1-work-orders');
+    return saved && JSON.parse(saved).length > 0 ? "t1t3" : "upload";
   });
+
+  // Persist work orders to localStorage
+  useEffect(() => {
+    localStorage.setItem('t1-work-orders', JSON.stringify(workOrders));
+  }, [workOrders]);
+
+  // Persist scheduled labor to localStorage
+  useEffect(() => {
+    localStorage.setItem('t1-scheduled-labor', JSON.stringify(scheduledLabor));
+  }, [scheduledLabor]);
+
+
 
   const handleWorkOrderUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
     const reader = new FileReader();
     reader.onload = (event) => {
-      try {
-        const data = event.target?.result;
-        const workbook = XLSX.read(data, { type: "binary" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet);
-        
-        // Map Excel data to work order format
-        const orders = json.map((row: any) => ({
-          workOrderNumber: String(row["Work Order"] || ""),
-          description: row["Description"] || "",
-          dataCenter: row["Data Center"] || "",
-          schedStartDate: row["Sched. Start Date"] || "",
-          assignedToName: row["Assigned To Name"] || "",
-          status: row["Status"] || "",
-          type: row["Type"] || "",
-          equipmentDescription: row["Equipment Description"] || "",
-          priority: row["Priority"] || "",
-          shift: row["Shift"] || "",
-          ehsLor: row["EHS LOR"] || "",
-          operationalLor: row["Operational LOR"] || "",
-          deferralReasonSelected: row["Deferral Reason Selected"] || "",
-          trade: row["Trade"] || "",
-        }));
-
-        uploadWorkOrdersMutation.mutate({ workOrders: orders });
-      } catch (error) {
-        toast.error("Failed to parse Excel file");
-        setIsUploading(false);
-      }
+      const data = event.target?.result;
+      const workbook = XLSX.read(data, { type: "binary" });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(worksheet) as WorkOrder[];
+      setWorkOrders(json);
     };
     reader.readAsBinaryString(file);
   };
@@ -103,31 +62,25 @@ export default function Home() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
     const reader = new FileReader();
     reader.onload = (event) => {
-      try {
-        const data = event.target?.result;
-        const workbook = XLSX.read(data, { type: "binary" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet);
-        
-        // Extract work order numbers from the first column
-        const laborData = json.map((row: any) => ({
-          workOrderNumber: String(Object.values(row)[0] || ""),
-        }));
-
-        uploadScheduledLaborMutation.mutate({ labor: laborData });
-      } catch (error) {
-        toast.error("Failed to parse Excel file");
-        setIsUploading(false);
-      }
+      const data = event.target?.result;
+      const workbook = XLSX.read(data, { type: "binary" });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(worksheet);
+      
+      // Extract work order numbers from the first column
+      const laborData: ScheduledLabor[] = json.map((row: any) => ({
+        workOrderNumber: Object.values(row)[0] as number
+      }));
+      
+      setScheduledLabor(laborData);
     };
     reader.readAsBinaryString(file);
   };
 
-  const isLoading = authLoading || workOrdersLoading || laborLoading || isUploading;
+
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -144,6 +97,7 @@ export default function Home() {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2">
+
           <button
             onClick={() => setActiveView("t1t3")}
             className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
@@ -197,13 +151,7 @@ export default function Home() {
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <div className="container py-8">
-          {isLoading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          )}
-
-          {!isLoading && activeView === "upload" && (
+          {activeView === "upload" && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -228,7 +176,6 @@ export default function Home() {
                         accept=".xlsx,.xls"
                         onChange={handleWorkOrderUpload}
                         className="hidden"
-                        disabled={isUploading}
                       />
                     </label>
                     {workOrders.length > 0 && (
@@ -248,13 +195,14 @@ export default function Home() {
                         accept=".xlsx,.xls"
                         onChange={handleScheduledLaborUpload}
                         className="hidden"
-                        disabled={isUploading}
                       />
                     </label>
                     {scheduledLabor.length > 0 && (
                       <p className="text-xs text-green-600 mt-2">✓ {scheduledLabor.length} labor records loaded</p>
                     )}
                   </div>
+
+
                 </div>
 
                 <Card className="bg-muted/30">
@@ -269,7 +217,6 @@ export default function Home() {
                           <li>Upload the work order information spreadsheet first</li>
                           <li>Scheduled labor file: work orders in this list will be marked as "No" in LOTO Review</li>
                           <li>WOs &gt;30 Days tab automatically filters corrective work orders based on criteria</li>
-                          <li>All data is shared across users - everyone sees the same information</li>
                         </ul>
                       </div>
                     </div>
@@ -279,23 +226,23 @@ export default function Home() {
             </Card>
           )}
 
-          {!isLoading && activeView === "t1t3" && workOrders.length > 0 && (
+          {activeView === "t1t3" && workOrders.length > 0 && (
             <T1T3Dashboard workOrders={workOrders} scheduledLabor={scheduledLabor} />
           )}
 
-          {!isLoading && activeView === "t4t8" && workOrders.length > 0 && (
+          {activeView === "t4t8" && workOrders.length > 0 && (
             <T4T8Dashboard workOrders={workOrders} />
           )}
 
-          {!isLoading && activeView === "schedule-lock" && workOrders.length > 0 && (
+          {activeView === "schedule-lock" && workOrders.length > 0 && (
             <ScheduleLockTab workOrders={workOrders} />
           )}
 
-          {!isLoading && activeView === "schedule-lock-review" && workOrders.length > 0 && (
+          {activeView === "schedule-lock-review" && workOrders.length > 0 && (
             <ScheduleLockReviewTab workOrders={workOrders} />
           )}
 
-          {!isLoading && activeView !== "upload" && workOrders.length === 0 && (
+          {activeView !== "upload" && workOrders.length === 0 && (
             <Card>
               <CardContent className="py-12 text-center">
                 <FileSpreadsheet className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
