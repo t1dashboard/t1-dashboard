@@ -39,23 +39,12 @@ export default function WOsOver30DaysTab({ workOrders }: WOsOver30DaysTabProps) 
       const deferralCode = wo["Deferral Reason Selected"]?.toUpperCase();
       const hasDeferralNo = deferralCode === "NO";
       
-      // Trade must not be CFT (if Trade column exists)
-      let isNotCFT = true;
-      if (wo["Trade"]) {
-        const trade = wo["Trade"]?.toUpperCase();
-        isNotCFT = trade !== "CFT";
-      }
-      
-      // Shift must NOT equal GNSF
-      const shift = wo["Shift"]?.toUpperCase();
-      const isNotGNSF = shift !== "GNSF";
-      
       // Work order number must be numeric only (no letters)
       const woNumber = String(wo["Work Order"]);
       const isNumericOnly = /^\d+$/.test(woNumber);
       
       return !isCancelled && !isCMCC && isCorrective && isValidStatus && 
-             isOlderThan30Days && hasDeferralNo && isNotCFT && isNotGNSF && isNumericOnly;
+             isOlderThan30Days && hasDeferralNo && isNumericOnly;
     });
     
     // Sort alphabetically by data center
