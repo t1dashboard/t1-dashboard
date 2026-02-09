@@ -9,8 +9,10 @@ import * as XLSX from "xlsx";
 import { WorkOrder, ScheduledLabor } from "@/types/workOrder";
 import T1T3Dashboard from "./T1T3Dashboard";
 import T4T8Dashboard from "./T4T8Dashboard";
+import ScheduleLockTab from "@/components/ScheduleLockTab";
+import ScheduleLockReviewTab from "@/components/ScheduleLockReviewTab";
 
-type ActiveView = "upload" | "t1t3" | "t4t8";
+type ActiveView = "upload" | "schedule-lock" | "schedule-lock-review" | "t1t3" | "t4t8";
 
 export default function Home() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => {
@@ -119,6 +121,30 @@ export default function Home() {
             <div className="font-medium">T4-T8 Dashboard</div>
             <div className="text-xs opacity-80 mt-1">Extended planning</div>
           </button>
+          
+          <button
+            onClick={() => setActiveView("schedule-lock")}
+            className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
+              activeView === "schedule-lock"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-foreground"
+            }`}
+          >
+            <div className="font-medium">Schedule Lock</div>
+            <div className="text-xs opacity-80 mt-1">Lock T1 schedule</div>
+          </button>
+          
+          <button
+            onClick={() => setActiveView("schedule-lock-review")}
+            className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
+              activeView === "schedule-lock-review"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-foreground"
+            }`}
+          >
+            <div className="font-medium">Schedule Lock Review</div>
+            <div className="text-xs opacity-80 mt-1">Review locked schedule</div>
+          </button>
         </nav>
       </aside>
 
@@ -206,6 +232,14 @@ export default function Home() {
 
           {activeView === "t4t8" && workOrders.length > 0 && (
             <T4T8Dashboard workOrders={workOrders} />
+          )}
+
+          {activeView === "schedule-lock" && workOrders.length > 0 && (
+            <ScheduleLockTab workOrders={workOrders} />
+          )}
+
+          {activeView === "schedule-lock-review" && workOrders.length > 0 && (
+            <ScheduleLockReviewTab workOrders={workOrders} />
           )}
 
           {activeView !== "upload" && workOrders.length === 0 && (
