@@ -31,5 +31,5 @@ export interface WorkOrder {
 }
 
 export interface ScheduledLabor {
-  workOrderNumber: number;
+  workOrderNumber: string | number;
 }

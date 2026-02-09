@@ -34,13 +34,13 @@ export default function LOTOReviewTab({ workOrders, scheduledLabor }: LOTOReview
       return dcA.localeCompare(dcB);
     });
 
-    // Create a set of work order numbers from scheduled labor
-    const scheduledSet = new Set(scheduledLabor.map(sl => sl.workOrderNumber));
+    // Create a set of work order numbers from scheduled labor (convert to strings for comparison)
+    const scheduledSet = new Set(scheduledLabor.map(sl => String(sl.workOrderNumber)));
 
     // Add scheduled labor status
     return filtered.map((wo) => ({
       ...wo,
-      allScheduledLabor: !scheduledSet.has(wo["Work Order"]) // If in scheduled labor list, mark as No
+      allScheduledLabor: !scheduledSet.has(String(wo["Work Order"])) // If in scheduled labor list, mark as No
     }));
   }, [workOrders, scheduledLabor]);
 

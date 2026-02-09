@@ -1,0 +1,14 @@
+# Project TODO
+
+## Current Issue
+- [x] Fix LOTO Review column logic - scheduled labor work order numbers need to be converted to strings for proper matching
+
+## Completed Features
+- [x] Swiss Rationalism design implementation
+- [x] Work order upload and display
+- [x] T1-T3 Dashboard with filtering
+- [x] T4-T8 Dashboard
+- [x] Schedule Lock functionality
+- [x] Schedule Lock Review
+- [x] LOTO Review tab
+- [x] localStorage persistence

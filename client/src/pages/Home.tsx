@@ -72,7 +72,7 @@ export default function Home() {
       
       // Extract work order numbers from the first column
       const laborData: ScheduledLabor[] = json.map((row: any) => ({
-        workOrderNumber: Object.values(row)[0] as number
+        workOrderNumber: String(Object.values(row)[0])
       }));
       
       setScheduledLabor(laborData);
