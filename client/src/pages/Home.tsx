@@ -22,7 +22,11 @@ export default function Home() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [activeView, setActiveView] = useState<ActiveView>("upload");
+  const [activeView, setActiveView] = useState<ActiveView>(() => {
+    // Default to t1t3 if data exists, otherwise upload
+    const saved = localStorage.getItem('t1-work-orders');
+    return saved && JSON.parse(saved).length > 0 ? "t1t3" : "upload";
+  });
 
   // Persist work orders to localStorage
   useEffect(() => {
@@ -80,24 +84,17 @@ export default function Home() {
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
       <aside className="w-64 border-r border-border bg-card flex flex-col">
-        {/* Title */}
-        <div className="p-6 border-b border-border">
+        {/* Title - Clickable to go to upload */}
+        <button 
+          onClick={() => setActiveView("upload")}
+          className="p-6 border-b border-border text-left hover:bg-muted/50 transition-colors w-full"
+        >
           <h1 className="text-lg font-medium text-foreground">Work Planning Dashboard</h1>
-        </div>
+          <p className="text-xs text-muted-foreground mt-1">Click to upload data</p>
+        </button>
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2">
-          <button
-            onClick={() => setActiveView("upload")}
-            className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
-              activeView === "upload"
-                ? "bg-primary text-primary-foreground"
-                : "hover:bg-muted text-foreground"
-            }`}
-          >
-            <div className="font-medium">Upload Data</div>
-            <div className="text-xs opacity-80 mt-1">Manage data files</div>
-          </button>
 
           <button
             onClick={() => setActiveView("t1t3")}
