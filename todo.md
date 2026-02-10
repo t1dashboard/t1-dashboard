@@ -23,3 +23,4 @@
 - [x] Add Work Week Leaders display to T3 Not in Ready tab
 - [x] Add Work Week Leaders display to T2 Not in Ready tab
 - [x] Add Work Week Leaders display to T1 Not in Ready tab
+- [x] Add previous week's Work Week Leaders to Schedule Lock Review tab
