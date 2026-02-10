@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react";
 import * as XLSX from "xlsx";
-import { WorkOrder, ScheduledLabor } from "@/types/workOrder";
+import { WorkOrder, ScheduledLabor, PMCode } from "@/types/workOrder";
 import T1T3Dashboard from "./T1T3Dashboard";
 import T4T8Dashboard from "./T4T8Dashboard";
 import ScheduleLockTab from "@/components/ScheduleLockTab";
@@ -22,6 +22,10 @@ export default function Home() {
   });
   const [scheduledLabor, setScheduledLabor] = useState<ScheduledLabor[]>(() => {
     const saved = localStorage.getItem('t1-scheduled-labor');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [pmCodes, setPmCodes] = useState<PMCode[]>(() => {
+    const saved = localStorage.getItem('t1-pm-codes');
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -42,6 +46,11 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem('t1-scheduled-labor', JSON.stringify(scheduledLabor));
   }, [scheduledLabor]);
+
+  // Persist PM codes to localStorage
+  useEffect(() => {
+    localStorage.setItem('t1-pm-codes', JSON.stringify(pmCodes));
+  }, [pmCodes]);
 
 
 
@@ -79,6 +88,23 @@ export default function Home() {
       }));
       
       setScheduledLabor(laborData);
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handlePMCodesUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const data = event.target?.result;
+      const workbook = XLSX.read(data, { type: "binary" });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(worksheet) as PMCode[];
+      
+      setPmCodes(json);
     };
     reader.readAsBinaryString(file);
   };
@@ -222,7 +248,7 @@ export default function Home() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-3 gap-6">
                   {/* Work Order Upload */}
                   <div>
                     <label className="block text-sm font-medium mb-2">Work Order Information</label>
@@ -261,7 +287,24 @@ export default function Home() {
                     )}
                   </div>
 
-
+                  {/* PM Codes Upload */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">PM Codes</label>
+                    <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors">
+                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                      <span className="text-sm text-muted-foreground">Click to upload</span>
+                      <span className="text-xs text-muted-foreground mt-1">For LOTO/PTW filtering</span>
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls"
+                        onChange={handlePMCodesUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {pmCodes.length > 0 && (
+                      <p className="text-xs text-green-600 mt-2">✓ {pmCodes.length} PM codes loaded</p>
+                    )}
+                  </div>
                 </div>
 
                 <Card className="bg-muted/30">
@@ -275,6 +318,7 @@ export default function Home() {
                         <ul className="space-y-1 list-disc list-inside">
                           <li>Upload the work order information spreadsheet first</li>
                           <li>Scheduled labor file: work orders in this list will be marked as "No" in LOTO Review</li>
+                          <li>PM codes file: work orders with PM codes requiring LOTO or PTW will appear in LOTO Review</li>
                           <li>WOs &gt;30 Days tab automatically filters corrective work orders based on criteria</li>
                         </ul>
                       </div>
@@ -286,7 +330,7 @@ export default function Home() {
           )}
 
           {activeView === "t1t3" && workOrders.length > 0 && (
-            <T1T3Dashboard workOrders={workOrders} scheduledLabor={scheduledLabor} />
+            <T1T3Dashboard workOrders={workOrders} scheduledLabor={scheduledLabor} pmCodes={pmCodes} />
           )}
 
           {activeView === "t4t8" && workOrders.length > 0 && (

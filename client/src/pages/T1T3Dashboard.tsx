@@ -4,7 +4,7 @@
 
 import { useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { WorkOrder, ScheduledLabor } from "@/types/workOrder";
+import { WorkOrder, ScheduledLabor, PMCode } from "@/types/workOrder";
 import WorkLoadTab from "@/components/WorkLoadTab";
 import RiskIdentificationTab from "@/components/RiskIdentificationTab";
 import LOTOReviewTab from "@/components/LOTOReviewTab";
@@ -17,9 +17,10 @@ import { useState } from "react";
 interface T1T3DashboardProps {
   workOrders: WorkOrder[];
   scheduledLabor: ScheduledLabor[];
+  pmCodes: PMCode[];
 }
 
-export default function T1T3Dashboard({ workOrders, scheduledLabor }: T1T3DashboardProps) {
+export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T1T3DashboardProps) {
   const [activeTab, setActiveTab] = useState("t3notready");
 
   const nextWeekRange = useMemo(() => {
@@ -77,7 +78,7 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor }: T1T3Dashbo
         </TabsContent>
 
         <TabsContent value="loto" className="mt-6">
-          <LOTOReviewTab workOrders={workOrders} scheduledLabor={scheduledLabor} />
+          <LOTOReviewTab workOrders={workOrders} scheduledLabor={scheduledLabor} pmCodes={pmCodes} />
         </TabsContent>
       </Tabs>
     </div>

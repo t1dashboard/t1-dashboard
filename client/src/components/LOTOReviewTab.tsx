@@ -4,7 +4,7 @@
  */
 
 import { useMemo } from "react";
-import { WorkOrder, ScheduledLabor } from "@/types/workOrder";
+import { WorkOrder, ScheduledLabor, PMCode } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, isNextWeek } from "@/lib/dateUtils";
@@ -12,19 +12,35 @@ import { formatDate, isNextWeek } from "@/lib/dateUtils";
 interface LOTOReviewTabProps {
   workOrders: WorkOrder[];
   scheduledLabor: ScheduledLabor[];
+  pmCodes: PMCode[];
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
-export default function LOTOReviewTab({ workOrders, scheduledLabor }: LOTOReviewTabProps) {
+export default function LOTOReviewTab({ workOrders, scheduledLabor, pmCodes }: LOTOReviewTabProps) {
   const lotoWorkOrders = useMemo(() => {
-    // Filter work orders containing LOTO or PTW in description and scheduled for next week, excluding cancelled and CMCC
+    // Create a set of PM codes that require LOTO or PTW
+    const lotoPTWCodes = new Set(
+      pmCodes
+        .filter(pm => {
+          const lotoReq = (pm["LOTO Required"] || "").toUpperCase();
+          const ptwReq = (pm["PTW Required"] || "").toUpperCase();
+          return lotoReq === "YES" || ptwReq === "YES";
+        })
+        .map(pm => pm["PM Codes"])
+    );
+
+    // Filter work orders containing LOTO or PTW in description OR matching PM codes, and scheduled for next week, excluding cancelled, CMCC, and weekly
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const desc = wo["Description"]?.toUpperCase() || "";
       const isCMCC = desc.includes("CMCC");
+      const isWeekly = desc.includes("WEEKLY");
       const hasLOTOorPTW = desc.includes("LOTO") || desc.includes("PTW");
-      return !isCancelled && !isCMCC && hasLOTOorPTW && isNextWeek(wo["Sched. Start Date"]);
+      const pmCode = wo["PM Code"] || "";
+      const hasPMCodeMatch = lotoPTWCodes.has(pmCode);
+      
+      return !isCancelled && !isCMCC && !isWeekly && (hasLOTOorPTW || hasPMCodeMatch) && isNextWeek(wo["Sched. Start Date"]);
     });
 
     // Sort alphabetically by data center
@@ -42,7 +58,7 @@ export default function LOTOReviewTab({ workOrders, scheduledLabor }: LOTOReview
       ...wo,
       allScheduledLabor: !scheduledSet.has(String(wo["Work Order"])) // If in scheduled labor list, mark as No
     }));
-  }, [workOrders, scheduledLabor]);
+  }, [workOrders, scheduledLabor, pmCodes]);
 
   const getLORBadgeVariant = (lor: string): "default" | "destructive" | "secondary" => {
     if (lor === "High") return "destructive";

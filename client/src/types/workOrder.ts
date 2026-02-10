@@ -33,3 +33,14 @@ export interface WorkOrder {
 export interface ScheduledLabor {
   workOrderNumber: string | number;
 }
+
+export interface PMCode {
+  "PM Codes": string;
+  "Description": string;
+  "Status": string;
+  "Date Approved": string;
+  "Perform Every": number;
+  "Period UOM": string;
+  "LOTO Required": string;
+  "PTW Required": string;
+}
