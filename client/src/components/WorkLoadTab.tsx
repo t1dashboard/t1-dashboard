@@ -105,8 +105,27 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
     </div>
   );
 
+  // Calculate total work orders across all days
+  const totalWorkOrders = useMemo(() => {
+    return DAYS_OF_WEEK.reduce((total, day) => {
+      const dayOrders = workloadByDay[day];
+      return total + dayOrders.day.length + dayOrders.night.length;
+    }, 0);
+  }, [workloadByDay]);
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Total Summary Card */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-2xl font-medium text-foreground">
+            T1 Workload Summary
+          </CardTitle>
+          <p className="text-lg text-foreground mt-2">
+            <span className="font-semibold">{totalWorkOrders}</span> total work orders for next week
+          </p>
+        </CardHeader>
+      </Card>
       {DAYS_OF_WEEK.map((day) => {
         const dayOrders = workloadByDay[day];
         const totalOrders = dayOrders.day.length + dayOrders.night.length;
