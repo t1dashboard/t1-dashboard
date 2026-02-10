@@ -19,10 +19,11 @@ export default function RiskIdentificationTab({ workOrders }: RiskIdentification
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
+      const isWeekly = wo["Description"]?.toUpperCase().includes("WEEKLY");
       const ehsLOR = wo["EHS LOR"];
       const opLOR = wo["Operational LOR"];
       const hasRisk = ehsLOR === "Medium" || ehsLOR === "High" || opLOR === "Medium" || opLOR === "High";
-      return !isCancelled && !isCMCC && hasRisk && isNextWeek(wo["Sched. Start Date"]);
+      return !isCancelled && !isCMCC && !isWeekly && hasRisk && isNextWeek(wo["Sched. Start Date"]);
     });
     
     // Sort alphabetically by data center

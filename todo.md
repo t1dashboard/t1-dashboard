@@ -16,3 +16,4 @@
 
 ## New Tasks
 - [x] Exclude work orders containing "weekly" in description from T1 Workload tab
+- [x] Exclude work orders containing "weekly" in description from Risk Identification tab
