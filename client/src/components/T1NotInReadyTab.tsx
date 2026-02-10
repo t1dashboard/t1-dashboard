@@ -5,7 +5,8 @@
 import { useMemo } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDate, isNextWeek } from "@/lib/dateUtils";
+import { formatDate, isNextWeek, getNextWeekRange } from "@/lib/dateUtils";
+import { getWorkWeekLeaders } from "@/lib/workWeekLeaders";
 
 interface T1NotInReadyTabProps {
   workOrders: WorkOrder[];
@@ -40,6 +41,10 @@ export default function T1NotInReadyTab({ workOrders }: T1NotInReadyTabProps) {
     );
   }
 
+  // Get Work Week Leaders for T1 week
+  const { start: t1Start } = getNextWeekRange();
+  const weekLeaders = getWorkWeekLeaders(t1Start);
+
   return (
     <Card>
       <CardHeader className="border-b border-border pb-4">
@@ -47,6 +52,19 @@ export default function T1NotInReadyTab({ workOrders }: T1NotInReadyTabProps) {
         <p className="text-sm text-muted-foreground mt-1">
           {t1NotReadyOrders.length} work orders not in Ready status
         </p>
+        {weekLeaders && (
+          <div className="mt-3 pt-3 border-t border-border/50">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Work Week Leaders:</p>
+            <div className="flex flex-wrap gap-3 text-xs">
+              <span><span className="font-medium">COM:</span> {weekLeaders.COM}</span>
+              <span><span className="font-medium">LBE:</span> {weekLeaders.LBE}</span>
+              <span><span className="font-medium">SME Lead:</span> {weekLeaders.SMELead}</span>
+              <span><span className="font-medium">cSME:</span> {weekLeaders.cSME}</span>
+              <span><span className="font-medium">mSME:</span> {weekLeaders.mSME}</span>
+              <span><span className="font-medium">eSME:</span> {weekLeaders.eSME}</span>
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">

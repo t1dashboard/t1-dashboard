@@ -33,7 +33,8 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
-      return !isCancelled && !isCMCC && isNextWeek(wo["Sched. Start Date"]);
+      const isWeekly = wo["Description"]?.toUpperCase().includes("WEEKLY");
+      return !isCancelled && !isCMCC && !isWeekly && isNextWeek(wo["Sched. Start Date"]);
     });
     
     // Sort alphabetically by data center

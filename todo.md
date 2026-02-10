@@ -18,3 +18,8 @@
 - [x] Exclude work orders containing "weekly" in description from T1 Workload tab
 - [x] Exclude work orders containing "weekly" in description from Risk Identification tab
 - [x] Add combined total count at the top of T1 Workload tab
+- [x] Exclude work orders containing "weekly" from Schedule Lock tab
+- [x] Exclude work orders containing "weekly" from Schedule Lock Review tab
+- [x] Add Work Week Leaders display to T3 Not in Ready tab
+- [x] Add Work Week Leaders display to T2 Not in Ready tab
+- [x] Add Work Week Leaders display to T1 Not in Ready tab

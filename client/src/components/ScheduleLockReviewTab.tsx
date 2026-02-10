@@ -57,6 +57,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     const unplanned = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
+      const isWeekly = wo["Description"]?.toUpperCase().includes("WEEKLY");
       
       const schedDate = parseExcelDate(wo["Sched. Start Date"]);
       const isInPreviousWeek = schedDate && schedDate >= lastMonday && schedDate <= lastSunday;
@@ -64,7 +65,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       const woNumber = String(wo["Work Order"]);
       const wasNotLocked = !lockedWONumbers.has(woNumber);
       
-      return !isCancelled && !isCMCC && isInPreviousWeek && wasNotLocked;
+      return !isCancelled && !isCMCC && !isWeekly && isInPreviousWeek && wasNotLocked;
     }).sort((a, b) => {
       const dcA = a["Data Center"] || "";
       const dcB = b["Data Center"] || "";
