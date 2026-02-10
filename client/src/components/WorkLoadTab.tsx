@@ -3,11 +3,13 @@
  * Separated into Day Shift and Night Shift sections
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { formatDate, parseExcelDate, isNextWeek, getNextWeekRange } from "@/lib/dateUtils";
 import { isNightShift } from "@/lib/nightShiftEmployees";
+import { Calendar, List } from "lucide-react";
 
 interface WorkLoadTabProps {
   workOrders: WorkOrder[];
@@ -18,6 +20,8 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+
   // Get In Process work orders that span the T1 week
   const inProcessOrders = useMemo(() => {
     const { start: weekStart, end: weekEnd } = getNextWeekRange();
@@ -144,35 +148,116 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
     return scheduledTotal + inProcessOrders.length;
   }, [workloadByDay, inProcessOrders]);
 
+  // Render calendar view
+  const renderCalendarView = () => (
+    <Card>
+      <CardContent className="p-4">
+        <div className="grid grid-cols-7 gap-2">
+          {DAYS_OF_WEEK.map((day) => {
+            const dayOrders = workloadByDay[day];
+            const totalOrders = dayOrders.day.length + dayOrders.night.length;
+            
+            return (
+              <div key={day} className="border border-border rounded-lg overflow-hidden">
+                <div className="bg-muted/50 p-2 border-b border-border">
+                  <h3 className="font-medium text-sm text-center">{day}</h3>
+                  <p className="text-xs text-muted-foreground text-center mt-1">
+                    {totalOrders} WOs
+                  </p>
+                </div>
+                <div className="p-2 space-y-2 min-h-[300px] max-h-[600px] overflow-y-auto">
+                  {/* Day Shift */}
+                  {dayOrders.day.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Day ({dayOrders.day.length})</div>
+                      {dayOrders.day.map((wo) => (
+                        <a
+                          key={wo["Work Order"]}
+                          href={`${BASE_URL}${wo["Work Order"]}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block p-2 bg-card border border-border rounded text-xs hover:bg-muted/50 transition-colors mb-1"
+                        >
+                          <div className="font-medium text-primary">{wo["Work Order"]}</div>
+                          <div className="text-muted-foreground truncate" title={wo["Description"]}>
+                            {wo["Description"]}
+                          </div>
+                          <div className="font-medium mt-1">{wo["Data Center"]}</div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  {/* Night Shift */}
+                  {dayOrders.night.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">Night ({dayOrders.night.length})</div>
+                      {dayOrders.night.map((wo) => (
+                        <a
+                          key={wo["Work Order"]}
+                          href={`${BASE_URL}${wo["Work Order"]}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block p-2 bg-card border border-border rounded text-xs hover:bg-muted/50 transition-colors mb-1"
+                        >
+                          <div className="font-medium text-primary">{wo["Work Order"]}</div>
+                          <div className="text-muted-foreground truncate" title={wo["Description"]}>
+                            {wo["Description"]}
+                          </div>
+                          <div className="font-medium mt-1">{wo["Data Center"]}</div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Total Summary Card */}
+      {/* Total Summary Card with View Toggle */}
       <Card className="bg-primary/5 border-primary/20">
         <CardHeader className="pb-3">
-          <CardTitle className="text-2xl font-medium text-foreground">
-            T1 Workload Summary
-          </CardTitle>
-          <p className="text-lg text-foreground mt-2">
-            <span className="font-semibold">{totalWorkOrders}</span> total work orders for next week
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl font-medium text-foreground">
+                T1 Workload Summary
+              </CardTitle>
+              <p className="text-lg text-foreground mt-2">
+                <span className="font-semibold">{totalWorkOrders}</span> total work orders for next week
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="h-4 w-4 mr-2" />
+                List
+              </Button>
+              <Button
+                variant={viewMode === 'calendar' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('calendar')}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Calendar
+              </Button>
+            </div>
+          </div>
         </CardHeader>
       </Card>
       
-      {/* In Process Work Orders Section */}
-      {inProcessOrders.length > 0 && (
-        <Card className="border-orange-500/30 bg-orange-50/30 dark:bg-orange-950/20">
-          <CardHeader className="border-b border-border pb-4">
-            <CardTitle className="text-xl font-medium">In Process Work Orders</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {inProcessOrders.length} work orders currently in process that span the T1 week
-            </p>
-          </CardHeader>
-          <CardContent className="p-0">
-            {renderTable(inProcessOrders)}
-          </CardContent>
-        </Card>
-      )}
-      {DAYS_OF_WEEK.map((day) => {
+      {viewMode === 'calendar' ? (
+        renderCalendarView()
+      ) : (
+        <>
+        {DAYS_OF_WEEK.map((day) => {
         const dayOrders = workloadByDay[day];
         const totalOrders = dayOrders.day.length + dayOrders.night.length;
         if (totalOrders === 0) return null;
@@ -209,6 +294,23 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
           </Card>
         );
       })}
+      
+      {/* In Process Work Orders Section */}
+      {inProcessOrders.length > 0 && (
+        <Card className="border-orange-500/30 bg-orange-50/30 dark:bg-orange-950/20">
+          <CardHeader className="border-b border-border pb-4">
+            <CardTitle className="text-xl font-medium">In Process Work Orders</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              {inProcessOrders.length} work orders currently in process that span the T1 week
+            </p>
+          </CardHeader>
+          <CardContent className="p-0">
+            {renderTable(inProcessOrders)}
+          </CardContent>
+        </Card>
+      )}
+      </>
+      )}
     </div>
   );
 }
