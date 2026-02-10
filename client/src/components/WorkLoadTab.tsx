@@ -19,11 +19,12 @@ const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "S
 
 export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
   const workloadByDay = useMemo(() => {
-    // Filter for next week's work orders only, excluding cancelled and CMCC Daily Work Orders
+    // Filter for next week's work orders only, excluding cancelled, CMCC Daily Work Orders, and weekly work orders
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
-      return !isCancelled && !isCMCC && wo["Sched. Start Date"] && wo["Sched. Start Date"] !== "" && isNextWeek(wo["Sched. Start Date"]);
+      const isWeekly = wo["Description"]?.toUpperCase().includes("WEEKLY");
+      return !isCancelled && !isCMCC && !isWeekly && wo["Sched. Start Date"] && wo["Sched. Start Date"] !== "" && isNextWeek(wo["Sched. Start Date"]);
     });
 
     // Group by day of week and shift

@@ -13,3 +13,6 @@
 - [x] Schedule Lock Review
 - [x] LOTO Review tab
 - [x] localStorage persistence
+
+## New Tasks
+- [x] Exclude work orders containing "weekly" in description from T1 Workload tab
