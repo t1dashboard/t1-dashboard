@@ -29,3 +29,4 @@
 - [x] Move In Process section to bottom of T1 Workload (after Sunday)
 - [x] Add calendar view to T1 Workload tab
 - [x] Add toggle between list view and calendar view
+- [x] Make sidebar collapsible with toggle button

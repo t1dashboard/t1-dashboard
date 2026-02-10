@@ -4,7 +4,8 @@
 
 import { useState, useEffect, ChangeEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, FileSpreadsheet } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react";
 import * as XLSX from "xlsx";
 import { WorkOrder, ScheduledLabor } from "@/types/workOrder";
 import T1T3Dashboard from "./T1T3Dashboard";
@@ -29,6 +30,8 @@ export default function Home() {
     const saved = localStorage.getItem('t1-work-orders');
     return saved && JSON.parse(saved).length > 0 ? "t1t3" : "upload";
   });
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Persist work orders to localStorage
   useEffect(() => {
@@ -85,18 +88,27 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-border bg-card flex flex-col">
+      <aside className={`border-r border-border bg-card flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
         {/* Title - Clickable to go to upload */}
-        <button 
-          onClick={() => setActiveView("upload")}
-          className="p-6 border-b border-border text-left hover:bg-muted/50 transition-colors w-full"
-        >
-          <h1 className="text-lg font-medium text-foreground">Work Planning Dashboard</h1>
-          <p className="text-xs text-muted-foreground mt-1">Click to upload data</p>
-        </button>
+        <div className="border-b border-border">
+          <button 
+            onClick={() => setActiveView("upload")}
+            className="p-6 text-left hover:bg-muted/50 transition-colors w-full"
+          >
+            {!sidebarCollapsed && (
+              <>
+                <h1 className="text-lg font-medium text-foreground">Work Planning Dashboard</h1>
+                <p className="text-xs text-muted-foreground mt-1">Click to upload data</p>
+              </>
+            )}
+            {sidebarCollapsed && (
+              <Upload className="h-5 w-5 mx-auto text-foreground" />
+            )}
+          </button>
+        </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
 
           <button
             onClick={() => setActiveView("t1t3")}
@@ -105,9 +117,16 @@ export default function Home() {
                 ? "bg-primary text-primary-foreground"
                 : "hover:bg-muted text-foreground"
             }`}
+            title={sidebarCollapsed ? "T1-T3 Dashboard" : ""}
           >
-            <div className="font-medium">T1-T3 Dashboard</div>
-            <div className="text-xs opacity-80 mt-1">Near-term planning</div>
+            {!sidebarCollapsed ? (
+              <>
+                <div className="font-medium">T1-T3 Dashboard</div>
+                <div className="text-xs opacity-80 mt-1">Near-term planning</div>
+              </>
+            ) : (
+              <div className="font-medium text-center">T1-T3</div>
+            )}
           </button>
           
           <button
@@ -117,9 +136,16 @@ export default function Home() {
                 ? "bg-primary text-primary-foreground"
                 : "hover:bg-muted text-foreground"
             }`}
+            title={sidebarCollapsed ? "T4-T8 Dashboard" : ""}
           >
-            <div className="font-medium">T4-T8 Dashboard</div>
-            <div className="text-xs opacity-80 mt-1">Extended planning</div>
+            {!sidebarCollapsed ? (
+              <>
+                <div className="font-medium">T4-T8 Dashboard</div>
+                <div className="text-xs opacity-80 mt-1">Extended planning</div>
+              </>
+            ) : (
+              <div className="font-medium text-center">T4-T8</div>
+            )}
           </button>
           
           <button
@@ -129,9 +155,16 @@ export default function Home() {
                 ? "bg-primary text-primary-foreground"
                 : "hover:bg-muted text-foreground"
             }`}
+            title={sidebarCollapsed ? "Schedule Lock" : ""}
           >
-            <div className="font-medium">Schedule Lock</div>
-            <div className="text-xs opacity-80 mt-1">Lock T1 schedule</div>
+            {!sidebarCollapsed ? (
+              <>
+                <div className="font-medium">Schedule Lock</div>
+                <div className="text-xs opacity-80 mt-1">Lock T1 schedule</div>
+              </>
+            ) : (
+              <div className="font-medium text-center text-xs">Lock</div>
+            )}
           </button>
           
           <button
@@ -141,11 +174,37 @@ export default function Home() {
                 ? "bg-primary text-primary-foreground"
                 : "hover:bg-muted text-foreground"
             }`}
+            title={sidebarCollapsed ? "Schedule Lock Review" : ""}
           >
-            <div className="font-medium">Schedule Lock Review</div>
-            <div className="text-xs opacity-80 mt-1">Review locked schedule</div>
+            {!sidebarCollapsed ? (
+              <>
+                <div className="font-medium">Schedule Lock Review</div>
+                <div className="text-xs opacity-80 mt-1">Review locked schedule</div>
+              </>
+            ) : (
+              <div className="font-medium text-center text-xs">Review</div>
+            )}
           </button>
         </nav>
+        
+        {/* Toggle Button */}
+        <div className="p-2 border-t border-border">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="w-full"
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <>
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Collapse
+              </>
+            )}
+          </Button>
+        </div>
       </aside>
 
       {/* Main Content */}
