@@ -128,6 +128,19 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
               <p className="text-sm text-muted-foreground mt-1">
                 Work orders scheduled for previous week that were not on the locked schedule
               </p>
+              {previousWeekLeaders && (
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Previous Week Leaders:</p>
+                  <div className="flex flex-wrap gap-3 text-xs">
+                    <span><span className="font-medium">COM:</span> {previousWeekLeaders.COM}</span>
+                    <span><span className="font-medium">LBE:</span> {previousWeekLeaders.LBE}</span>
+                    <span><span className="font-medium">SME Lead:</span> {previousWeekLeaders.SMELead}</span>
+                    <span><span className="font-medium">cSME:</span> {previousWeekLeaders.cSME}</span>
+                    <span><span className="font-medium">mSME:</span> {previousWeekLeaders.mSME}</span>
+                    <span><span className="font-medium">eSME:</span> {previousWeekLeaders.eSME}</span>
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -183,25 +196,6 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground">No unplanned work orders from previous week</p>
-            </CardContent>
-          </Card>
-        )}
-        
-        {/* Previous Week Leaders */}
-        {previousWeekLeaders && (
-          <Card className="mt-4 bg-muted/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Previous Week Leaders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-3 text-sm">
-                <span><span className="font-medium">COM:</span> {previousWeekLeaders.COM}</span>
-                <span><span className="font-medium">LBE:</span> {previousWeekLeaders.LBE}</span>
-                <span><span className="font-medium">SME Lead:</span> {previousWeekLeaders.SMELead}</span>
-                <span><span className="font-medium">cSME:</span> {previousWeekLeaders.cSME}</span>
-                <span><span className="font-medium">mSME:</span> {previousWeekLeaders.mSME}</span>
-                <span><span className="font-medium">eSME:</span> {previousWeekLeaders.eSME}</span>
-              </div>
             </CardContent>
           </Card>
         )}
