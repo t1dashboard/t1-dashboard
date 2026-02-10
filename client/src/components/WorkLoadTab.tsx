@@ -18,6 +18,36 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
+  // Get In Process work orders that span the T1 week
+  const inProcessOrders = useMemo(() => {
+    const { start: weekStart, end: weekEnd } = getNextWeekRange();
+    
+    const filtered = workOrders.filter((wo) => {
+      const isInProcess = wo["Status"]?.toUpperCase() === "IN PROCESS" || wo["Status"]?.toUpperCase() === "INPROCESS" || wo["Status"]?.toUpperCase() === "IN-PROCESS";
+      if (!isInProcess) return false;
+      
+      const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
+      const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
+      const isWeekly = wo["Description"]?.toUpperCase().includes("WEEKLY");
+      if (isCancelled || isCMCC || isWeekly) return false;
+      
+      const schedStart = parseExcelDate(wo["Sched. Start Date"]);
+      const schedEnd = parseExcelDate(wo["Sched. End Date"]);
+      
+      if (!schedStart || !schedEnd) return false;
+      
+      // Check if the work order overlaps with T1 week
+      return schedStart <= weekEnd && schedEnd >= weekStart;
+    });
+    
+    // Sort by data center
+    return filtered.sort((a, b) => {
+      const dcA = a["Data Center"] || "";
+      const dcB = b["Data Center"] || "";
+      return dcA.localeCompare(dcB);
+    });
+  }, [workOrders]);
+
   const workloadByDay = useMemo(() => {
     // Filter for next week's work orders only, excluding cancelled, CMCC Daily Work Orders, and weekly work orders
     const filtered = workOrders.filter((wo) => {
@@ -70,6 +100,7 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Description</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched End Date</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
           </tr>
@@ -93,9 +124,8 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
               </td>
               <td className="py-3 px-4 text-sm">{wo["Description"]}</td>
               <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
-              <td className="py-3 px-4 text-sm">
-                {formatDate(wo["Sched. Start Date"])}
-              </td>
+              <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
+              <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. End Date"])}</td>
               <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
               <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
             </tr>
@@ -105,13 +135,14 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
     </div>
   );
 
-  // Calculate total work orders across all days
+  // Calculate total work orders across all days (including in process)
   const totalWorkOrders = useMemo(() => {
-    return DAYS_OF_WEEK.reduce((total, day) => {
+    const scheduledTotal = DAYS_OF_WEEK.reduce((total, day) => {
       const dayOrders = workloadByDay[day];
       return total + dayOrders.day.length + dayOrders.night.length;
     }, 0);
-  }, [workloadByDay]);
+    return scheduledTotal + inProcessOrders.length;
+  }, [workloadByDay, inProcessOrders]);
 
   return (
     <div className="space-y-6">
@@ -126,6 +157,21 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
           </p>
         </CardHeader>
       </Card>
+      
+      {/* In Process Work Orders Section */}
+      {inProcessOrders.length > 0 && (
+        <Card className="border-orange-500/30 bg-orange-50/30 dark:bg-orange-950/20">
+          <CardHeader className="border-b border-border pb-4">
+            <CardTitle className="text-xl font-medium">In Process Work Orders</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              {inProcessOrders.length} work orders currently in process that span the T1 week
+            </p>
+          </CardHeader>
+          <CardContent className="p-0">
+            {renderTable(inProcessOrders)}
+          </CardContent>
+        </Card>
+      )}
       {DAYS_OF_WEEK.map((day) => {
         const dayOrders = workloadByDay[day];
         const totalOrders = dayOrders.day.length + dayOrders.night.length;
