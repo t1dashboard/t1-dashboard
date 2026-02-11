@@ -36,3 +36,6 @@
 - [x] Create ScheduledLaborReviewTab component
 - [x] Show total count of Ready status work orders from scheduled labor
 - [x] Show breakdown of all unique work orders with assigned to and status
+- [x] Make Ready status appear in red in Scheduled Labor Review
+- [x] Make Ready count number red in summary
+- [x] Group work orders by assigned person in Scheduled Labor Review

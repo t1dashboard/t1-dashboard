@@ -31,12 +31,27 @@ export default function ScheduledLaborReviewTab({ workOrders, scheduledLabor }: 
 
     const matchedWorkOrders = Array.from(uniqueWorkOrders.values());
 
-    // Sort alphabetically by data center
-    matchedWorkOrders.sort((a, b) => {
-      const dcA = a["Data Center"] || "";
-      const dcB = b["Data Center"] || "";
-      return dcA.localeCompare(dcB);
+    // Group by assigned person, then sort by person name
+    const groupedByPerson = new Map<string, WorkOrder[]>();
+    matchedWorkOrders.forEach(wo => {
+      const assignedTo = wo["Assigned To Name"] || "Unassigned";
+      if (!groupedByPerson.has(assignedTo)) {
+        groupedByPerson.set(assignedTo, []);
+      }
+      groupedByPerson.get(assignedTo)!.push(wo);
     });
+
+    // Sort persons alphabetically and their work orders by data center
+    const sortedGroups = Array.from(groupedByPerson.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([person, wos]) => ({
+        person,
+        workOrders: wos.sort((a, b) => {
+          const dcA = a["Data Center"] || "";
+          const dcB = b["Data Center"] || "";
+          return dcA.localeCompare(dcB);
+        })
+      }));
 
     // Count Ready status work orders
     const readyCount = matchedWorkOrders.filter(wo => 
@@ -44,17 +59,16 @@ export default function ScheduledLaborReviewTab({ workOrders, scheduledLabor }: 
     ).length;
 
     return {
-      workOrders: matchedWorkOrders,
+      groups: sortedGroups,
       readyCount,
       totalCount: matchedWorkOrders.length
     };
   }, [workOrders, scheduledLabor]);
 
-  const getStatusBadgeVariant = (status: string): "default" | "secondary" | "outline" => {
+  const getStatusColor = (status: string): string => {
     const statusUpper = status?.toUpperCase() || "";
-    if (statusUpper === "READY") return "default";
-    if (statusUpper === "IN PROCESS") return "secondary";
-    return "outline";
+    if (statusUpper === "READY") return "text-red-600 font-semibold";
+    return "";
   };
 
   return (
@@ -71,7 +85,7 @@ export default function ScheduledLaborReviewTab({ workOrders, scheduledLabor }: 
               <div className="text-sm text-muted-foreground">Total Work Orders</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-green-600">{scheduledLaborAnalysis.readyCount}</div>
+              <div className="text-2xl font-bold text-red-600">{scheduledLaborAnalysis.readyCount}</div>
               <div className="text-sm text-muted-foreground">Ready Status</div>
             </div>
             <div>
@@ -93,43 +107,50 @@ export default function ScheduledLaborReviewTab({ workOrders, scheduledLabor }: 
           </p>
         </CardHeader>
         <CardContent>
-          {scheduledLaborAnalysis.workOrders.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Data Center</th>
-                    <th className="text-left p-2">Work Order</th>
-                    <th className="text-left p-2">Description</th>
-                    <th className="text-left p-2">Assigned To</th>
-                    <th className="text-left p-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {scheduledLaborAnalysis.workOrders.map((wo, index) => (
-                    <tr key={index} className="border-b hover:bg-muted/50">
-                      <td className="p-2">{wo["Data Center"]}</td>
-                      <td className="p-2">
-                        <a
-                          href={`${BASE_URL}${wo["Work Order"]}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          {wo["Work Order"]}
-                        </a>
-                      </td>
-                      <td className="p-2">{wo["Description"]}</td>
-                      <td className="p-2">{wo["Assigned To Name"] || "-"}</td>
-                      <td className="p-2">
-                        <Badge variant={getStatusBadgeVariant(wo["Status"] || "")}>
-                          {wo["Status"] || "Unknown"}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {scheduledLaborAnalysis.groups.length > 0 ? (
+            <div className="space-y-6">
+              {scheduledLaborAnalysis.groups.map((group, groupIndex) => (
+                <div key={groupIndex}>
+                  <h3 className="font-semibold text-lg mb-3 text-primary">
+                    {group.person} ({group.workOrders.length} work orders)
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2">Data Center</th>
+                          <th className="text-left p-2">Work Order</th>
+                          <th className="text-left p-2">Description</th>
+                          <th className="text-left p-2">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {group.workOrders.map((wo, index) => (
+                          <tr key={index} className="border-b hover:bg-muted/50">
+                            <td className="p-2">{wo["Data Center"]}</td>
+                            <td className="p-2">
+                              <a
+                                href={`${BASE_URL}${wo["Work Order"]}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                {wo["Work Order"]}
+                              </a>
+                            </td>
+                            <td className="p-2">{wo["Description"]}</td>
+                            <td className="p-2">
+                              <span className={getStatusColor(wo["Status"] || "")}>
+                                {wo["Status"] || "Unknown"}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <p className="text-muted-foreground text-center py-8">
