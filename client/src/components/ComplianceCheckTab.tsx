@@ -24,6 +24,14 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
       .filter((wo) => {
         const complianceEnd = wo["Compliance Window End Date"];
         if (!complianceEnd) return false;
+        
+        // Exclude Closed and Work Complete status
+        const status = (wo["Status"] || "").toLowerCase();
+        if (status === "closed" || status === "work complete") return false;
+        
+        // Exclude work orders with "daily" in description
+        const description = (wo["Description"] || "").toLowerCase();
+        if (description.includes("daily")) return false;
 
         // Parse date - handle string, number, or Date object
         let complianceDate;
