@@ -9,7 +9,10 @@ interface ComplianceCheckTabProps {
 
 export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabProps) {
   const complianceData = useMemo(() => {
+    // Normalize to start of today for comparison
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    
     const thirtyDaysFromNow = new Date(now);
     thirtyDaysFromNow.setDate(now.getDate() + 30);
 
@@ -19,6 +22,9 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
         if (!complianceEnd) return false;
 
         const complianceDate = new Date(complianceEnd);
+        // Normalize compliance date to midnight
+        complianceDate.setHours(0, 0, 0, 0);
+        
         return complianceDate >= now && complianceDate <= thirtyDaysFromNow;
       })
       .map((wo) => {

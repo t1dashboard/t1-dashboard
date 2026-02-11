@@ -46,3 +46,4 @@
 - [x] Add slack column (sched start to compliance end) with pink highlight for <10 days (excluding daily/weekly/monthly)
 - [x] Add Compliance Check to T1-T3 Dashboard
 - [x] Add Compliance Check to T4-T8 Dashboard
+- [x] Fix date parsing in ComplianceCheckTab to handle Excel dates correctly
