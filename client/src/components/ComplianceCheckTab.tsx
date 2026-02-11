@@ -35,9 +35,9 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
         const complianceEnd = wo["Compliance Window End Date"];
         if (!complianceEnd) return false;
         
-        // Exclude Closed and Work Complete status
+        // Exclude Closed, Work Complete, and Cancelled status
         const status = (wo["Status"] || "").toLowerCase();
-        if (status === "closed" || status === "work complete") return false;
+        if (status === "closed" || status === "work complete" || status === "cancelled") return false;
         
         // Exclude work orders with "daily" in description
         const description = (wo["Description"] || "").toLowerCase();
@@ -164,7 +164,16 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
                       }`}
                     >
                       <td className="py-3 px-4">{wo["Data Center"]}</td>
-                      <td className="py-3 px-4">{wo["Work Order"]}</td>
+                      <td className="py-3 px-4">
+                        <a
+                          href={`https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=${wo["Work Order"]}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline"
+                        >
+                          {wo["Work Order"]}
+                        </a>
+                      </td>
                       <td className="py-3 px-4">{wo["Description"]}</td>
                       <td className="py-3 px-4">{wo["Assigned To Name"]}</td>
                       <td className="py-3 px-4">{wo["Status"]}</td>

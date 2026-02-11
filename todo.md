@@ -55,3 +55,5 @@
 - [x] Add day of week column to Compliance Check tab
 - [x] Sort Compliance Check by days until compliance (ascending)
 - [x] Add Status column to Compliance Check tab
+- [x] Exclude Cancelled status from Compliance Check
+- [x] Make work order numbers clickable hyperlinks in Compliance Check
