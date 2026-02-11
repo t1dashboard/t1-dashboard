@@ -30,19 +30,17 @@ export default function LOTOReviewTab({ workOrders, scheduledLabor, pmCodes }: L
         .map(pm => pm["PM Codes"])
     );
 
-    // Filter work orders containing LOTO or PTW in Description OR Activity Note OR matching PM codes, and scheduled for next week, excluding cancelled, CMCC, and weekly
+    // Filter work orders containing LOTO or PTW in description OR matching PM codes, and scheduled for next week, excluding cancelled, CMCC, and weekly
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const desc = wo["Description"]?.toUpperCase() || "";
       const isCMCC = desc.includes("CMCC");
       const isWeekly = desc.includes("WEEKLY");
-      const activityNote = wo["Activity Note"]?.toUpperCase() || "";
-      const hasLOTOorPTWInDesc = desc.includes("LOTO") || desc.includes("PTW");
-      const hasLOTOorPTWInActivity = activityNote.includes("LOTO") || activityNote.includes("PTW");
+      const hasLOTOorPTW = desc.includes("LOTO") || desc.includes("PTW");
       const pmCode = wo["PM Code"] || "";
       const hasPMCodeMatch = lotoPTWCodes.has(pmCode);
       
-      return !isCancelled && !isCMCC && !isWeekly && (hasLOTOorPTWInDesc || hasLOTOorPTWInActivity || hasPMCodeMatch) && isNextWeek(wo["Sched. Start Date"]);
+      return !isCancelled && !isCMCC && !isWeekly && (hasLOTOorPTW || hasPMCodeMatch) && isNextWeek(wo["Sched. Start Date"]);
     });
 
     // Sort alphabetically by data center
@@ -55,20 +53,11 @@ export default function LOTOReviewTab({ workOrders, scheduledLabor, pmCodes }: L
     // Create a set of work order numbers from scheduled labor (convert to strings for comparison)
     const scheduledSet = new Set(scheduledLabor.map(sl => String(sl.workOrderNumber)));
 
-    // Add scheduled labor status - only validate for work orders with PTW/LOTO in Activity Note
-    return filtered.map((wo) => {
-      const activityNote = wo["Activity Note"]?.toUpperCase() || "";
-      const hasLOTOorPTWInActivity = activityNote.includes("LOTO") || activityNote.includes("PTW");
-      
-      // Only check scheduled labor if Activity Note contains PTW/LOTO
-      const shouldValidate = hasLOTOorPTWInActivity;
-      const isInScheduledLabor = scheduledSet.has(String(wo["Work Order"]));
-      
-      return {
-        ...wo,
-        allScheduledLabor: shouldValidate ? !isInScheduledLabor : null // null means N/A (not applicable)
-      };
-    });
+    // Add scheduled labor status
+    return filtered.map((wo) => ({
+      ...wo,
+      allScheduledLabor: !scheduledSet.has(String(wo["Work Order"])) // If in scheduled labor list, mark as No
+    }));
   }, [workOrders, scheduledLabor, pmCodes]);
 
   const getLORBadgeVariant = (lor: string): "default" | "destructive" | "secondary" => {
@@ -136,19 +125,15 @@ export default function LOTOReviewTab({ workOrders, scheduledLabor, pmCodes }: L
                     </Badge>
                   </td>
                   <td className="py-3 px-4">
-                    {wo.allScheduledLabor === null ? (
-                      <span className="text-xs text-muted-foreground">N/A</span>
-                    ) : (
-                      <Badge 
-                        className="text-xs font-medium"
-                        style={{
-                          backgroundColor: wo.allScheduledLabor ? "oklch(0.60 0.12 150)" : "oklch(0.50 0.15 25)",
-                          color: "white"
-                        }}
-                      >
-                        {wo.allScheduledLabor ? "Yes" : "No"}
-                      </Badge>
-                    )}
+                    <Badge 
+                      className="text-xs font-medium"
+                      style={{
+                        backgroundColor: wo.allScheduledLabor ? "oklch(0.60 0.12 150)" : "oklch(0.50 0.15 25)",
+                        color: "white"
+                      }}
+                    >
+                      {wo.allScheduledLabor ? "Yes" : "No"}
+                    </Badge>
                   </td>
                 </tr>
               ))}
