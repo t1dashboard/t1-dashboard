@@ -51,3 +51,4 @@
 - [x] Fix Excel date parsing in work order upload handler to convert serial dates properly
 - [x] Exclude Closed and Work Complete status from Compliance Check
 - [x] Exclude work orders with "daily" in description from Compliance Check
+- [x] Fix Excel serial number to Date conversion in ComplianceCheckTab

@@ -7,6 +7,16 @@ interface ComplianceCheckTabProps {
   workOrders: WorkOrder[];
 }
 
+// Convert Excel serial number to JavaScript Date
+function excelSerialToDate(serial: number): Date {
+  // Excel serial date: days since January 1, 1900
+  // JavaScript needs milliseconds since January 1, 1970
+  const excelEpoch = new Date(1900, 0, 1); // Jan 1, 1900
+  const msPerDay = 24 * 60 * 60 * 1000;
+  // Excel has a leap year bug for 1900, so subtract 2 days
+  return new Date(excelEpoch.getTime() + (serial - 2) * msPerDay);
+}
+
 export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabProps) {
   const complianceData = useMemo(() => {
     console.log('[ComplianceCheck] Total work orders received:', workOrders.length);
@@ -40,7 +50,7 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
           complianceDate = new Date(complianceEnd);
         } else if (typeof complianceEnd === 'number') {
           // If number (Excel serial date), convert it
-          complianceDate = new Date(complianceEnd);
+          complianceDate = excelSerialToDate(complianceEnd);
         } else {
           // Already a Date object
           complianceDate = new Date(complianceEnd);
@@ -62,8 +72,10 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
         return isInRange;
       })
       .map((wo) => {
-        const complianceEnd = new Date(wo["Compliance Window End Date"]);
-        const schedStart = wo["Sched. Start Date"] ? new Date(wo["Sched. Start Date"]) : null;
+        const complianceEndRaw = wo["Compliance Window End Date"];
+        const complianceEnd = typeof complianceEndRaw === 'number' ? excelSerialToDate(complianceEndRaw) : new Date(complianceEndRaw);
+        const schedStartRaw = wo["Sched. Start Date"];
+        const schedStart = schedStartRaw ? (typeof schedStartRaw === 'number' ? excelSerialToDate(schedStartRaw) : new Date(schedStartRaw)) : null;
         
         // Calculate days until compliance
         const daysUntilCompliance = Math.ceil((complianceEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
