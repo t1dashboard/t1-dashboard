@@ -87,6 +87,8 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
         
         // Check if compliance ends on Sat/Sun/Mon
         const dayOfWeek = complianceEnd.getDay(); // 0=Sun, 1=Mon, 6=Sat
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayOfWeekName = dayNames[dayOfWeek];
         const isWeekendOrMonday = dayOfWeek === 0 || dayOfWeek === 1 || dayOfWeek === 6;
         
         // Check if description contains daily/weekly/monthly
@@ -97,15 +99,16 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
           ...wo,
           daysUntilCompliance,
           slack,
+          dayOfWeekName,
           isWeekendOrMonday,
           isRoutine,
         };
       })
       .sort((a, b) => {
-        // Sort by data center, then by days until compliance
-        const dcCompare = (a["Data Center"] || "").localeCompare(b["Data Center"] || "");
-        if (dcCompare !== 0) return dcCompare;
-        return a.daysUntilCompliance - b.daysUntilCompliance;
+        // Sort by days until compliance first (ascending), then by data center
+        const daysCompare = a.daysUntilCompliance - b.daysUntilCompliance;
+        if (daysCompare !== 0) return daysCompare;
+        return (a["Data Center"] || "").localeCompare(b["Data Center"] || "");
       });
 
     return filtered;
@@ -139,6 +142,7 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
                   <th className="py-3 px-4 text-left font-medium">Sched Start Date</th>
                   <th className="py-3 px-4 text-left font-medium">Sched End Date</th>
                   <th className="py-3 px-4 text-left font-medium">Compliance Window End</th>
+                  <th className="py-3 px-4 text-left font-medium">Day of Week</th>
                   <th className="py-3 px-4 text-left font-medium">Days Until Compliance</th>
                   <th className="py-3 px-4 text-left font-medium">Slack (Days)</th>
                 </tr>
@@ -146,7 +150,7 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
               <tbody>
                 {complianceData.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-8 text-center text-muted-foreground">
+                    <td colSpan={10} className="py-8 text-center text-muted-foreground">
                       No work orders with compliance deadlines in the next 30 days
                     </td>
                   </tr>
@@ -174,6 +178,9 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
                       </td>
                       <td className="py-3 px-4">
                         {new Date(wo["Compliance Window End Date"]).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 px-4">
+                        {wo.dayOfWeekName}
                       </td>
                       <td
                         className={`py-3 px-4 font-semibold ${

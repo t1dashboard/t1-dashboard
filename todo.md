@@ -52,3 +52,5 @@
 - [x] Exclude Closed and Work Complete status from Compliance Check
 - [x] Exclude work orders with "daily" in description from Compliance Check
 - [x] Fix Excel serial number to Date conversion in ComplianceCheckTab
+- [x] Add day of week column to Compliance Check tab
+- [x] Sort Compliance Check by days until compliance (ascending)
