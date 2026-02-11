@@ -39,3 +39,10 @@
 - [x] Make Ready status appear in red in Scheduled Labor Review
 - [x] Make Ready count number red in summary
 - [x] Group work orders by assigned person in Scheduled Labor Review
+- [x] Create ComplianceCheckTab component
+- [x] Add compliance window end date filtering (within 30 days)
+- [x] Add yellow highlighting for Sat/Sun/Mon compliance deadlines
+- [x] Add days until compliance column with red highlight for ≤7 days
+- [x] Add slack column (sched start to compliance end) with pink highlight for <10 days (excluding daily/weekly/monthly)
+- [x] Add Compliance Check to T1-T3 Dashboard
+- [x] Add Compliance Check to T4-T8 Dashboard

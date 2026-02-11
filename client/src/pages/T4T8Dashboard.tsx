@@ -8,6 +8,7 @@ import T1NotInReadyTab from "@/components/T1NotInReadyTab";
 import T4T8NotInApprovedTab from "@/components/T4T8NotInApprovedTab";
 import WOsOver30DaysTab from "@/components/WOsOver30DaysTab";
 import WOsOver90DaysTab from "@/components/WOsOver90DaysTab";
+import ComplianceCheckTab from "@/components/ComplianceCheckTab";
 import { useState, useEffect } from "react";
 
 interface T4T8DashboardProps {
@@ -34,11 +35,12 @@ export default function T4T8Dashboard({ workOrders }: T4T8DashboardProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-5 h-auto p-1">
           <TabsTrigger value="t1notready" className="py-3">T1 Not in Ready</TabsTrigger>
           <TabsTrigger value="t4t8notapproved" className="py-3">T4-T8 Not in Approved</TabsTrigger>
           <TabsTrigger value="over30days" className="py-3">WOs &gt;30 Days</TabsTrigger>
           <TabsTrigger value="over90days" className="py-3">&gt;90 Days with Deferral</TabsTrigger>
+          <TabsTrigger value="compliance" className="py-3">Compliance Check</TabsTrigger>
         </TabsList>
 
         <TabsContent value="t1notready" className="mt-6">
@@ -55,6 +57,10 @@ export default function T4T8Dashboard({ workOrders }: T4T8DashboardProps) {
 
         <TabsContent value="over90days" className="mt-6">
           <WOsOver90DaysTab workOrders={workOrders} />
+        </TabsContent>
+
+        <TabsContent value="compliance" className="mt-6">
+          <ComplianceCheckTab workOrders={workOrders} />
         </TabsContent>
       </Tabs>
     </div>

@@ -11,6 +11,7 @@ import LOTOReviewTab from "@/components/LOTOReviewTab";
 import T1NotInReadyTab from "@/components/T1NotInReadyTab";
 import T2NotInReadyTab from "@/components/T2NotInReadyTab";
 import T3NotInReadyTab from "@/components/T3NotInReadyTab";
+import ComplianceCheckTab from "@/components/ComplianceCheckTab";
 import { getNextWeekRange, getT2WeekRange, getT3WeekRange } from "@/lib/dateUtils";
 import { useState } from "react";
 
@@ -48,13 +49,14 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-7 h-auto p-1">
           <TabsTrigger value="t3notready" className="py-3">T3 Not in Ready</TabsTrigger>
           <TabsTrigger value="t2notready" className="py-3">T2 Not in Ready</TabsTrigger>
           <TabsTrigger value="t1notready" className="py-3">T1 Not in Ready</TabsTrigger>
           <TabsTrigger value="workload" className="py-3">T1 Workload</TabsTrigger>
           <TabsTrigger value="risk" className="py-3">Risk Identification</TabsTrigger>
           <TabsTrigger value="loto" className="py-3">LOTO Review</TabsTrigger>
+          <TabsTrigger value="compliance" className="py-3">Compliance Check</TabsTrigger>
         </TabsList>
 
         <TabsContent value="t3notready" className="mt-6">
@@ -79,6 +81,10 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T
 
         <TabsContent value="loto" className="mt-6">
           <LOTOReviewTab workOrders={workOrders} scheduledLabor={scheduledLabor} pmCodes={pmCodes} />
+        </TabsContent>
+
+        <TabsContent value="compliance" className="mt-6">
+          <ComplianceCheckTab workOrders={workOrders} />
         </TabsContent>
       </Tabs>
     </div>
