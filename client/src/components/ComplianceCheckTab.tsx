@@ -9,9 +9,13 @@ interface ComplianceCheckTabProps {
 
 export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabProps) {
   const complianceData = useMemo(() => {
+    console.log('[ComplianceCheck] Total work orders received:', workOrders.length);
+    console.log('[ComplianceCheck] Sample work order:', workOrders[0]);
+    
     // Normalize to start of today for comparison
     const now = new Date();
     now.setHours(0, 0, 0, 0);
+    console.log('[ComplianceCheck] Today (normalized):', now);
     
     const thirtyDaysFromNow = new Date(now);
     thirtyDaysFromNow.setDate(now.getDate() + 30);
@@ -21,11 +25,33 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
         const complianceEnd = wo["Compliance Window End Date"];
         if (!complianceEnd) return false;
 
-        const complianceDate = new Date(complianceEnd);
+        // Parse date - handle string, number, or Date object
+        let complianceDate;
+        if (typeof complianceEnd === 'string') {
+          // If string, parse it (handles "2026-02-13 09:36:00" format)
+          complianceDate = new Date(complianceEnd);
+        } else if (typeof complianceEnd === 'number') {
+          // If number (Excel serial date), convert it
+          complianceDate = new Date(complianceEnd);
+        } else {
+          // Already a Date object
+          complianceDate = new Date(complianceEnd);
+        }
+        
+        // Check if date is valid
+        if (isNaN(complianceDate.getTime())) {
+          console.warn('[ComplianceCheck] Invalid date for WO', wo["Work Order"], ':', complianceEnd);
+          return false;
+        }
+        
         // Normalize compliance date to midnight
         complianceDate.setHours(0, 0, 0, 0);
         
-        return complianceDate >= now && complianceDate <= thirtyDaysFromNow;
+        const isInRange = complianceDate >= now && complianceDate <= thirtyDaysFromNow;
+        if (wo["Work Order"] === 2913177 || wo["Work Order"] === 2602812) {
+          console.log(`[ComplianceCheck] WO ${wo["Work Order"]} - complianceEnd:`, complianceEnd, 'complianceDate:', complianceDate, 'isInRange:', isInRange, 'now:', now, 'thirtyDays:', thirtyDaysFromNow);
+        }
+        return isInRange;
       })
       .map((wo) => {
         const complianceEnd = new Date(wo["Compliance Window End Date"]);
