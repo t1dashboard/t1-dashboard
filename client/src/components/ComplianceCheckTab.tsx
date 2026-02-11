@@ -139,6 +139,7 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
                   <th className="py-3 px-4 text-left font-medium">Work Order</th>
                   <th className="py-3 px-4 text-left font-medium">Description</th>
                   <th className="py-3 px-4 text-left font-medium">Assigned To</th>
+                  <th className="py-3 px-4 text-left font-medium">Status</th>
                   <th className="py-3 px-4 text-left font-medium">Sched Start Date</th>
                   <th className="py-3 px-4 text-left font-medium">Sched End Date</th>
                   <th className="py-3 px-4 text-left font-medium">Compliance Window End</th>
@@ -150,7 +151,7 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
               <tbody>
                 {complianceData.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="py-8 text-center text-muted-foreground">
+                    <td colSpan={11} className="py-8 text-center text-muted-foreground">
                       No work orders with compliance deadlines in the next 30 days
                     </td>
                   </tr>
@@ -166,6 +167,7 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
                       <td className="py-3 px-4">{wo["Work Order"]}</td>
                       <td className="py-3 px-4">{wo["Description"]}</td>
                       <td className="py-3 px-4">{wo["Assigned To Name"]}</td>
+                      <td className="py-3 px-4">{wo["Status"]}</td>
                       <td className="py-3 px-4">
                         {wo["Sched. Start Date"]
                           ? new Date(wo["Sched. Start Date"]).toLocaleDateString()

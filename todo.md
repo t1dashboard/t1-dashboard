@@ -54,3 +54,4 @@
 - [x] Fix Excel serial number to Date conversion in ComplianceCheckTab
 - [x] Add day of week column to Compliance Check tab
 - [x] Sort Compliance Check by days until compliance (ascending)
+- [x] Add Status column to Compliance Check tab
