@@ -40,3 +40,5 @@
 - [x] Make Ready count number red in summary
 - [x] Group work orders by assigned person in Scheduled Labor Review
 - [x] Update LOTO Review to filter by Activity Note containing PTW or LOTO
+- [x] Update LOTO Review to include PTW/LOTO in Description OR Activity Note
+- [x] Only validate scheduled labor for work orders with PTW/LOTO in Activity Note
