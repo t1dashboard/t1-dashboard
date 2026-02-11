@@ -48,3 +48,4 @@
 - [x] Add Compliance Check to T4-T8 Dashboard
 - [x] Fix date parsing in ComplianceCheckTab to handle Excel dates correctly
 - [x] Debug why Compliance Check shows no work orders despite valid data - added robust date parsing
+- [x] Fix Excel date parsing in work order upload handler to convert serial dates properly

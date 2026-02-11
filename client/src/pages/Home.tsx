@@ -62,10 +62,11 @@ export default function Home() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const data = event.target?.result;
-      const workbook = XLSX.read(data, { type: "binary" });
+      const workbook = XLSX.read(data, { type: "binary", cellDates: true });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const json = XLSX.utils.sheet_to_json(worksheet) as WorkOrder[];
+      const json = XLSX.utils.sheet_to_json(worksheet, { raw: false, dateNF: 'yyyy-mm-dd' }) as WorkOrder[];
+      console.log('[Upload] Sample work order:', json[0]);
       setWorkOrders(json);
     };
     reader.readAsBinaryString(file);
