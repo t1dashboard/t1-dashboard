@@ -32,3 +32,7 @@
 - [x] Make sidebar collapsible with toggle button
 - [x] Add PM codes upload functionality
 - [x] Update LOTO Review to filter by PM codes with Yes in column G or H
+- [x] Add Scheduled Labor Review navigation item in sidebar
+- [x] Create ScheduledLaborReviewTab component
+- [x] Show total count of Ready status work orders from scheduled labor
+- [x] Show breakdown of all unique work orders with assigned to and status

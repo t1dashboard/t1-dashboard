@@ -12,8 +12,9 @@ import T1T3Dashboard from "./T1T3Dashboard";
 import T4T8Dashboard from "./T4T8Dashboard";
 import ScheduleLockTab from "@/components/ScheduleLockTab";
 import ScheduleLockReviewTab from "@/components/ScheduleLockReviewTab";
+import ScheduledLaborReviewTab from "@/components/ScheduledLaborReviewTab";
 
-type ActiveView = "upload" | "schedule-lock" | "schedule-lock-review" | "t1t3" | "t4t8";
+type ActiveView = "upload" | "schedule-lock" | "schedule-lock-review" | "scheduled-labor-review" | "t1t3" | "t4t8";
 
 export default function Home() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => {
@@ -211,6 +212,25 @@ export default function Home() {
               <div className="font-medium text-center text-xs">Review</div>
             )}
           </button>
+          
+          <button
+            onClick={() => setActiveView("scheduled-labor-review")}
+            className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
+              activeView === "scheduled-labor-review"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-foreground"
+            }`}
+            title={sidebarCollapsed ? "Scheduled Labor Review" : ""}
+          >
+            {!sidebarCollapsed ? (
+              <>
+                <div className="font-medium">Scheduled Labor Review</div>
+                <div className="text-xs opacity-80 mt-1">Review scheduled labor</div>
+              </>
+            ) : (
+              <div className="font-medium text-center text-xs">Labor</div>
+            )}
+          </button>
         </nav>
         
         {/* Toggle Button */}
@@ -343,6 +363,10 @@ export default function Home() {
 
           {activeView === "schedule-lock-review" && workOrders.length > 0 && (
             <ScheduleLockReviewTab workOrders={workOrders} />
+          )}
+
+          {activeView === "scheduled-labor-review" && workOrders.length > 0 && (
+            <ScheduledLaborReviewTab workOrders={workOrders} scheduledLabor={scheduledLabor} />
           )}
 
           {activeView !== "upload" && workOrders.length === 0 && (
