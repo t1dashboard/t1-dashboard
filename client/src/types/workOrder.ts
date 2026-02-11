@@ -25,6 +25,7 @@ export interface WorkOrder {
   "PM Code": string;
   "Assigned To": string;
   "Date Created": string;
+  "Activity Note"?: string;
 
   "Deferral Reason Selected": string;
   "Trade"?: string;

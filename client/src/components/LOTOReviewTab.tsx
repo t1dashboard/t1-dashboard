@@ -30,13 +30,14 @@ export default function LOTOReviewTab({ workOrders, scheduledLabor, pmCodes }: L
         .map(pm => pm["PM Codes"])
     );
 
-    // Filter work orders containing LOTO or PTW in description OR matching PM codes, and scheduled for next week, excluding cancelled, CMCC, and weekly
+    // Filter work orders containing LOTO or PTW in Activity Note OR matching PM codes, and scheduled for next week, excluding cancelled, CMCC, and weekly
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const desc = wo["Description"]?.toUpperCase() || "";
       const isCMCC = desc.includes("CMCC");
       const isWeekly = desc.includes("WEEKLY");
-      const hasLOTOorPTW = desc.includes("LOTO") || desc.includes("PTW");
+      const activityNote = wo["Activity Note"]?.toUpperCase() || "";
+      const hasLOTOorPTW = activityNote.includes("LOTO") || activityNote.includes("PTW");
       const pmCode = wo["PM Code"] || "";
       const hasPMCodeMatch = lotoPTWCodes.has(pmCode);
       
