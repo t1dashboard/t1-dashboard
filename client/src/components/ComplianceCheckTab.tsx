@@ -75,11 +75,19 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
         // Normalize compliance date to midnight
         complianceDate.setHours(0, 0, 0, 0);
         
-        // Check if work order has "weekly" in description
+        // Check if work order has "weekly" in description or is the specific monthly NICV PM
         const isWeekly = description.includes("weekly");
+        const isMonthlyNICV = description.includes("wet") && 
+                              description.includes("dry") && 
+                              description.includes("pre-action") && 
+                              description.includes("non-indicating") && 
+                              description.includes("curb") && 
+                              description.includes("valve") && 
+                              description.includes("nicv") && 
+                              description.includes("pm");
         
-        if (isWeekly) {
-          // For weekly work orders, only include if compliance date is upcoming Sat/Sun/Mon
+        if (isWeekly || isMonthlyNICV) {
+          // For weekly/monthly work orders, only include if compliance date is upcoming Sat/Sun/Mon
           const isUpcomingWeekend = 
             complianceDate.getTime() === upcomingSaturday.getTime() ||
             complianceDate.getTime() === upcomingSunday.getTime() ||
@@ -143,7 +151,7 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
             Compliance Check
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Work orders with compliance window ending within 15 days (weekly work orders only shown if due on upcoming Sat/Sun/Mon)
+            Work orders with compliance window ending within 15 days (weekly/monthly work orders only shown if due on upcoming Sat/Sun/Mon)
           </p>
         </CardHeader>
         <CardContent>

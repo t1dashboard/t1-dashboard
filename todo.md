@@ -60,3 +60,4 @@
 - [x] Exclude QA Rejected status from Compliance Check
 - [x] Only show weekly work orders if compliance date is upcoming Sat/Sun/Mon
 - [x] Change Compliance Check time window from 30 days to 15 days
+- [x] Treat NICV PM work orders as monthly (only show if due on upcoming Sat/Sun/Mon)
