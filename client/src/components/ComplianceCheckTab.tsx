@@ -27,17 +27,27 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
     now.setHours(0, 0, 0, 0);
     console.log('[ComplianceCheck] Today (normalized):', now);
     
-    const thirtyDaysFromNow = new Date(now);
-    thirtyDaysFromNow.setDate(now.getDate() + 30);
+    const fifteenDaysFromNow = new Date(now);
+    fifteenDaysFromNow.setDate(now.getDate() + 15);
+    
+    // Calculate upcoming Saturday, Sunday, Monday
+    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    const daysUntilSaturday = (6 - dayOfWeek + 7) % 7 || 7; // Days until next Saturday
+    const upcomingSaturday = new Date(now);
+    upcomingSaturday.setDate(now.getDate() + daysUntilSaturday);
+    const upcomingSunday = new Date(upcomingSaturday);
+    upcomingSunday.setDate(upcomingSaturday.getDate() + 1);
+    const upcomingMonday = new Date(upcomingSaturday);
+    upcomingMonday.setDate(upcomingSaturday.getDate() + 2);
 
     const filtered = workOrders
       .filter((wo) => {
         const complianceEnd = wo["Compliance Window End Date"];
         if (!complianceEnd) return false;
         
-        // Exclude Closed, Work Complete, and Cancelled status
+        // Exclude Closed, Work Complete, Cancelled, and QA Rejected status
         const status = (wo["Status"] || "").toLowerCase();
-        if (status === "closed" || status === "work complete" || status === "cancelled") return false;
+        if (status === "closed" || status === "work complete" || status === "cancelled" || status === "qa rejected") return false;
         
         // Exclude work orders with "daily" in description
         const description = (wo["Description"] || "").toLowerCase();
@@ -65,10 +75,20 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
         // Normalize compliance date to midnight
         complianceDate.setHours(0, 0, 0, 0);
         
-        const isInRange = complianceDate >= now && complianceDate <= thirtyDaysFromNow;
-        if (wo["Work Order"] === 2913177 || wo["Work Order"] === 2602812) {
-          console.log(`[ComplianceCheck] WO ${wo["Work Order"]} - complianceEnd:`, complianceEnd, 'complianceDate:', complianceDate, 'isInRange:', isInRange, 'now:', now, 'thirtyDays:', thirtyDaysFromNow);
+        // Check if work order has "weekly" in description
+        const isWeekly = description.includes("weekly");
+        
+        if (isWeekly) {
+          // For weekly work orders, only include if compliance date is upcoming Sat/Sun/Mon
+          const isUpcomingWeekend = 
+            complianceDate.getTime() === upcomingSaturday.getTime() ||
+            complianceDate.getTime() === upcomingSunday.getTime() ||
+            complianceDate.getTime() === upcomingMonday.getTime();
+          return isUpcomingWeekend;
         }
+        
+        // For non-weekly work orders, check if within 15 days
+        const isInRange = complianceDate >= now && complianceDate <= fifteenDaysFromNow;
         return isInRange;
       })
       .map((wo) => {
@@ -123,7 +143,7 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
             Compliance Check
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Work orders with compliance window ending within 30 days
+            Work orders with compliance window ending within 15 days (weekly work orders only shown if due on upcoming Sat/Sun/Mon)
           </p>
         </CardHeader>
         <CardContent>
@@ -152,7 +172,7 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
                 {complianceData.length === 0 ? (
                   <tr>
                     <td colSpan={11} className="py-8 text-center text-muted-foreground">
-                      No work orders with compliance deadlines in the next 30 days
+                      No work orders with compliance deadlines in the next 15 days
                     </td>
                   </tr>
                 ) : (

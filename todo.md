@@ -57,3 +57,6 @@
 - [x] Add Status column to Compliance Check tab
 - [x] Exclude Cancelled status from Compliance Check
 - [x] Make work order numbers clickable hyperlinks in Compliance Check
+- [x] Exclude QA Rejected status from Compliance Check
+- [x] Only show weekly work orders if compliance date is upcoming Sat/Sun/Mon
+- [x] Change Compliance Check time window from 30 days to 15 days
