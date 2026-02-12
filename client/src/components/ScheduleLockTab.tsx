@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDate, isNextWeek } from "@/lib/dateUtils";
 import { toast } from "sonner";
-import { Lock, Unlock } from "lucide-react";
+import { Lock, Unlock, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 interface ScheduleLockTabProps {
   workOrders: WorkOrder[];
@@ -64,6 +65,66 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
     }
     setSelectedWorkOrders(newSelected);
     setSelectAll(newSelected.size === t1WorkOrders.length);
+  };
+
+  const handleExportLocked = () => {
+    // Get locked work orders from localStorage
+    const lockedOrders = JSON.parse(localStorage.getItem("scheduleLocks") || "[]");
+    
+    if (lockedOrders.length === 0) {
+      toast.error("No locked work orders to export");
+      return;
+    }
+
+    // Get next week's Monday date (T1 week)
+    const today = new Date();
+    const currentDay = today.getDay();
+    const diff = currentDay === 0 ? -6 : 1 - currentDay;
+    const thisMonday = new Date(today);
+    thisMonday.setDate(today.getDate() + diff);
+    
+    // Add 7 days to get next week's Monday
+    const nextMonday = new Date(thisMonday);
+    nextMonday.setDate(thisMonday.getDate() + 7);
+    
+    // Calculate next week's Sunday (end of T1 week)
+    const nextSunday = new Date(nextMonday);
+    nextSunday.setDate(nextMonday.getDate() + 6);
+    
+    // Format dates for filename
+    const formatDateForFilename = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    const startDate = formatDateForFilename(nextMonday);
+    const endDate = formatDateForFilename(nextSunday);
+    const filename = `Schedule_Lock_${startDate}_to_${endDate}.xlsx`;
+
+    // Prepare data for export
+    const exportData = lockedOrders.map((order: any) => ({
+      "Work Order": order.workOrderNumber,
+      "Description": order.description,
+      "Data Center": order.dataCenter,
+      "Sched Start Date": order.schedStartDate,
+      "Assigned To": order.assignedTo,
+      "Status": order.status,
+      "Type": order.type,
+      "Equipment Description": order.equipmentDescription,
+      "Priority": order.priority,
+      "Shift": order.shift,
+      "Lock Week": order.lockWeek
+    }));
+
+    // Create workbook and export
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Locked Schedule");
+    XLSX.writeFile(wb, filename);
+
+    toast.success(`Exported ${lockedOrders.length} locked work orders`);
   };
 
   const handleUnlockSchedule = () => {
@@ -159,6 +220,14 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button 
+              onClick={handleExportLocked}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export Locked
+            </Button>
             <Button 
               onClick={handleLockSchedule}
               disabled={selectedWorkOrders.size === 0}
