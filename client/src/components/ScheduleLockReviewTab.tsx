@@ -2,11 +2,13 @@
  * Swiss Rationalism: Schedule Lock Review tab showing unplanned and incomplete locked work orders
  */
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, parseExcelDate } from "@/lib/dateUtils";
 import { getWorkWeekLeaders } from "@/lib/workWeekLeaders";
+import { getScheduleLocks, ScheduleLock } from "@/lib/api";
+import { Loader2 } from "lucide-react";
 
 interface ScheduleLockReviewTabProps {
   workOrders: WorkOrder[];
@@ -29,6 +31,23 @@ interface LockedWorkOrder {
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
 export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReviewTabProps) {
+  const [serverLocks, setServerLocks] = useState<ScheduleLock[]>([]);
+  const [loadingLocks, setLoadingLocks] = useState(true);
+
+  useEffect(() => {
+    async function loadLocks() {
+      try {
+        const locks = await getScheduleLocks();
+        setServerLocks(locks);
+      } catch (error) {
+        console.error("Error loading schedule locks:", error);
+      } finally {
+        setLoadingLocks(false);
+      }
+    }
+    loadLocks();
+  }, []);
+
   const { unplannedWorkOrders, incompleteLockedOrders } = useMemo(() => {
     // Get previous week's date range
     const today = new Date();
@@ -43,8 +62,20 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     const lastSunday = new Date(lastMonday);
     lastSunday.setDate(lastMonday.getDate() + 6);
 
-    // Get locked work orders from localStorage
-    const lockedOrders: LockedWorkOrder[] = JSON.parse(localStorage.getItem("scheduleLocks") || "[]");
+    // Use server locks instead of localStorage
+    const lockedOrders: LockedWorkOrder[] = serverLocks.map(lock => ({
+      workOrderNumber: lock.workOrderNumber,
+      description: lock.description || "",
+      dataCenter: lock.dataCenter || "",
+      schedStartDate: lock.schedStartDate,
+      assignedTo: lock.assignedTo || "",
+      status: lock.status || "",
+      type: lock.type || "",
+      equipmentDescription: lock.equipmentDescription || "",
+      priority: lock.priority || "",
+      shift: lock.shift || "",
+      lockWeek: lock.lockWeek
+    }));
     
     // Filter for previous week's locked orders
     const previousWeekLocked = lockedOrders.filter(locked => {
@@ -91,7 +122,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       unplannedWorkOrders: unplanned,
       incompleteLockedOrders: incomplete
     };
-  }, [workOrders]);
+  }, [workOrders, serverLocks]);
 
   // Get Work Week Leaders for previous week
   const previousWeekLeaders = useMemo(() => {
@@ -106,6 +137,17 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     
     return getWorkWeekLeaders(lastMonday);
   }, []);
+
+  if (loadingLocks) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading schedule lock data...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">

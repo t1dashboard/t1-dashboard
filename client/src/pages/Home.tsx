@@ -5,7 +5,7 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react";
+import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { WorkOrder, ScheduledLabor, PMCode } from "@/types/workOrder";
 import T1T3Dashboard from "./T1T3Dashboard";
@@ -13,105 +13,147 @@ import T4T8Dashboard from "./T4T8Dashboard";
 import ScheduleLockTab from "@/components/ScheduleLockTab";
 import ScheduleLockReviewTab from "@/components/ScheduleLockReviewTab";
 import ScheduledLaborReviewTab from "@/components/ScheduledLaborReviewTab";
+import {
+  getWorkOrders, uploadWorkOrders,
+  getScheduledLabor, uploadScheduledLabor,
+  getPMCodes, uploadPMCodes,
+} from "@/lib/api";
+import { toast } from "sonner";
 
 type ActiveView = "upload" | "schedule-lock" | "schedule-lock-review" | "scheduled-labor-review" | "t1t3" | "t4t8";
 
 export default function Home() {
-  const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => {
-    const saved = localStorage.getItem('t1-work-orders');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [scheduledLabor, setScheduledLabor] = useState<ScheduledLabor[]>(() => {
-    const saved = localStorage.getItem('t1-scheduled-labor');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [pmCodes, setPmCodes] = useState<PMCode[]>(() => {
-    const saved = localStorage.getItem('t1-pm-codes');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+  const [scheduledLabor, setScheduledLabor] = useState<ScheduledLabor[]>([]);
+  const [pmCodes, setPmCodes] = useState<PMCode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState<string | null>(null);
 
-  const [activeView, setActiveView] = useState<ActiveView>(() => {
-    // Default to t1t3 if data exists, otherwise upload
-    const saved = localStorage.getItem('t1-work-orders');
-    return saved && JSON.parse(saved).length > 0 ? "t1t3" : "upload";
-  });
-
+  const [activeView, setActiveView] = useState<ActiveView>("upload");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Persist work orders to localStorage
+  // Load data from server on mount
   useEffect(() => {
-    localStorage.setItem('t1-work-orders', JSON.stringify(workOrders));
-  }, [workOrders]);
+    async function loadData() {
+      try {
+        const [wo, sl, pm] = await Promise.all([
+          getWorkOrders(),
+          getScheduledLabor(),
+          getPMCodes(),
+        ]);
+        setWorkOrders(wo);
+        setScheduledLabor(sl);
+        setPmCodes(pm);
+        if (wo.length > 0) {
+          setActiveView("t1t3");
+        }
+      } catch (error) {
+        console.error("Error loading data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
-  // Persist scheduled labor to localStorage
-  useEffect(() => {
-    localStorage.setItem('t1-scheduled-labor', JSON.stringify(scheduledLabor));
-  }, [scheduledLabor]);
-
-  // Persist PM codes to localStorage
-  useEffect(() => {
-    localStorage.setItem('t1-pm-codes', JSON.stringify(pmCodes));
-  }, [pmCodes]);
-
-
-
-  const handleWorkOrderUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleWorkOrderUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setUploading("workOrders");
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const data = event.target?.result;
-      const workbook = XLSX.read(data, { type: "binary", cellDates: true });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const json = XLSX.utils.sheet_to_json(worksheet, { raw: false, dateNF: 'yyyy-mm-dd' }) as WorkOrder[];
-      console.log('[Upload] Sample work order:', json[0]);
-      setWorkOrders(json);
+    reader.onload = async (event) => {
+      try {
+        const data = event.target?.result;
+        const workbook = XLSX.read(data, { type: "binary", cellDates: true });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet, { raw: false, dateNF: 'yyyy-mm-dd' }) as WorkOrder[];
+        
+        // Upload to server
+        await uploadWorkOrders(json);
+        setWorkOrders(json);
+        toast.success(`Uploaded ${json.length} work orders`);
+      } catch (error: any) {
+        console.error("Error uploading work orders:", error);
+        toast.error("Failed to upload work orders: " + error.message);
+      } finally {
+        setUploading(null);
+      }
     };
     reader.readAsBinaryString(file);
   };
 
-  const handleScheduledLaborUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleScheduledLaborUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setUploading("scheduledLabor");
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const data = event.target?.result;
-      const workbook = XLSX.read(data, { type: "binary" });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const json = XLSX.utils.sheet_to_json(worksheet);
-      
-      // Extract work order numbers from the "Work Order" column
-      const laborData: ScheduledLabor[] = json.map((row: any) => ({
-        workOrderNumber: String(row['Work Order'] || Object.values(row)[0])
-      }));
-      
-      setScheduledLabor(laborData);
+    reader.onload = async (event) => {
+      try {
+        const data = event.target?.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet);
+        
+        const laborData: ScheduledLabor[] = json.map((row: any) => ({
+          workOrderNumber: String(row['Work Order'] || Object.values(row)[0])
+        }));
+        
+        // Upload to server
+        await uploadScheduledLabor(laborData);
+        setScheduledLabor(laborData);
+        toast.success(`Uploaded ${laborData.length} labor records`);
+      } catch (error: any) {
+        console.error("Error uploading scheduled labor:", error);
+        toast.error("Failed to upload scheduled labor: " + error.message);
+      } finally {
+        setUploading(null);
+      }
     };
     reader.readAsBinaryString(file);
   };
 
-  const handlePMCodesUpload = (e: ChangeEvent<HTMLInputElement>) => {
+  const handlePMCodesUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setUploading("pmCodes");
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const data = event.target?.result;
-      const workbook = XLSX.read(data, { type: "binary" });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const json = XLSX.utils.sheet_to_json(worksheet) as PMCode[];
-      
-      setPmCodes(json);
+    reader.onload = async (event) => {
+      try {
+        const data = event.target?.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet) as PMCode[];
+        
+        // Upload to server
+        await uploadPMCodes(json);
+        setPmCodes(json);
+        toast.success(`Uploaded ${json.length} PM codes`);
+      } catch (error: any) {
+        console.error("Error uploading PM codes:", error);
+        toast.error("Failed to upload PM codes: " + error.message);
+      } finally {
+        setUploading(null);
+      }
     };
     reader.readAsBinaryString(file);
   };
 
-
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -265,7 +307,7 @@ export default function Home() {
                   Upload Data
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Upload your work order spreadsheets to populate the dashboards
+                  Upload your work order spreadsheets to populate the dashboards. Data is stored on the server so all team members see the same information.
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -273,15 +315,25 @@ export default function Home() {
                   {/* Work Order Upload */}
                   <div>
                     <label className="block text-sm font-medium mb-2">Work Order Information</label>
-                    <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors">
-                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                      <span className="text-sm text-muted-foreground">Click to upload</span>
-                      <span className="text-xs text-muted-foreground mt-1">Excel files (.xlsx, .xls)</span>
+                    <label className={`flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors ${uploading === "workOrders" ? "opacity-50 pointer-events-none" : ""}`}>
+                      {uploading === "workOrders" ? (
+                        <>
+                          <Loader2 className="h-8 w-8 text-muted-foreground mb-2 animate-spin" />
+                          <span className="text-sm text-muted-foreground">Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                          <span className="text-sm text-muted-foreground">Click to upload</span>
+                          <span className="text-xs text-muted-foreground mt-1">Excel files (.xlsx, .xls)</span>
+                        </>
+                      )}
                       <input
                         type="file"
                         accept=".xlsx,.xls"
                         onChange={handleWorkOrderUpload}
                         className="hidden"
+                        disabled={uploading !== null}
                       />
                     </label>
                     {workOrders.length > 0 && (
@@ -292,15 +344,25 @@ export default function Home() {
                   {/* Scheduled Labor Upload */}
                   <div>
                     <label className="block text-sm font-medium mb-2">Scheduled Labor</label>
-                    <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors">
-                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                      <span className="text-sm text-muted-foreground">Click to upload</span>
-                      <span className="text-xs text-muted-foreground mt-1">For LOTO Review tracking</span>
+                    <label className={`flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors ${uploading === "scheduledLabor" ? "opacity-50 pointer-events-none" : ""}`}>
+                      {uploading === "scheduledLabor" ? (
+                        <>
+                          <Loader2 className="h-8 w-8 text-muted-foreground mb-2 animate-spin" />
+                          <span className="text-sm text-muted-foreground">Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                          <span className="text-sm text-muted-foreground">Click to upload</span>
+                          <span className="text-xs text-muted-foreground mt-1">For LOTO Review tracking</span>
+                        </>
+                      )}
                       <input
                         type="file"
                         accept=".xlsx,.xls"
                         onChange={handleScheduledLaborUpload}
                         className="hidden"
+                        disabled={uploading !== null}
                       />
                     </label>
                     {scheduledLabor.length > 0 && (
@@ -311,15 +373,25 @@ export default function Home() {
                   {/* PM Codes Upload */}
                   <div>
                     <label className="block text-sm font-medium mb-2">PM Codes</label>
-                    <label className="flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors">
-                      <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                      <span className="text-sm text-muted-foreground">Click to upload</span>
-                      <span className="text-xs text-muted-foreground mt-1">For LOTO/PTW filtering</span>
+                    <label className={`flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors ${uploading === "pmCodes" ? "opacity-50 pointer-events-none" : ""}`}>
+                      {uploading === "pmCodes" ? (
+                        <>
+                          <Loader2 className="h-8 w-8 text-muted-foreground mb-2 animate-spin" />
+                          <span className="text-sm text-muted-foreground">Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                          <span className="text-sm text-muted-foreground">Click to upload</span>
+                          <span className="text-xs text-muted-foreground mt-1">For LOTO/PTW filtering</span>
+                        </>
+                      )}
                       <input
                         type="file"
                         accept=".xlsx,.xls"
                         onChange={handlePMCodesUpload}
                         className="hidden"
+                        disabled={uploading !== null}
                       />
                     </label>
                     {pmCodes.length > 0 && (
@@ -341,6 +413,7 @@ export default function Home() {
                           <li>Scheduled labor file: work orders in this list will be marked as "No" in LOTO Review</li>
                           <li>PM codes file: work orders with PM codes requiring LOTO or PTW will appear in LOTO Review</li>
                           <li>WOs &gt;30 Days tab automatically filters corrective work orders based on criteria</li>
+                          <li><strong>Data is shared:</strong> All team members will see the same uploaded data</li>
                         </ul>
                       </div>
                     </div>

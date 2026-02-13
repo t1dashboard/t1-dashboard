@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE work_orders \nADD COLUMN route varchar(128) DEFAULT NULL,\nADD COLUMN sched_end_date varchar(64) DEFAULT NULL,\nADD COLUMN production_impact varchar(16) DEFAULT NULL,\nADD COLUMN compliance_window_start_date varchar(64) DEFAULT NULL,\nADD COLUMN compliance_window_end_date varchar(64) DEFAULT NULL,\nADD COLUMN discipline varchar(128) DEFAULT NULL,\nADD COLUMN organization varchar(128) DEFAULT NULL,\nADD COLUMN department varchar(128) DEFAULT NULL,\nADD COLUMN equipment varchar(128) DEFAULT NULL,\nADD COLUMN class varchar(128) DEFAULT NULL,\nADD COLUMN reported_by varchar(64) DEFAULT NULL,\nADD COLUMN pm_code varchar(64) DEFAULT NULL,\nADD COLUMN assigned_to varchar(128) DEFAULT NULL,\nADD COLUMN date_created varchar(64) DEFAULT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute ALTER TABLE work_orders \nADD COLUMN route varchar(128) DEFAULT NULL,\nADD COLUMN sched_end_date varchar(64) DEFAULT NULL,\nADD COLUMN production_impact varchar(16) DEFAULT NULL,\nADD COLUMN compliance_window_start_date varchar(64) DEFAULT NULL,\nADD COLUMN compliance_window_end_date varchar(64) DEFAULT NULL,\nADD COLUMN discipline varchar(128) DEFAULT NULL,\nADD COLUMN organization varchar(128) DEFAULT NULL,\nADD COLUMN department varchar(128) DEFAULT NULL,\nADD COLUMN equipment varchar(128) DEFAULT NULL,\nADD COLUMN class varchar(128) DEFAULT NULL,\nADD COLUMN reported_by varchar(64) DEFAULT NULL,\nADD COLUMN pm_code varchar(64) DEFAULT NULL,\nADD COLUMN assigned_to varchar(128) DEFAULT NULL,\nADD COLUMN date_created varchar(64) DEFAULT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 10542
+}

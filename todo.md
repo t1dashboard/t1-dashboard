@@ -63,3 +63,8 @@
 - [x] Treat NICV PM work orders as monthly (only show if due on upcoming Sat/Sun/Mon)
 - [x] Add export button to Schedule Lock page to download locked work orders
 - [x] Update export filename to use next week's date range (T1 week)
+- [x] Move work order data from localStorage to server-side database
+- [x] Create database tables for work orders, scheduled labor, PM codes, and schedule locks
+- [x] Create REST API endpoints for uploading and retrieving data
+- [x] Update frontend to use API calls instead of localStorage
+- [x] Ensure all visitors see the same uploaded data

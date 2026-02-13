@@ -1,0 +1,16 @@
+Migration from localStorage to server DB:
+
+DONE:
+1. Created server/db.ts - MySQL connection pool using DATABASE_URL
+2. Created server/api.ts - REST API endpoints for work orders, scheduled labor, PM codes, schedule locks
+3. Updated server/index.ts - Added JSON body parsing and API routes
+4. Added vite proxy config for /api -> localhost:3001
+5. Created client/src/lib/api.ts - Frontend API client
+6. Updated Home.tsx - Uses API calls for upload/load instead of localStorage
+7. Updated ScheduleLockTab.tsx - Uses API for lock/unlock/export
+8. Updated ScheduleLockReviewTab.tsx - Uses API for loading locks
+
+REMAINING:
+- Need to handle production build (server needs to serve both API and static files)
+- The dev server starts API on port 3001, Vite on 3000 with proxy
+- Need to ensure the build script bundles both

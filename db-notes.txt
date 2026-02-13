@@ -1,0 +1,12 @@
+Database tables exist:
+- users (id, openId, name, email, loginMethod, role, createdAt, updatedAt, lastSignedIn)
+- work_orders (id, work_order_number, description, data_center, sched_start_date, assigned_to_name, status, type, equipment_description, priority, shift, ehs_lor, operational_lor, deferral_reason_selected, trade, uploaded_at, uploaded_by)
+- scheduled_labor (id, work_order_number, uploaded_at, uploaded_by)
+- schedule_locks (id, work_order_number, description, data_center, sched_start_date, assigned_to_name, status, type, equipment_description, priority, shift, lock_week, locked_at, locked_by)
+
+Missing columns in work_orders that exist in WorkOrder interface:
+- route, sched_end_date, production_impact, compliance_window_start_date, compliance_window_end_date, discipline, organization, department, equipment, class, reported_by, pm_code, assigned_to, date_created
+
+PM codes table doesn't exist yet.
+
+Server setup: Only has basic Express static server (server/index.ts). No _core directory, no tRPC, no drizzle ORM connection. Need to build REST API endpoints directly with Express + mysql2.

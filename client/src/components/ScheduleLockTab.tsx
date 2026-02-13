@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDate, isNextWeek } from "@/lib/dateUtils";
 import { toast } from "sonner";
-import { Lock, Unlock, Download } from "lucide-react";
+import { Lock, Unlock, Download, Loader2 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { getScheduleLocks, lockWorkOrders, unlockWorkOrders, ScheduleLock } from "@/lib/api";
 
 interface ScheduleLockTabProps {
   workOrders: WorkOrder[];
@@ -22,12 +23,25 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
   const [selectedWorkOrders, setSelectedWorkOrders] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [lockedWorkOrders, setLockedWorkOrders] = useState<Set<string>>(new Set());
+  const [allLocks, setAllLocks] = useState<ScheduleLock[]>([]);
+  const [loadingLocks, setLoadingLocks] = useState(true);
+  const [locking, setLocking] = useState(false);
 
-  // Load locked work orders from localStorage
+  // Load locked work orders from server
   useEffect(() => {
-    const locks = JSON.parse(localStorage.getItem("scheduleLocks") || "[]");
-    const lockedNumbers = new Set<string>(locks.map((lock: any) => String(lock.workOrderNumber)));
-    setLockedWorkOrders(lockedNumbers);
+    async function loadLocks() {
+      try {
+        const locks = await getScheduleLocks();
+        setAllLocks(locks);
+        const lockedNumbers = new Set<string>(locks.map(lock => String(lock.workOrderNumber)));
+        setLockedWorkOrders(lockedNumbers);
+      } catch (error) {
+        console.error("Error loading schedule locks:", error);
+      } finally {
+        setLoadingLocks(false);
+      }
+    }
+    loadLocks();
   }, []);
 
   const t1WorkOrders = useMemo(() => {
@@ -68,10 +82,7 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
   };
 
   const handleExportLocked = () => {
-    // Get locked work orders from localStorage
-    const lockedOrders = JSON.parse(localStorage.getItem("scheduleLocks") || "[]");
-    
-    if (lockedOrders.length === 0) {
+    if (allLocks.length === 0) {
       toast.error("No locked work orders to export");
       return;
     }
@@ -104,7 +115,7 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
     const filename = `Schedule_Lock_${startDate}_to_${endDate}.xlsx`;
 
     // Prepare data for export
-    const exportData = lockedOrders.map((order: any) => ({
+    const exportData = allLocks.map((order) => ({
       "Work Order": order.workOrderNumber,
       "Description": order.description,
       "Data Center": order.dataCenter,
@@ -124,81 +135,100 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
     XLSX.utils.book_append_sheet(wb, ws, "Locked Schedule");
     XLSX.writeFile(wb, filename);
 
-    toast.success(`Exported ${lockedOrders.length} locked work orders`);
+    toast.success(`Exported ${allLocks.length} locked work orders`);
   };
 
-  const handleUnlockSchedule = () => {
+  const handleUnlockSchedule = async () => {
     if (selectedWorkOrders.size === 0) {
       toast.error("Please select at least one work order to unlock");
       return;
     }
 
-    // Remove selected work orders from localStorage
-    const existingLocks = JSON.parse(localStorage.getItem("scheduleLocks") || "[]");
-    const updatedLocks = existingLocks.filter(
-      (lock: any) => !selectedWorkOrders.has(String(lock.workOrderNumber))
-    );
-    localStorage.setItem("scheduleLocks", JSON.stringify(updatedLocks));
+    setLocking(true);
+    try {
+      await unlockWorkOrders(Array.from(selectedWorkOrders));
 
-    // Update locked work orders state
-    const newLockedNumbers = new Set(lockedWorkOrders);
-    selectedWorkOrders.forEach(wo => newLockedNumbers.delete(wo));
-    setLockedWorkOrders(newLockedNumbers);
+      // Update local state
+      const newLockedNumbers = new Set(lockedWorkOrders);
+      selectedWorkOrders.forEach(wo => newLockedNumbers.delete(wo));
+      setLockedWorkOrders(newLockedNumbers);
+      setAllLocks(prev => prev.filter(lock => !selectedWorkOrders.has(String(lock.workOrderNumber))));
 
-    toast.success(`Unlocked ${selectedWorkOrders.size} work orders`);
-    setSelectedWorkOrders(new Set());
-    setSelectAll(false);
+      toast.success(`Unlocked ${selectedWorkOrders.size} work orders`);
+      setSelectedWorkOrders(new Set());
+      setSelectAll(false);
+    } catch (error: any) {
+      toast.error("Failed to unlock: " + error.message);
+    } finally {
+      setLocking(false);
+    }
   };
 
-  const handleLockSchedule = () => {
+  const handleLockSchedule = async () => {
     if (selectedWorkOrders.size === 0) {
       toast.error("Please select at least one work order to lock");
       return;
     }
 
-    // Get the current week's Monday date for the lock
-    const today = new Date();
-    const currentDay = today.getDay();
-    const diff = currentDay === 0 ? -6 : 1 - currentDay; // Adjust to Monday
-    const monday = new Date(today);
-    monday.setDate(today.getDate() + diff);
-    const lockWeek = monday.toISOString().split('T')[0];
+    setLocking(true);
+    try {
+      // Get the current week's Monday date for the lock
+      const today = new Date();
+      const currentDay = today.getDay();
+      const diff = currentDay === 0 ? -6 : 1 - currentDay;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + diff);
+      const lockWeek = monday.toISOString().split('T')[0];
 
-    // Get selected work order details
-    const lockedOrders = t1WorkOrders
-      .filter(wo => selectedWorkOrders.has(String(wo["Work Order"])))
-      .map(wo => ({
-        workOrderNumber: wo["Work Order"],
-        description: wo["Description"],
-        dataCenter: wo["Data Center"],
-        schedStartDate: wo["Sched. Start Date"],
-        assignedTo: wo["Assigned To Name"],
-        status: wo["Status"],
-        type: wo["Type"],
-        equipmentDescription: wo["Equipment Description"],
-        priority: wo["Priority"],
-        shift: wo["Shift"],
-        lockWeek: lockWeek
-      }));
+      // Get selected work order details
+      const lockedOrders: ScheduleLock[] = t1WorkOrders
+        .filter(wo => selectedWorkOrders.has(String(wo["Work Order"])))
+        .map(wo => ({
+          workOrderNumber: String(wo["Work Order"]),
+          description: wo["Description"],
+          dataCenter: wo["Data Center"],
+          schedStartDate: wo["Sched. Start Date"],
+          assignedTo: wo["Assigned To Name"],
+          status: wo["Status"],
+          type: wo["Type"],
+          equipmentDescription: wo["Equipment Description"],
+          priority: wo["Priority"],
+          shift: wo["Shift"],
+          lockWeek: lockWeek
+        }));
 
-    // Store in localStorage
-    const existingLocks = JSON.parse(localStorage.getItem("scheduleLocks") || "[]");
-    const updatedLocks = [...existingLocks, ...lockedOrders];
-    localStorage.setItem("scheduleLocks", JSON.stringify(updatedLocks));
+      await lockWorkOrders(lockedOrders);
 
-    // Update locked work orders state
-    const newLockedNumbers = new Set(lockedWorkOrders);
-    selectedWorkOrders.forEach(wo => newLockedNumbers.add(wo));
-    setLockedWorkOrders(newLockedNumbers);
+      // Update local state
+      const newLockedNumbers = new Set(lockedWorkOrders);
+      selectedWorkOrders.forEach(wo => newLockedNumbers.add(wo));
+      setLockedWorkOrders(newLockedNumbers);
+      setAllLocks(prev => [...prev, ...lockedOrders]);
 
-    toast.success(`Locked ${selectedWorkOrders.size} work orders for week of ${lockWeek}`);
-    setSelectedWorkOrders(new Set());
-    setSelectAll(false);
+      toast.success(`Locked ${selectedWorkOrders.size} work orders for week of ${lockWeek}`);
+      setSelectedWorkOrders(new Set());
+      setSelectAll(false);
+    } catch (error: any) {
+      toast.error("Failed to lock: " + error.message);
+    } finally {
+      setLocking(false);
+    }
   };
 
   useEffect(() => {
     setSelectAll(selectedWorkOrders.size === t1WorkOrders.length && t1WorkOrders.length > 0);
   }, [selectedWorkOrders, t1WorkOrders]);
+
+  if (loadingLocks) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading schedule locks...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (t1WorkOrders.length === 0) {
     return (
@@ -230,14 +260,15 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
             </Button>
             <Button 
               onClick={handleLockSchedule}
-              disabled={selectedWorkOrders.size === 0}
+              disabled={selectedWorkOrders.size === 0 || locking}
               className="bg-primary hover:bg-primary/90"
             >
+              {locking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Lock Schedule
             </Button>
             <Button 
               onClick={handleUnlockSchedule}
-              disabled={selectedWorkOrders.size === 0}
+              disabled={selectedWorkOrders.size === 0 || locking}
               variant="destructive"
             >
               Unlock Selected

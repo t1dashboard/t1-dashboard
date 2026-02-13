@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS pm_codes (\n  id int AUTO_INCREMENT NOT NULL,\n  pm_code varchar(64) NOT NULL,\n  description text,\n  status varchar(64),\n  date_approved varchar(64),\n  perform_every varchar(16),\n  period_uom varchar(32),\n  loto_required varchar(16),\n  ptw_required varchar(16),\n  uploaded_at timestamp NOT NULL DEFAULT (now()),\n  uploaded_by int NOT NULL DEFAULT 0,\n  CONSTRAINT pm_codes_id PRIMARY KEY(id)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute CREATE TABLE IF NOT EXISTS pm_codes (\n  id int AUTO_INCREMENT NOT NULL,\n  pm_code varchar(64) NOT NULL,\n  description text,\n  status varchar(64),\n  date_approved varchar(64),\n  perform_every varchar(16),\n  period_uom varchar(32),\n  loto_required varchar(16),\n  ptw_required varchar(16),\n  uploaded_at timestamp NOT NULL DEFAULT (now()),\n  uploaded_by int NOT NULL DEFAULT 0,\n  CONSTRAINT pm_codes_id PRIMARY KEY(id)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 356
+}
