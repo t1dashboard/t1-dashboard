@@ -63,7 +63,12 @@ export default function WOsOver30DaysTab({ workOrders }: WOsOver30DaysTabProps) 
       .sort()
       .forEach((dc) => {
         sortedGroups[dc] = grouped[dc].sort((a, b) => {
-          return (a["Work Order"] || 0) - (b["Work Order"] || 0);
+          const dateA = parseExcelDate(a["Sched. Start Date"]);
+          const dateB = parseExcelDate(b["Sched. Start Date"]);
+          if (!dateA && !dateB) return 0;
+          if (!dateA) return 1;
+          if (!dateB) return -1;
+          return dateA.getTime() - dateB.getTime();
         });
       });
 

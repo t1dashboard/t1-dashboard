@@ -72,3 +72,4 @@
 - [x] Fix: File too large error when uploading work order spreadsheet
 - [x] Fix: Handle very large work order Excel files (user-provided file)
 - [x] Add PIN lock to upload page to restrict data uploads
+- [x] Sort WOs >30 Days by Sched Start Date (oldest first) within each building section
