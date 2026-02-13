@@ -150,7 +150,42 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+/**
+ * Vite plugin that starts the Express API server on port 3001
+ * and configures Vite to proxy /api requests to it.
+ */
+function vitePluginExpressApi(): Plugin {
+  let apiStarted = false;
+  return {
+    name: "express-api",
+    configureServer(_server: ViteDevServer) {
+      if (apiStarted) return;
+      apiStarted = true;
+      
+      // Start the API server as a child process using spawn from node:child_process
+      import("node:child_process").then(({ spawn }) => {
+        const apiProcess = spawn("npx", ["tsx", path.resolve(PROJECT_ROOT, "server/index.ts")], {
+          cwd: PROJECT_ROOT,
+          stdio: "inherit",
+          env: { ...process.env },
+        });
+        
+        apiProcess.on("error", (err) => {
+          console.error("[API] Failed to start API server:", err);
+        });
+        
+        // Cleanup on Vite server close
+        _server.httpServer?.on("close", () => {
+          apiProcess.kill();
+        });
+        
+        console.log("[API] Starting Express API server on port 3001...");
+      });
+    },
+  };
+}
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginExpressApi()];
 
 export default defineConfig({
   plugins,
