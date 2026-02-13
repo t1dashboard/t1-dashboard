@@ -7,57 +7,30 @@ const router = Router();
 // Work Orders
 // ============================================================
 
-// Upload work orders (replaces all existing)
-router.post("/work-orders", async (req: Request, res: Response) => {
+// Clear all work orders (called before batch upload)
+router.post("/work-orders/clear", async (_req: Request, res: Response) => {
+  try {
+    await execute("DELETE FROM work_orders");
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("Error clearing work orders:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Upload a batch of work orders (appends, does not clear)
+router.post("/work-orders/batch", async (req: Request, res: Response) => {
   try {
     const workOrders = req.body;
     if (!Array.isArray(workOrders) || workOrders.length === 0) {
       return res.status(400).json({ error: "Expected an array of work orders" });
     }
 
-    // Clear existing work orders
-    await execute("DELETE FROM work_orders");
-
     // Insert in batches of 100
     const batchSize = 100;
     for (let i = 0; i < workOrders.length; i += batchSize) {
       const batch = workOrders.slice(i, i + batchSize);
-      const placeholders = batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)").join(", ");
       const values = batch.flatMap((wo: any) => [
-        String(wo["Work Order"] || ""),
-        wo["Description"] || null,
-        wo["Data Center"] || null,
-        wo["Sched. Start Date"] || null,
-        wo["Assigned To Name"] || null,
-        wo["Status"] || null,
-        wo["Type"] || null,
-        wo["Equipment Description"] || null,
-        wo["Priority"] || null,
-        wo["Shift"] || null,
-        wo["EHS LOR"] || null,
-        wo["Operational LOR"] || null,
-        wo["Deferral Reason Selected"] || null,
-        wo["Trade"] || null,
-        wo["Route"] || null,
-        wo["Sched. End Date"] || null,
-        wo["Production Impact"] != null ? String(wo["Production Impact"]) : null,
-        wo["Compliance Window Start Date"] || null,
-        wo["Compliance Window End Date"] || null,
-        wo["Discipline"] || null,
-        wo["Organization"] || null,
-        wo["Department"] || null,
-        wo["Equipment"] || null,
-        wo["Class"] || null,
-        wo["Reported By"] != null ? String(wo["Reported By"]) : null,
-        wo["PM Code"] || null,
-        wo["Assigned To"] || null,
-        wo["Date Created"] || null,
-        wo["Sched. End Date"] || null,
-        wo["Production Impact"] != null ? String(wo["Production Impact"]) : null,
-      ]);
-
-      // Fix: only use the correct 31 values per row
-      const fixedValues = batch.flatMap((wo: any) => [
         String(wo["Work Order"] || ""),
         wo["Description"] || null,
         wo["Data Center"] || null,
@@ -98,7 +71,73 @@ router.post("/work-orders", async (req: Request, res: Response) => {
         reported_by, pm_code, assigned_to, date_created, uploaded_by
       ) VALUES ${batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)").join(", ")}`;
 
-      await execute(sql, fixedValues);
+      await execute(sql, values);
+    }
+
+    res.json({ success: true, count: workOrders.length });
+  } catch (error: any) {
+    console.error("Error uploading work orders batch:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Legacy: Upload work orders (replaces all existing) - kept for backwards compatibility
+router.post("/work-orders", async (req: Request, res: Response) => {
+  try {
+    const workOrders = req.body;
+    if (!Array.isArray(workOrders) || workOrders.length === 0) {
+      return res.status(400).json({ error: "Expected an array of work orders" });
+    }
+
+    // Clear existing work orders
+    await execute("DELETE FROM work_orders");
+
+    // Insert in batches of 100
+    const batchSize = 100;
+    for (let i = 0; i < workOrders.length; i += batchSize) {
+      const batch = workOrders.slice(i, i + batchSize);
+      const values = batch.flatMap((wo: any) => [
+        String(wo["Work Order"] || ""),
+        wo["Description"] || null,
+        wo["Data Center"] || null,
+        wo["Sched. Start Date"] || null,
+        wo["Assigned To Name"] || null,
+        wo["Status"] || null,
+        wo["Type"] || null,
+        wo["Equipment Description"] || null,
+        wo["Priority"] || null,
+        wo["Shift"] || null,
+        wo["EHS LOR"] || null,
+        wo["Operational LOR"] || null,
+        wo["Deferral Reason Selected"] || null,
+        wo["Trade"] || null,
+        wo["Route"] || null,
+        wo["Sched. End Date"] || null,
+        wo["Production Impact"] != null ? String(wo["Production Impact"]) : null,
+        wo["Compliance Window Start Date"] || null,
+        wo["Compliance Window End Date"] || null,
+        wo["Discipline"] || null,
+        wo["Organization"] || null,
+        wo["Department"] || null,
+        wo["Equipment"] || null,
+        wo["Class"] || null,
+        wo["Reported By"] != null ? String(wo["Reported By"]) : null,
+        wo["PM Code"] || null,
+        wo["Assigned To"] || null,
+        wo["Date Created"] || null,
+      ]);
+
+      const sql = `INSERT INTO work_orders (
+        work_order_number, description, data_center, sched_start_date, assigned_to_name,
+        status, type, equipment_description, priority, shift,
+        ehs_lor, operational_lor, deferral_reason_selected, trade,
+        route, sched_end_date, production_impact,
+        compliance_window_start_date, compliance_window_end_date,
+        discipline, organization, department, equipment, class,
+        reported_by, pm_code, assigned_to, date_created, uploaded_by
+      ) VALUES ${batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)").join(", ")}`;
+
+      await execute(sql, values);
     }
 
     res.json({ success: true, count: workOrders.length });

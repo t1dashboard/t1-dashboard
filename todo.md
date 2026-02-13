@@ -69,3 +69,4 @@
 - [x] Update frontend to use API calls instead of localStorage
 - [x] Ensure all visitors see the same uploaded data
 - [x] Fix: Work orders not uploading when spreadsheet is uploaded
+- [x] Fix: File too large error when uploading work order spreadsheet

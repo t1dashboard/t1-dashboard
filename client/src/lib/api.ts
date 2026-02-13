@@ -7,13 +7,30 @@ const API_BASE = "/api";
 // ============================================================
 
 export async function uploadWorkOrders(workOrders: WorkOrder[]): Promise<{ success: boolean; count: number }> {
-  const res = await fetch(`${API_BASE}/work-orders`, {
+  // First, clear existing work orders
+  const clearRes = await fetch(`${API_BASE}/work-orders/clear`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(workOrders),
   });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  if (!clearRes.ok) throw new Error(await clearRes.text());
+
+  // Upload in batches of 500 to avoid payload size limits
+  const batchSize = 500;
+  let totalUploaded = 0;
+
+  for (let i = 0; i < workOrders.length; i += batchSize) {
+    const batch = workOrders.slice(i, i + batchSize);
+    const res = await fetch(`${API_BASE}/work-orders/batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(batch),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const result = await res.json();
+    totalUploaded += result.count;
+  }
+
+  return { success: true, count: totalUploaded };
 }
 
 export async function getWorkOrders(): Promise<WorkOrder[]> {
