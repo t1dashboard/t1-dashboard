@@ -6,7 +6,6 @@ import { useState, useEffect, ChangeEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import * as XLSX from "xlsx";
 import { WorkOrder, ScheduledLabor, PMCode } from "@/types/workOrder";
 import T1T3Dashboard from "./T1T3Dashboard";
 import T4T8Dashboard from "./T4T8Dashboard";
@@ -14,9 +13,9 @@ import ScheduleLockTab from "@/components/ScheduleLockTab";
 import ScheduleLockReviewTab from "@/components/ScheduleLockReviewTab";
 import ScheduledLaborReviewTab from "@/components/ScheduledLaborReviewTab";
 import {
-  getWorkOrders, uploadWorkOrders,
-  getScheduledLabor, uploadScheduledLabor,
-  getPMCodes, uploadPMCodes,
+  getWorkOrders, uploadWorkOrdersFile,
+  getScheduledLabor, uploadScheduledLaborFile,
+  getPMCodes, uploadPMCodesFile,
 } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -61,27 +60,19 @@ export default function Home() {
     if (!file) return;
 
     setUploading("workOrders");
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const data = event.target?.result;
-        const workbook = XLSX.read(data, { type: "binary", cellDates: true });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet, { raw: false, dateNF: 'yyyy-mm-dd' }) as WorkOrder[];
-        
-        // Upload to server
-        await uploadWorkOrders(json);
-        setWorkOrders(json);
-        toast.success(`Uploaded ${json.length} work orders`);
-      } catch (error: any) {
-        console.error("Error uploading work orders:", error);
-        toast.error("Failed to upload work orders: " + error.message);
-      } finally {
-        setUploading(null);
-      }
-    };
-    reader.readAsBinaryString(file);
+    try {
+      // Upload file directly to server for parsing
+      const result = await uploadWorkOrdersFile(file);
+      // Reload data from server
+      const wo = await getWorkOrders();
+      setWorkOrders(wo);
+      toast.success(`Uploaded ${result.count} work orders`);
+    } catch (error: any) {
+      console.error("Error uploading work orders:", error);
+      toast.error("Failed to upload work orders: " + error.message);
+    } finally {
+      setUploading(null);
+    }
   };
 
   const handleScheduledLaborUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -89,31 +80,17 @@ export default function Home() {
     if (!file) return;
 
     setUploading("scheduledLabor");
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const data = event.target?.result;
-        const workbook = XLSX.read(data, { type: "binary" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet);
-        
-        const laborData: ScheduledLabor[] = json.map((row: any) => ({
-          workOrderNumber: String(row['Work Order'] || Object.values(row)[0])
-        }));
-        
-        // Upload to server
-        await uploadScheduledLabor(laborData);
-        setScheduledLabor(laborData);
-        toast.success(`Uploaded ${laborData.length} labor records`);
-      } catch (error: any) {
-        console.error("Error uploading scheduled labor:", error);
-        toast.error("Failed to upload scheduled labor: " + error.message);
-      } finally {
-        setUploading(null);
-      }
-    };
-    reader.readAsBinaryString(file);
+    try {
+      const result = await uploadScheduledLaborFile(file);
+      const sl = await getScheduledLabor();
+      setScheduledLabor(sl);
+      toast.success(`Uploaded ${result.count} labor records`);
+    } catch (error: any) {
+      console.error("Error uploading scheduled labor:", error);
+      toast.error("Failed to upload scheduled labor: " + error.message);
+    } finally {
+      setUploading(null);
+    }
   };
 
   const handlePMCodesUpload = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -121,27 +98,17 @@ export default function Home() {
     if (!file) return;
 
     setUploading("pmCodes");
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const data = event.target?.result;
-        const workbook = XLSX.read(data, { type: "binary" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet) as PMCode[];
-        
-        // Upload to server
-        await uploadPMCodes(json);
-        setPmCodes(json);
-        toast.success(`Uploaded ${json.length} PM codes`);
-      } catch (error: any) {
-        console.error("Error uploading PM codes:", error);
-        toast.error("Failed to upload PM codes: " + error.message);
-      } finally {
-        setUploading(null);
-      }
-    };
-    reader.readAsBinaryString(file);
+    try {
+      const result = await uploadPMCodesFile(file);
+      const pm = await getPMCodes();
+      setPmCodes(pm);
+      toast.success(`Uploaded ${result.count} PM codes`);
+    } catch (error: any) {
+      console.error("Error uploading PM codes:", error);
+      toast.error("Failed to upload PM codes: " + error.message);
+    } finally {
+      setUploading(null);
+    }
   };
 
   if (loading) {

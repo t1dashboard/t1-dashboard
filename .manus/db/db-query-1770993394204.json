@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE work_orders \n  MODIFY COLUMN priority VARCHAR(255),\n  MODIFY COLUMN description VARCHAR(255),\n  MODIFY COLUMN equipment_description VARCHAR(255),\n  MODIFY COLUMN type VARCHAR(100),\n  MODIFY COLUMN compliance_window_start_date VARCHAR(100),\n  MODIFY COLUMN compliance_window_end_date VARCHAR(100),\n  MODIFY COLUMN assigned_to_name VARCHAR(100),\n  MODIFY COLUMN route VARCHAR(100),\n  MODIFY COLUMN pm_code VARCHAR(100);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute ALTER TABLE work_orders \n  MODIFY COLUMN priority VARCHAR(255),\n  MODIFY COLUMN description VARCHAR(255),\n  MODIFY COLUMN equipment_description VARCHAR(255),\n  MODIFY COLUMN type VARCHAR(100),\n  MODIFY COLUMN compliance_window_start_date VARCHAR(100),\n  MODIFY COLUMN compliance_window_end_date VARCHAR(100),\n  MODIFY COLUMN assigned_to_name VARCHAR(100),\n  MODIFY COLUMN route VARCHAR(100),\n  MODIFY COLUMN pm_code VARCHAR(100);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3888
+}

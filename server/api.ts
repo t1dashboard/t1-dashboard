@@ -1,92 +1,29 @@
 import { Router, Request, Response } from "express";
+import multer from "multer";
+import * as XLSX from "xlsx";
 import { query, execute } from "./db.js";
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 // ============================================================
-// Work Orders
+// Work Orders - File Upload
 // ============================================================
 
-// Clear all work orders (called before batch upload)
-router.post("/work-orders/clear", async (_req: Request, res: Response) => {
+// Upload work orders via Excel file
+router.post("/work-orders/upload", upload.single("file"), async (req: Request, res: Response) => {
   try {
-    await execute("DELETE FROM work_orders");
-    res.json({ success: true });
-  } catch (error: any) {
-    console.error("Error clearing work orders:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Upload a batch of work orders (appends, does not clear)
-router.post("/work-orders/batch", async (req: Request, res: Response) => {
-  try {
-    const workOrders = req.body;
-    if (!Array.isArray(workOrders) || workOrders.length === 0) {
-      return res.status(400).json({ error: "Expected an array of work orders" });
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
-    // Insert in batches of 100
-    const batchSize = 100;
-    for (let i = 0; i < workOrders.length; i += batchSize) {
-      const batch = workOrders.slice(i, i + batchSize);
-      const values = batch.flatMap((wo: any) => [
-        String(wo["Work Order"] || ""),
-        wo["Description"] || null,
-        wo["Data Center"] || null,
-        wo["Sched. Start Date"] || null,
-        wo["Assigned To Name"] || null,
-        wo["Status"] || null,
-        wo["Type"] || null,
-        wo["Equipment Description"] || null,
-        wo["Priority"] || null,
-        wo["Shift"] || null,
-        wo["EHS LOR"] || null,
-        wo["Operational LOR"] || null,
-        wo["Deferral Reason Selected"] || null,
-        wo["Trade"] || null,
-        wo["Route"] || null,
-        wo["Sched. End Date"] || null,
-        wo["Production Impact"] != null ? String(wo["Production Impact"]) : null,
-        wo["Compliance Window Start Date"] || null,
-        wo["Compliance Window End Date"] || null,
-        wo["Discipline"] || null,
-        wo["Organization"] || null,
-        wo["Department"] || null,
-        wo["Equipment"] || null,
-        wo["Class"] || null,
-        wo["Reported By"] != null ? String(wo["Reported By"]) : null,
-        wo["PM Code"] || null,
-        wo["Assigned To"] || null,
-        wo["Date Created"] || null,
-      ]);
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer", cellDates: true });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const workOrders = XLSX.utils.sheet_to_json(worksheet, { raw: false, dateNF: "yyyy-mm-dd" }) as any[];
 
-      const sql = `INSERT INTO work_orders (
-        work_order_number, description, data_center, sched_start_date, assigned_to_name,
-        status, type, equipment_description, priority, shift,
-        ehs_lor, operational_lor, deferral_reason_selected, trade,
-        route, sched_end_date, production_impact,
-        compliance_window_start_date, compliance_window_end_date,
-        discipline, organization, department, equipment, class,
-        reported_by, pm_code, assigned_to, date_created, uploaded_by
-      ) VALUES ${batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)").join(", ")}`;
-
-      await execute(sql, values);
-    }
-
-    res.json({ success: true, count: workOrders.length });
-  } catch (error: any) {
-    console.error("Error uploading work orders batch:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Legacy: Upload work orders (replaces all existing) - kept for backwards compatibility
-router.post("/work-orders", async (req: Request, res: Response) => {
-  try {
-    const workOrders = req.body;
-    if (!Array.isArray(workOrders) || workOrders.length === 0) {
-      return res.status(400).json({ error: "Expected an array of work orders" });
+    if (workOrders.length === 0) {
+      return res.status(400).json({ error: "No data found in spreadsheet" });
     }
 
     // Clear existing work orders
@@ -151,7 +88,6 @@ router.post("/work-orders", async (req: Request, res: Response) => {
 router.get("/work-orders", async (_req: Request, res: Response) => {
   try {
     const rows = await query("SELECT * FROM work_orders ORDER BY id");
-    // Map DB columns back to the frontend WorkOrder interface format
     const workOrders = rows.map((row: any) => ({
       "Work Order": row.work_order_number,
       "Status": row.status,
@@ -190,15 +126,27 @@ router.get("/work-orders", async (_req: Request, res: Response) => {
 });
 
 // ============================================================
-// Scheduled Labor
+// Scheduled Labor - File Upload
 // ============================================================
 
-// Upload scheduled labor (replaces all existing)
-router.post("/scheduled-labor", async (req: Request, res: Response) => {
+router.post("/scheduled-labor/upload", upload.single("file"), async (req: Request, res: Response) => {
   try {
-    const laborData = req.body;
-    if (!Array.isArray(laborData) || laborData.length === 0) {
-      return res.status(400).json({ error: "Expected an array of scheduled labor records" });
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const json = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+    // Extract work order numbers from the first column
+    const laborData = json.map((row: any) => ({
+      workOrderNumber: String(row["Work Order"] || Object.values(row)[0]),
+    }));
+
+    if (laborData.length === 0) {
+      return res.status(400).json({ error: "No data found in spreadsheet" });
     }
 
     // Clear existing
@@ -220,7 +168,6 @@ router.post("/scheduled-labor", async (req: Request, res: Response) => {
   }
 });
 
-// Get all scheduled labor
 router.get("/scheduled-labor", async (_req: Request, res: Response) => {
   try {
     const rows = await query("SELECT * FROM scheduled_labor ORDER BY id");
@@ -235,15 +182,22 @@ router.get("/scheduled-labor", async (_req: Request, res: Response) => {
 });
 
 // ============================================================
-// PM Codes
+// PM Codes - File Upload
 // ============================================================
 
-// Upload PM codes (replaces all existing)
-router.post("/pm-codes", async (req: Request, res: Response) => {
+router.post("/pm-codes/upload", upload.single("file"), async (req: Request, res: Response) => {
   try {
-    const pmCodes = req.body;
-    if (!Array.isArray(pmCodes) || pmCodes.length === 0) {
-      return res.status(400).json({ error: "Expected an array of PM codes" });
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const pmCodes = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+    if (pmCodes.length === 0) {
+      return res.status(400).json({ error: "No data found in spreadsheet" });
     }
 
     // Clear existing
@@ -274,7 +228,6 @@ router.post("/pm-codes", async (req: Request, res: Response) => {
   }
 });
 
-// Get all PM codes
 router.get("/pm-codes", async (_req: Request, res: Response) => {
   try {
     const rows = await query("SELECT * FROM pm_codes ORDER BY id");
@@ -299,7 +252,6 @@ router.get("/pm-codes", async (_req: Request, res: Response) => {
 // Schedule Locks
 // ============================================================
 
-// Lock work orders
 router.post("/schedule-locks", async (req: Request, res: Response) => {
   try {
     const locks = req.body;
@@ -334,7 +286,6 @@ router.post("/schedule-locks", async (req: Request, res: Response) => {
   }
 });
 
-// Get all schedule locks
 router.get("/schedule-locks", async (_req: Request, res: Response) => {
   try {
     const rows = await query("SELECT * FROM schedule_locks ORDER BY locked_at DESC");
@@ -360,7 +311,6 @@ router.get("/schedule-locks", async (_req: Request, res: Response) => {
   }
 });
 
-// Unlock (delete) schedule locks
 router.post("/schedule-locks/unlock", async (req: Request, res: Response) => {
   try {
     const { workOrderNumbers } = req.body;

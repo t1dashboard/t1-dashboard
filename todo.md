@@ -70,3 +70,4 @@
 - [x] Ensure all visitors see the same uploaded data
 - [x] Fix: Work orders not uploading when spreadsheet is uploaded
 - [x] Fix: File too large error when uploading work order spreadsheet
+- [x] Fix: Handle very large work order Excel files (user-provided file)
