@@ -5,7 +5,8 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2, Lock, KeyRound } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { WorkOrder, ScheduledLabor, PMCode } from "@/types/workOrder";
 import T1T3Dashboard from "./T1T3Dashboard";
 import T4T8Dashboard from "./T4T8Dashboard";
@@ -30,6 +31,22 @@ export default function Home() {
 
   const [activeView, setActiveView] = useState<ActiveView>("upload");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [uploadUnlocked, setUploadUnlocked] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState(false);
+
+  const UPLOAD_PIN = import.meta.env.VITE_UPLOAD_PIN || "1171";
+
+  const handlePinSubmit = () => {
+    if (pinInput === UPLOAD_PIN) {
+      setUploadUnlocked(true);
+      setPinError(false);
+      setPinInput("");
+    } else {
+      setPinError(true);
+      setPinInput("");
+    }
+  };
 
   // Load data from server on mount
   useEffect(() => {
@@ -266,7 +283,42 @@ export default function Home() {
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <div className="container py-8">
-          {activeView === "upload" && (
+          {activeView === "upload" && !uploadUnlocked && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="h-5 w-5" />
+                  Upload Data — Locked
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Enter the PIN to unlock the upload page.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center justify-center py-12 gap-4">
+                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                    <KeyRound className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">This page is PIN-protected to prevent accidental data changes.</p>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="password"
+                      placeholder="Enter PIN"
+                      value={pinInput}
+                      onChange={(e) => { setPinInput(e.target.value); setPinError(false); }}
+                      onKeyDown={(e) => { if (e.key === "Enter") handlePinSubmit(); }}
+                      className={`w-40 text-center ${pinError ? "border-red-500" : ""}`}
+                      maxLength={10}
+                    />
+                    <Button onClick={handlePinSubmit}>Unlock</Button>
+                  </div>
+                  {pinError && <p className="text-xs text-red-500">Incorrect PIN. Please try again.</p>}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeView === "upload" && uploadUnlocked && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
