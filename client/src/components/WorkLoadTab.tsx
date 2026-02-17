@@ -1,6 +1,7 @@
 /**
  * Swiss Rationalism: Hairline dividers, systematic grid, monospace work order numbers
- * Separated into Day Shift and Night Shift sections
+ * Separated into Day Shift (7:00 AM - 6:59 PM) and Night Shift sections
+ * Color-coded by risk level: green (low/none), yellow (medium), red (high)
  */
 
 import { useMemo, useState } from "react";
@@ -18,6 +19,45 @@ interface WorkLoadTabProps {
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
 const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+/**
+ * Determine the risk level of a work order based on Operational LOR and EHS LOR fields.
+ * Returns 'high', 'medium', or 'low'.
+ */
+function getRiskLevel(wo: WorkOrder): 'high' | 'medium' | 'low' {
+  const opRisk = (wo["Operational LOR"] || "").toUpperCase().trim();
+  const ehsRisk = (wo["EHS LOR"] || "").toUpperCase().trim();
+
+  if (opRisk.includes("HIGH") || ehsRisk.includes("HIGH")) {
+    return 'high';
+  }
+  if (opRisk.includes("MEDIUM") || ehsRisk.includes("MEDIUM")) {
+    return 'medium';
+  }
+  return 'low';
+}
+
+/**
+ * Get background color class based on risk level.
+ */
+function getRiskBgClass(risk: 'high' | 'medium' | 'low'): string {
+  switch (risk) {
+    case 'high': return 'bg-red-100 dark:bg-red-950/40 border-red-300 dark:border-red-800';
+    case 'medium': return 'bg-yellow-100 dark:bg-yellow-950/40 border-yellow-300 dark:border-yellow-800';
+    case 'low': return 'bg-green-100 dark:bg-green-950/40 border-green-300 dark:border-green-800';
+  }
+}
+
+/**
+ * Get row background color for table rows based on risk level.
+ */
+function getRiskRowBg(risk: 'high' | 'medium' | 'low'): string {
+  switch (risk) {
+    case 'high': return 'bg-red-50 dark:bg-red-950/30';
+    case 'medium': return 'bg-yellow-50 dark:bg-yellow-950/30';
+    case 'low': return 'bg-green-50 dark:bg-green-950/30';
+  }
+}
 
 export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
@@ -107,33 +147,42 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched End Date</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Risk</th>
           </tr>
         </thead>
         <tbody>
-          {orders.map((wo) => (
-            <tr 
-              key={wo["Work Order"]} 
-              className="border-b border-border/50 hover:bg-muted/20 transition-colors"
-              style={{ borderBottomWidth: '0.5px' }}
-            >
-              <td className="py-3 px-4">
-                <a
-                  href={`${BASE_URL}${wo["Work Order"]}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="work-order-number text-primary hover:underline"
-                >
-                  {wo["Work Order"]}
-                </a>
-              </td>
-              <td className="py-3 px-4 text-sm">{wo["Description"]}</td>
-              <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
-              <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
-              <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. End Date"])}</td>
-              <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
-              <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
-            </tr>
-          ))}
+          {orders.map((wo) => {
+            const risk = getRiskLevel(wo);
+            return (
+              <tr 
+                key={wo["Work Order"]} 
+                className={`border-b border-border/50 hover:opacity-80 transition-colors ${getRiskRowBg(risk)}`}
+                style={{ borderBottomWidth: '0.5px' }}
+              >
+                <td className="py-3 px-4">
+                  <a
+                    href={`${BASE_URL}${wo["Work Order"]}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="work-order-number text-primary hover:underline"
+                  >
+                    {wo["Work Order"]}
+                  </a>
+                </td>
+                <td className="py-3 px-4 text-sm">{wo["Description"]}</td>
+                <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
+                <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
+                <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. End Date"])}</td>
+                <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
+                <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
+                <td className="py-3 px-4 text-sm font-medium">
+                  {risk === 'high' && <span className="text-red-600 dark:text-red-400">High</span>}
+                  {risk === 'medium' && <span className="text-yellow-600 dark:text-yellow-400">Medium</span>}
+                  {risk === 'low' && <span className="text-green-600 dark:text-green-400">Low</span>}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -148,10 +197,27 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
     return scheduledTotal + inProcessOrders.length;
   }, [workloadByDay, inProcessOrders]);
 
-  // Render calendar view
+  // Render calendar view with Days/Nights sections and risk color coding
   const renderCalendarView = () => (
     <Card>
       <CardContent className="p-4">
+        {/* Risk Legend */}
+        <div className="flex items-center gap-4 mb-4 text-xs">
+          <span className="font-medium text-muted-foreground">Risk Level:</span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 rounded bg-green-200 border border-green-400"></span>
+            Low
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 rounded bg-yellow-200 border border-yellow-400"></span>
+            Medium
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-3 rounded bg-red-200 border border-red-400"></span>
+            High
+          </span>
+        </div>
+
         <div className="grid grid-cols-7 gap-2">
           {DAYS_OF_WEEK.map((day) => {
             const dayOrders = workloadByDay[day];
@@ -165,49 +231,74 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
                     {totalOrders} WOs
                   </p>
                 </div>
-                <div className="p-2 space-y-2 min-h-[300px] max-h-[600px] overflow-y-auto">
-                  {/* Day Shift */}
-                  {dayOrders.day.length > 0 && (
-                    <div>
-                      <div className="text-xs font-medium text-muted-foreground mb-1">Day ({dayOrders.day.length})</div>
-                      {dayOrders.day.map((wo) => (
-                        <a
-                          key={wo["Work Order"]}
-                          href={`${BASE_URL}${wo["Work Order"]}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block p-2 bg-card border border-border rounded text-xs hover:bg-muted/50 transition-colors mb-1"
-                        >
-                          <div className="font-medium text-primary">{wo["Work Order"]}</div>
-                          <div className="text-muted-foreground truncate" title={wo["Description"]}>
-                            {wo["Description"]}
-                          </div>
-                          <div className="font-medium mt-1">{wo["Data Center"]}</div>
-                        </a>
-                      ))}
+                <div className="min-h-[300px] max-h-[600px] overflow-y-auto">
+                  {/* Day Shift Section: 7:00 AM - 6:59 PM */}
+                  <div className="border-b border-border">
+                    <div className="bg-amber-50 dark:bg-amber-950/30 px-2 py-1.5 border-b border-border/50">
+                      <div className="text-xs font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                        ☀️ Days <span className="font-normal text-muted-foreground">(7:00 AM – 6:59 PM)</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">{dayOrders.day.length} WOs</div>
                     </div>
-                  )}
-                  {/* Night Shift */}
-                  {dayOrders.night.length > 0 && (
-                    <div>
-                      <div className="text-xs font-medium text-muted-foreground mb-1">Night ({dayOrders.night.length})</div>
-                      {dayOrders.night.map((wo) => (
-                        <a
-                          key={wo["Work Order"]}
-                          href={`${BASE_URL}${wo["Work Order"]}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block p-2 bg-card border border-border rounded text-xs hover:bg-muted/50 transition-colors mb-1"
-                        >
-                          <div className="font-medium text-primary">{wo["Work Order"]}</div>
-                          <div className="text-muted-foreground truncate" title={wo["Description"]}>
-                            {wo["Description"]}
-                          </div>
-                          <div className="font-medium mt-1">{wo["Data Center"]}</div>
-                        </a>
-                      ))}
+                    <div className="p-1.5 space-y-1">
+                      {dayOrders.day.length > 0 ? (
+                        dayOrders.day.map((wo) => {
+                          const risk = getRiskLevel(wo);
+                          return (
+                            <a
+                              key={wo["Work Order"]}
+                              href={`${BASE_URL}${wo["Work Order"]}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`block p-1.5 border rounded text-xs hover:opacity-80 transition-colors ${getRiskBgClass(risk)}`}
+                            >
+                              <div className="font-medium text-primary">{wo["Work Order"]}</div>
+                              <div className="text-muted-foreground truncate" title={wo["Description"]}>
+                                {wo["Description"]}
+                              </div>
+                              <div className="font-medium mt-0.5">{wo["Data Center"]}</div>
+                            </a>
+                          );
+                        })
+                      ) : (
+                        <div className="text-xs text-muted-foreground text-center py-2">No WOs</div>
+                      )}
                     </div>
-                  )}
+                  </div>
+
+                  {/* Night Shift Section: 7:00 PM - 6:59 AM */}
+                  <div>
+                    <div className="bg-indigo-50 dark:bg-indigo-950/30 px-2 py-1.5 border-b border-border/50">
+                      <div className="text-xs font-semibold text-indigo-800 dark:text-indigo-300 flex items-center gap-1">
+                        🌙 Nights <span className="font-normal text-muted-foreground">(7:00 PM – 6:59 AM)</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">{dayOrders.night.length} WOs</div>
+                    </div>
+                    <div className="p-1.5 space-y-1">
+                      {dayOrders.night.length > 0 ? (
+                        dayOrders.night.map((wo) => {
+                          const risk = getRiskLevel(wo);
+                          return (
+                            <a
+                              key={wo["Work Order"]}
+                              href={`${BASE_URL}${wo["Work Order"]}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`block p-1.5 border rounded text-xs hover:opacity-80 transition-colors ${getRiskBgClass(risk)}`}
+                            >
+                              <div className="font-medium text-primary">{wo["Work Order"]}</div>
+                              <div className="text-muted-foreground truncate" title={wo["Description"]}>
+                                {wo["Description"]}
+                              </div>
+                              <div className="font-medium mt-0.5">{wo["Data Center"]}</div>
+                            </a>
+                          );
+                        })
+                      ) : (
+                        <div className="text-xs text-muted-foreground text-center py-2">No WOs</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             );
@@ -257,6 +348,23 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
         renderCalendarView()
       ) : (
         <>
+        {/* Risk Legend for List View */}
+        <div className="flex items-center gap-4 text-sm px-1">
+          <span className="font-medium text-muted-foreground">Risk Level:</span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded bg-green-200 border border-green-400"></span>
+            Low
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded bg-yellow-200 border border-yellow-400"></span>
+            Medium
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded bg-red-200 border border-red-400"></span>
+            High
+          </span>
+        </div>
+
         {DAYS_OF_WEEK.map((day) => {
         const dayOrders = workloadByDay[day];
         const totalOrders = dayOrders.day.length + dayOrders.night.length;
@@ -271,21 +379,25 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
               </p>
             </CardHeader>
             <CardContent className="p-0">
-              {/* Day Shift Section */}
+              {/* Day Shift Section: 7:00 AM - 6:59 PM */}
               {dayOrders.day.length > 0 && (
                 <div className="border-b border-border">
-                  <div className="bg-muted/20 px-4 py-2 border-b border-border/50">
-                    <h4 className="text-sm font-medium text-foreground">Day Shift ({dayOrders.day.length})</h4>
+                  <div className="bg-amber-50/50 dark:bg-amber-950/20 px-4 py-2 border-b border-border/50">
+                    <h4 className="text-sm font-medium text-foreground">
+                      ☀️ Day Shift ({dayOrders.day.length}) <span className="text-xs font-normal text-muted-foreground">7:00 AM – 6:59 PM</span>
+                    </h4>
                   </div>
                   {renderTable(dayOrders.day)}
                 </div>
               )}
 
-              {/* Night Shift Section */}
+              {/* Night Shift Section: 7:00 PM - 6:59 AM */}
               {dayOrders.night.length > 0 && (
                 <div>
-                  <div className="bg-muted/20 px-4 py-2 border-b border-border/50">
-                    <h4 className="text-sm font-medium text-foreground">Night Shift ({dayOrders.night.length})</h4>
+                  <div className="bg-indigo-50/50 dark:bg-indigo-950/20 px-4 py-2 border-b border-border/50">
+                    <h4 className="text-sm font-medium text-foreground">
+                      🌙 Night Shift ({dayOrders.night.length}) <span className="text-xs font-normal text-muted-foreground">7:00 PM – 6:59 AM</span>
+                    </h4>
                   </div>
                   {renderTable(dayOrders.night)}
                 </div>

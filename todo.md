@@ -73,3 +73,5 @@
 - [x] Fix: Handle very large work order Excel files (user-provided file)
 - [x] Add PIN lock to upload page to restrict data uploads
 - [x] Sort WOs >30 Days by Sched Start Date (oldest first) within each building section
+- [x] T1 Workload: Section off Days (7AM-6:59PM) and Nights
+- [x] T1 Workload: Color-code by risk level (green=low, yellow=medium, red=high)
