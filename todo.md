@@ -94,3 +94,4 @@
 - [x] Expand week dropdown from T1-T3 to T1-T8 with correct date ranges for each week
 - [x] Add T0 (this week) option to the Workload week dropdown
 - [x] Restrict Schedule Lock and Schedule Lock Review sidebar buttons to owner only (hidden behind PIN)
+- [x] Fix: Restore Schedule Lock/Review sidebar buttons for everyone; only hide lock/unlock action buttons behind PIN

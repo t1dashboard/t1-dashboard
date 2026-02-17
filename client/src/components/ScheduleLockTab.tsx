@@ -15,11 +15,12 @@ import { getScheduleLocks, lockWorkOrders, unlockWorkOrders, getScheduleLockWeek
 
 interface ScheduleLockTabProps {
   workOrders: WorkOrder[];
+  canLock?: boolean;
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
-export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
+export default function ScheduleLockTab({ workOrders, canLock = false }: ScheduleLockTabProps) {
   const [selectedWorkOrders, setSelectedWorkOrders] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [lockedWorkOrders, setLockedWorkOrders] = useState<Set<string>>(new Set());
@@ -346,21 +347,25 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
               <Download className="h-4 w-4" />
               Export Locked
             </Button>
-            <Button 
-              onClick={handleLockSchedule}
-              disabled={selectedWorkOrders.size === 0 || locking}
-              className="bg-primary hover:bg-primary/90"
-            >
-              {locking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Lock Schedule
-            </Button>
-            <Button 
-              onClick={handleUnlockSchedule}
-              disabled={selectedWorkOrders.size === 0 || locking}
-              variant="destructive"
-            >
-              Unlock Selected
-            </Button>
+            {canLock && (
+              <Button 
+                onClick={handleLockSchedule}
+                disabled={selectedWorkOrders.size === 0 || locking}
+                className="bg-primary hover:bg-primary/90"
+              >
+                {locking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Lock Schedule
+              </Button>
+            )}
+            {canLock && (
+              <Button 
+                onClick={handleUnlockSchedule}
+                disabled={selectedWorkOrders.size === 0 || locking}
+                variant="destructive"
+              >
+                Unlock Selected
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -217,47 +217,43 @@ export default function Home() {
             )}
           </button>
           
-          {uploadUnlocked && (
-            <button
-              onClick={() => { setActiveView("schedule-lock"); setMobileMenuOpen(false); }}
-              className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
-                activeView === "schedule-lock"
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted text-foreground"
-              }`}
-              title={sidebarCollapsed ? "Schedule Lock" : ""}
-            >
-              {!sidebarCollapsed ? (
-                <>
-                  <div className="font-medium">Schedule Lock</div>
-                  <div className="text-xs opacity-80 mt-1">Lock T1 schedule</div>
-                </>
-              ) : (
-                <div className="font-medium text-center text-xs">Lock</div>
-              )}
-            </button>
-          )}
+          <button
+            onClick={() => { setActiveView("schedule-lock"); setMobileMenuOpen(false); }}
+            className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
+              activeView === "schedule-lock"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-foreground"
+            }`}
+            title={sidebarCollapsed ? "Schedule Lock" : ""}
+          >
+            {!sidebarCollapsed ? (
+              <>
+                <div className="font-medium">Schedule Lock</div>
+                <div className="text-xs opacity-80 mt-1">Lock T1 schedule</div>
+              </>
+            ) : (
+              <div className="font-medium text-center text-xs">Lock</div>
+            )}
+          </button>
           
-          {uploadUnlocked && (
-            <button
-              onClick={() => { setActiveView("schedule-lock-review"); setMobileMenuOpen(false); }}
-              className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
-                activeView === "schedule-lock-review"
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted text-foreground"
-              }`}
-              title={sidebarCollapsed ? "Schedule Lock Review" : ""}
-            >
-              {!sidebarCollapsed ? (
-                <>
-                  <div className="font-medium">Schedule Lock Review</div>
-                  <div className="text-xs opacity-80 mt-1">Review locked schedule</div>
-                </>
-              ) : (
-                <div className="font-medium text-center text-xs">Review</div>
-              )}
-            </button>
-          )}
+          <button
+            onClick={() => { setActiveView("schedule-lock-review"); setMobileMenuOpen(false); }}
+            className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
+              activeView === "schedule-lock-review"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-foreground"
+            }`}
+            title={sidebarCollapsed ? "Schedule Lock Review" : ""}
+          >
+            {!sidebarCollapsed ? (
+              <>
+                <div className="font-medium">Schedule Lock Review</div>
+                <div className="text-xs opacity-80 mt-1">Review locked schedule</div>
+              </>
+            ) : (
+              <div className="font-medium text-center text-xs">Review</div>
+            )}
+          </button>
           
           <button
             onClick={() => { setActiveView("scheduled-labor-review"); setMobileMenuOpen(false); }}
@@ -470,7 +466,7 @@ export default function Home() {
           )}
 
           {activeView === "schedule-lock" && workOrders.length > 0 && (
-            <ScheduleLockTab workOrders={workOrders} />
+            <ScheduleLockTab workOrders={workOrders} canLock={uploadUnlocked} />
           )}
 
           {activeView === "schedule-lock-review" && workOrders.length > 0 && (
