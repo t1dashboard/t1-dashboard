@@ -90,3 +90,4 @@
 - [x] Rename "T1 Workload" tab to "Workload"
 - [x] Make calendar view the default view (instead of list view)
 - [x] Add T1/T2/T3 dropdown selector to Workload tab (T1 default)
+- [x] Move T1/T2/T3 week dropdown from tab bar to below List/Calendar toggle in Workload Summary card

@@ -6,13 +6,6 @@ import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { WorkOrder, ScheduledLabor, PMCode } from "@/types/workOrder";
 import WorkLoadTab, { WeekFilter } from "@/components/WorkLoadTab";
 import RiskIdentificationTab from "@/components/RiskIdentificationTab";
@@ -270,31 +263,15 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="flex items-center gap-3">
-          <TabsList className="grid flex-1 grid-cols-7 h-auto p-1">
-            <TabsTrigger value="t3notready" className="py-3">T3 Not in Ready</TabsTrigger>
-            <TabsTrigger value="t2notready" className="py-3">T2 Not in Ready</TabsTrigger>
-            <TabsTrigger value="t1notready" className="py-3">T1 Not in Ready</TabsTrigger>
-            <TabsTrigger value="workload" className="py-3">Workload</TabsTrigger>
-            <TabsTrigger value="risk" className="py-3">Risk Identification</TabsTrigger>
-            <TabsTrigger value="loto" className="py-3">LOTO Review</TabsTrigger>
-            <TabsTrigger value="compliance" className="py-3">Compliance Check</TabsTrigger>
-          </TabsList>
-
-          {/* T1/T2/T3 Week Selector — visible when Workload tab is active */}
-          {activeTab === "workload" && (
-            <Select value={workloadWeek} onValueChange={(v) => setWorkloadWeek(v as WeekFilter)}>
-              <SelectTrigger className="w-[120px] h-auto py-3">
-                <SelectValue placeholder="Week" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="t1">T1 Week</SelectItem>
-                <SelectItem value="t2">T2 Week</SelectItem>
-                <SelectItem value="t3">T3 Week</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-        </div>
+        <TabsList className="grid grid-cols-7 h-auto p-1">
+          <TabsTrigger value="t3notready" className="py-3">T3 Not in Ready</TabsTrigger>
+          <TabsTrigger value="t2notready" className="py-3">T2 Not in Ready</TabsTrigger>
+          <TabsTrigger value="t1notready" className="py-3">T1 Not in Ready</TabsTrigger>
+          <TabsTrigger value="workload" className="py-3">Workload</TabsTrigger>
+          <TabsTrigger value="risk" className="py-3">Risk Identification</TabsTrigger>
+          <TabsTrigger value="loto" className="py-3">LOTO Review</TabsTrigger>
+          <TabsTrigger value="compliance" className="py-3">Compliance Check</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="t3notready" className="mt-6">
           <T3NotInReadyTab workOrders={filteredWorkOrders} />
@@ -309,7 +286,7 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T
         </TabsContent>
 
         <TabsContent value="workload" className="mt-6">
-          <WorkLoadTab workOrders={filteredWorkOrders} weekFilter={workloadWeek} />
+          <WorkLoadTab workOrders={filteredWorkOrders} weekFilter={workloadWeek} onWeekChange={setWorkloadWeek} />
         </TabsContent>
 
         <TabsContent value="risk" className="mt-6">

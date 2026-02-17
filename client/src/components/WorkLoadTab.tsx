@@ -12,12 +12,20 @@ import { Button } from "@/components/ui/button";
 import { formatDate, parseExcelDate, isNextWeek, isT2Week, isT3Week, getNextWeekRange, getT2WeekRange, getT3WeekRange } from "@/lib/dateUtils";
 import { isNightShift } from "@/lib/nightShiftEmployees";
 import { Calendar, List } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export type WeekFilter = "t1" | "t2" | "t3";
 
 interface WorkLoadTabProps {
   workOrders: WorkOrder[];
   weekFilter?: WeekFilter;
+  onWeekChange?: (week: WeekFilter) => void;
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
@@ -90,7 +98,7 @@ function getWeekLabel(filter: WeekFilter): string {
   }
 }
 
-export default function WorkLoadTab({ workOrders, weekFilter = "t1" }: WorkLoadTabProps) {
+export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChange }: WorkLoadTabProps) {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
 
   const isInWeek = useMemo(() => getWeekChecker(weekFilter), [weekFilter]);
@@ -382,23 +390,37 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1" }: WorkLoadT
                 <span className="font-semibold">{totalWorkOrders}</span> total work orders for {weekLabel} week
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-              >
-                <List className="h-4 w-4 mr-2" />
-                List
-              </Button>
-              <Button
-                variant={viewMode === 'calendar' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('calendar')}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Calendar
-              </Button>
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex gap-2">
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  List
+                </Button>
+                <Button
+                  variant={viewMode === 'calendar' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('calendar')}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Calendar
+                </Button>
+              </div>
+              {onWeekChange && (
+                <Select value={weekFilter} onValueChange={(v) => onWeekChange(v as WeekFilter)}>
+                  <SelectTrigger className="w-[130px] h-9">
+                    <SelectValue placeholder="Week" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="t1">T1 Week</SelectItem>
+                    <SelectItem value="t2">T2 Week</SelectItem>
+                    <SelectItem value="t3">T3 Week</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
         </CardHeader>
