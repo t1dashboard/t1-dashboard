@@ -110,6 +110,18 @@ export async function getScheduleLocks(): Promise<ScheduleLock[]> {
   return res.json();
 }
 
+export async function getScheduleLockWeeks(): Promise<string[]> {
+  const res = await fetch(`${API_BASE}/schedule-locks/weeks`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getScheduleLocksByWeek(week: string): Promise<ScheduleLock[]> {
+  const res = await fetch(`${API_BASE}/schedule-locks/by-week?week=${encodeURIComponent(week)}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function unlockWorkOrders(workOrderNumbers: string[]): Promise<{ success: boolean }> {
   const res = await fetch(`${API_BASE}/schedule-locks/unlock`, {
     method: "POST",

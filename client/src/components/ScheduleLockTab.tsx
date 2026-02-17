@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDate, isNextWeek } from "@/lib/dateUtils";
 import { toast } from "sonner";
-import { Lock, Unlock, Download, Loader2 } from "lucide-react";
+import { Lock, Unlock, Download, Loader2, X } from "lucide-react";
 import * as XLSX from "xlsx";
-import { getScheduleLocks, lockWorkOrders, unlockWorkOrders, ScheduleLock } from "@/lib/api";
+import { getScheduleLocks, lockWorkOrders, unlockWorkOrders, getScheduleLockWeeks, getScheduleLocksByWeek, ScheduleLock } from "@/lib/api";
 
 interface ScheduleLockTabProps {
   workOrders: WorkOrder[];
@@ -26,6 +26,12 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
   const [allLocks, setAllLocks] = useState<ScheduleLock[]>([]);
   const [loadingLocks, setLoadingLocks] = useState(true);
   const [locking, setLocking] = useState(false);
+
+  // Export dialog state
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [availableWeeks, setAvailableWeeks] = useState<string[]>([]);
+  const [loadingWeeks, setLoadingWeeks] = useState(false);
+  const [exportingWeek, setExportingWeek] = useState<string | null>(null);
 
   // Load locked work orders from server
   useEffect(() => {
@@ -81,61 +87,89 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
     setSelectAll(newSelected.size === t1WorkOrders.length);
   };
 
-  const handleExportLocked = () => {
-    if (allLocks.length === 0) {
-      toast.error("No locked work orders to export");
-      return;
+  const handleOpenExportDialog = async () => {
+    setShowExportDialog(true);
+    setLoadingWeeks(true);
+    try {
+      const weeks = await getScheduleLockWeeks();
+      setAvailableWeeks(weeks);
+    } catch (error: any) {
+      toast.error("Failed to load available weeks: " + error.message);
+    } finally {
+      setLoadingWeeks(false);
     }
+  };
 
-    // Get next week's Monday date (T1 week)
-    const today = new Date();
-    const currentDay = today.getDay();
-    const diff = currentDay === 0 ? -6 : 1 - currentDay;
-    const thisMonday = new Date(today);
-    thisMonday.setDate(today.getDate() + diff);
-    
-    // Add 7 days to get next week's Monday
-    const nextMonday = new Date(thisMonday);
-    nextMonday.setDate(thisMonday.getDate() + 7);
-    
-    // Calculate next week's Sunday (end of T1 week)
-    const nextSunday = new Date(nextMonday);
-    nextSunday.setDate(nextMonday.getDate() + 6);
-    
-    // Format dates for filename
-    const formatDateForFilename = (date: Date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-    
-    const startDate = formatDateForFilename(nextMonday);
-    const endDate = formatDateForFilename(nextSunday);
-    const filename = `Schedule_Lock_${startDate}_to_${endDate}.xlsx`;
+  const handleExportWeek = async (week: string) => {
+    setExportingWeek(week);
+    try {
+      const locks = await getScheduleLocksByWeek(week);
+      if (locks.length === 0) {
+        toast.error("No locked work orders found for this week");
+        return;
+      }
 
-    // Prepare data for export
-    const exportData = allLocks.map((order) => ({
-      "Work Order": order.workOrderNumber,
-      "Description": order.description,
-      "Data Center": order.dataCenter,
-      "Sched Start Date": order.schedStartDate,
-      "Assigned To": order.assignedTo,
-      "Status": order.status,
-      "Type": order.type,
-      "Equipment Description": order.equipmentDescription,
-      "Priority": order.priority,
-      "Shift": order.shift,
-      "Lock Week": order.lockWeek
-    }));
+      // Calculate the Monday and Sunday of the lock week for the filename
+      const weekDate = new Date(week + "T00:00:00");
+      const monday = new Date(weekDate);
+      // The lockWeek stores the Monday date, so add 7 days for T1 (next week)
+      const t1Monday = new Date(monday);
+      t1Monday.setDate(monday.getDate() + 7);
+      const t1Sunday = new Date(t1Monday);
+      t1Sunday.setDate(t1Monday.getDate() + 6);
 
-    // Create workbook and export
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Locked Schedule");
-    XLSX.writeFile(wb, filename);
+      const formatDateForFilename = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
 
-    toast.success(`Exported ${allLocks.length} locked work orders`);
+      const startDate = formatDateForFilename(t1Monday);
+      const endDate = formatDateForFilename(t1Sunday);
+      const filename = `Schedule_Lock_${startDate}_to_${endDate}.xlsx`;
+
+      // Prepare data for export
+      const exportData = locks.map((order) => ({
+        "Work Order": order.workOrderNumber,
+        "Description": order.description,
+        "Data Center": order.dataCenter,
+        "Sched Start Date": order.schedStartDate,
+        "Assigned To": order.assignedTo,
+        "Status": order.status,
+        "Type": order.type,
+        "Equipment Description": order.equipmentDescription,
+        "Priority": order.priority,
+        "Shift": order.shift,
+        "Lock Week": order.lockWeek
+      }));
+
+      // Create workbook and export
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Locked Schedule");
+      XLSX.writeFile(wb, filename);
+
+      toast.success(`Exported ${locks.length} locked work orders`);
+      setShowExportDialog(false);
+    } catch (error: any) {
+      toast.error("Failed to export: " + error.message);
+    } finally {
+      setExportingWeek(null);
+    }
+  };
+
+  const formatWeekLabel = (week: string) => {
+    const weekDate = new Date(week + "T00:00:00");
+    const monday = new Date(weekDate);
+    // T1 is next week from when it was locked
+    const t1Monday = new Date(monday);
+    t1Monday.setDate(monday.getDate() + 7);
+    const t1Sunday = new Date(t1Monday);
+    t1Sunday.setDate(t1Monday.getDate() + 6);
+
+    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+    return `${t1Monday.toLocaleDateString('en-US', options)} – ${t1Sunday.toLocaleDateString('en-US', options)}`;
   };
 
   const handleUnlockSchedule = async () => {
@@ -242,6 +276,60 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
 
   return (
     <div className="space-y-4">
+      {/* Export Week Selector Dialog */}
+      {showExportDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-lg font-medium">Export Locked Schedule</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowExportDialog(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {loadingWeeks ? (
+                <div className="py-8 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Loading available weeks...</p>
+                </div>
+              ) : availableWeeks.length === 0 ? (
+                <div className="py-8 text-center">
+                  <p className="text-sm text-muted-foreground">No locked schedules found</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground mb-3">Select a week to export:</p>
+                  {availableWeeks.map((week) => (
+                    <Button
+                      key={week}
+                      variant="outline"
+                      className="w-full justify-between h-auto py-3 px-4"
+                      onClick={() => handleExportWeek(week)}
+                      disabled={exportingWeek !== null}
+                    >
+                      <div className="text-left">
+                        <div className="font-medium">{formatWeekLabel(week)}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">Locked on week of {week}</div>
+                      </div>
+                      {exportingWeek === week ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Card className="bg-primary/5 border-primary/20">
         <CardContent className="py-4 flex items-center justify-between">
           <div>
@@ -251,7 +339,7 @@ export default function ScheduleLockTab({ workOrders }: ScheduleLockTabProps) {
           </div>
           <div className="flex gap-2">
             <Button 
-              onClick={handleExportLocked}
+              onClick={handleOpenExportDialog}
               variant="outline"
               className="flex items-center gap-2"
             >

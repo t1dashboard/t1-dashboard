@@ -311,6 +311,46 @@ router.get("/schedule-locks", async (_req: Request, res: Response) => {
   }
 });
 
+router.get("/schedule-locks/weeks", async (_req: Request, res: Response) => {
+  try {
+    const rows = await query("SELECT DISTINCT lock_week FROM schedule_locks ORDER BY lock_week DESC");
+    const weeks = rows.map((row: any) => row.lock_week);
+    res.json(weeks);
+  } catch (error: any) {
+    console.error("Error fetching lock weeks:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/schedule-locks/by-week", async (req: Request, res: Response) => {
+  try {
+    const { week } = req.query;
+    if (!week) {
+      return res.status(400).json({ error: "week query parameter required" });
+    }
+    const rows = await query("SELECT * FROM schedule_locks WHERE lock_week = ? ORDER BY data_center, work_order_number", [String(week)]);
+    const locks = rows.map((row: any) => ({
+      id: row.id,
+      workOrderNumber: row.work_order_number,
+      description: row.description,
+      dataCenter: row.data_center,
+      schedStartDate: row.sched_start_date,
+      assignedTo: row.assigned_to_name,
+      status: row.status,
+      type: row.type,
+      equipmentDescription: row.equipment_description,
+      priority: row.priority,
+      shift: row.shift,
+      lockWeek: row.lock_week,
+      lockedAt: row.locked_at,
+    }));
+    res.json(locks);
+  } catch (error: any) {
+    console.error("Error fetching locks by week:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post("/schedule-locks/unlock", async (req: Request, res: Response) => {
   try {
     const { workOrderNumbers } = req.body;
