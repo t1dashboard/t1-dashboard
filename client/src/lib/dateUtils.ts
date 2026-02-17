@@ -148,7 +148,7 @@ export function isT3Week(date: any): boolean {
 
 /**
  * Generic: Get the start and end dates for T(n) week.
- * T1 = next week, T2 = 2 weeks out, ... T8 = 8 weeks out.
+ * T0 = this week (current Mon-Sun), T1 = next week, T2 = 2 weeks out, ... T8 = 8 weeks out.
  * Each week runs Monday to Sunday.
  */
 export function getTWeekRange(n: number): { start: Date; end: Date } {
@@ -164,6 +164,7 @@ export function getTWeekRange(n: number): { start: Date; end: Date } {
   t1Monday.setHours(0, 0, 0, 0);
   
   // T(n) Monday = T1 Monday + (n-1) weeks
+  // For T0: n=0, so (0-1)*7 = -7, which gives this week's Monday
   const tnMonday = new Date(t1Monday);
   tnMonday.setDate(t1Monday.getDate() + (n - 1) * 7);
   

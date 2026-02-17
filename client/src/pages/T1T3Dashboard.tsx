@@ -57,12 +57,13 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T
   }, []);
 
   const weekRanges = useMemo(() => {
-    return Array.from({ length: 8 }, (_, i) => {
-      const n = i + 1;
+    return Array.from({ length: 9 }, (_, i) => {
+      const n = i; // 0 through 8
       const { start, end } = getTWeekRange(n);
       const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const fmtYear = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      return `T${n}: ${fmt(start)} - ${fmtYear(end)}`;
+      const label = n === 0 ? 'T0 (This Wk)' : `T${n}`;
+      return `${label}: ${fmt(start)} - ${fmtYear(end)}`;
     });
   }, []);
 
@@ -127,10 +128,13 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T
         <div>
           <h2 className="text-2xl font-medium text-foreground">T1-T3 Dashboard</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {weekRanges.slice(0, 4).join(' | ')}
+            {weekRanges.slice(0, 3).join(' | ')}
           </p>
           <p className="text-sm text-muted-foreground">
-            {weekRanges.slice(4).join(' | ')}
+            {weekRanges.slice(3, 6).join(' | ')}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {weekRanges.slice(6).join(' | ')}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">

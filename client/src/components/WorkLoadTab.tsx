@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export type WeekFilter = "t1" | "t2" | "t3" | "t4" | "t5" | "t6" | "t7" | "t8";
+export type WeekFilter = "t0" | "t1" | "t2" | "t3" | "t4" | "t5" | "t6" | "t7" | "t8";
 
 /** Map a WeekFilter string to its numeric offset (1–8). */
 function weekNumber(filter: WeekFilter): number {
@@ -89,7 +89,7 @@ function getWeekRange(filter: WeekFilter): { start: Date; end: Date } {
 
 /** Human-readable label for the week filter. */
 function getWeekLabel(filter: WeekFilter): string {
-  return filter.toUpperCase();
+  return filter === "t0" ? "T0 (This Week)" : filter.toUpperCase();
 }
 
 export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChange }: WorkLoadTabProps) {
@@ -409,10 +409,10 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
                     <SelectValue placeholder="Week" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(["t1","t2","t3","t4","t5","t6","t7","t8"] as WeekFilter[]).map((wk) => {
+                    {(["t0","t1","t2","t3","t4","t5","t6","t7","t8"] as WeekFilter[]).map((wk) => {
                       const n = weekNumber(wk);
                       const { start, end } = getTWeekRange(n);
-                      const label = `T${n} Week`;
+                      const label = n === 0 ? "T0 (This Week)" : `T${n} Week`;
                       const dateHint = `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
                       return (
                         <SelectItem key={wk} value={wk}>
