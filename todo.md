@@ -76,3 +76,4 @@
 - [x] T1 Workload: Section off Days (7AM-6:59PM) and Nights
 - [x] T1 Workload: Color-code by risk level (green=low, yellow=medium, red=high)
 - [x] T1 Workload: Redesign calendar as one large full-width view with horizontal Day/Night divider, no scrolling
+- [x] Fix: T1 Workload calendar overflowing outside the white background

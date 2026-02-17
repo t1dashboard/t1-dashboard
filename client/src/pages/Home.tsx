@@ -281,8 +281,8 @@ export default function Home() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="container py-8">
+      <main className="flex-1 overflow-auto min-w-0">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           {activeView === "upload" && !uploadUnlocked && (
             <Card>
               <CardHeader>
