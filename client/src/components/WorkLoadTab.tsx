@@ -197,7 +197,7 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
     return scheduledTotal + inProcessOrders.length;
   }, [workloadByDay, inProcessOrders]);
 
-  // Render calendar view with Days/Nights sections and risk color coding
+  // Render calendar view as one big table-style layout with Day/Night horizontal divider
   const renderCalendarView = () => (
     <Card>
       <CardContent className="p-4">
@@ -218,29 +218,36 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
           </span>
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
-          {DAYS_OF_WEEK.map((day) => {
-            const dayOrders = workloadByDay[day];
-            const totalOrders = dayOrders.day.length + dayOrders.night.length;
-            
-            return (
-              <div key={day} className="border border-border rounded-lg overflow-hidden">
-                <div className="bg-muted/50 p-2 border-b border-border">
-                  <h3 className="font-medium text-sm text-center">{day}</h3>
-                  <p className="text-xs text-muted-foreground text-center mt-1">
-                    {totalOrders} WOs
-                  </p>
-                </div>
-                <div className="min-h-[300px] max-h-[600px] overflow-y-auto">
-                  {/* Day Shift Section: 7:00 AM - 6:59 PM */}
-                  <div className="border-b border-border">
-                    <div className="bg-amber-50 dark:bg-amber-950/30 px-2 py-1.5 border-b border-border/50">
-                      <div className="text-xs font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1">
-                        ☀️ Days <span className="font-normal text-muted-foreground">(7:00 AM – 6:59 PM)</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground">{dayOrders.day.length} WOs</div>
-                    </div>
-                    <div className="p-1.5 space-y-1">
+        <table className="w-full border-collapse border border-border">
+          {/* Header Row - Day Names */}
+          <thead>
+            <tr>
+              <th className="border border-border bg-muted/30 p-1 text-xs font-medium text-muted-foreground w-[60px]"></th>
+              {DAYS_OF_WEEK.map((day) => {
+                const dayOrders = workloadByDay[day];
+                const totalOrders = dayOrders.day.length + dayOrders.night.length;
+                return (
+                  <th key={day} className="border border-border bg-muted/50 p-2 text-center">
+                    <div className="font-semibold text-sm">{day}</div>
+                    <div className="text-xs text-muted-foreground font-normal">{totalOrders} WOs</div>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {/* Day Shift Row */}
+            <tr className="align-top">
+              <td className="border border-border bg-amber-50 dark:bg-amber-950/30 p-2 text-center">
+                <div className="text-xs font-semibold text-amber-800 dark:text-amber-300">☀️</div>
+                <div className="text-[10px] font-semibold text-amber-800 dark:text-amber-300 mt-1">DAYS</div>
+                <div className="text-[9px] text-muted-foreground mt-0.5">7AM–7PM</div>
+              </td>
+              {DAYS_OF_WEEK.map((day) => {
+                const dayOrders = workloadByDay[day];
+                return (
+                  <td key={day} className="border border-border p-1.5 align-top">
+                    <div className="space-y-1">
                       {dayOrders.day.length > 0 ? (
                         dayOrders.day.map((wo) => {
                           const risk = getRiskLevel(wo);
@@ -250,9 +257,9 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
                               href={`${BASE_URL}${wo["Work Order"]}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className={`block p-1.5 border rounded text-xs hover:opacity-80 transition-colors ${getRiskBgClass(risk)}`}
+                              className={`block p-1 border rounded text-[10px] leading-tight hover:opacity-80 transition-colors ${getRiskBgClass(risk)}`}
                             >
-                              <div className="font-medium text-primary">{wo["Work Order"]}</div>
+                              <div className="font-semibold text-primary">{wo["Work Order"]}</div>
                               <div className="text-muted-foreground truncate" title={wo["Description"]}>
                                 {wo["Description"]}
                               </div>
@@ -261,20 +268,31 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
                           );
                         })
                       ) : (
-                        <div className="text-xs text-muted-foreground text-center py-2">No WOs</div>
+                        <div className="text-[10px] text-muted-foreground text-center py-2">—</div>
                       )}
                     </div>
-                  </div>
+                  </td>
+                );
+              })}
+            </tr>
 
-                  {/* Night Shift Section: 7:00 PM - 6:59 AM */}
-                  <div>
-                    <div className="bg-indigo-50 dark:bg-indigo-950/30 px-2 py-1.5 border-b border-border/50">
-                      <div className="text-xs font-semibold text-indigo-800 dark:text-indigo-300 flex items-center gap-1">
-                        🌙 Nights <span className="font-normal text-muted-foreground">(7:00 PM – 6:59 AM)</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground">{dayOrders.night.length} WOs</div>
-                    </div>
-                    <div className="p-1.5 space-y-1">
+            {/* Horizontal Divider Row */}
+            <tr>
+              <td colSpan={8} className="border border-border bg-border h-[3px] p-0"></td>
+            </tr>
+
+            {/* Night Shift Row */}
+            <tr className="align-top">
+              <td className="border border-border bg-indigo-50 dark:bg-indigo-950/30 p-2 text-center">
+                <div className="text-xs font-semibold text-indigo-800 dark:text-indigo-300">🌙</div>
+                <div className="text-[10px] font-semibold text-indigo-800 dark:text-indigo-300 mt-1">NIGHTS</div>
+                <div className="text-[9px] text-muted-foreground mt-0.5">7PM–7AM</div>
+              </td>
+              {DAYS_OF_WEEK.map((day) => {
+                const dayOrders = workloadByDay[day];
+                return (
+                  <td key={day} className="border border-border p-1.5 align-top">
+                    <div className="space-y-1">
                       {dayOrders.night.length > 0 ? (
                         dayOrders.night.map((wo) => {
                           const risk = getRiskLevel(wo);
@@ -284,9 +302,9 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
                               href={`${BASE_URL}${wo["Work Order"]}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className={`block p-1.5 border rounded text-xs hover:opacity-80 transition-colors ${getRiskBgClass(risk)}`}
+                              className={`block p-1 border rounded text-[10px] leading-tight hover:opacity-80 transition-colors ${getRiskBgClass(risk)}`}
                             >
-                              <div className="font-medium text-primary">{wo["Work Order"]}</div>
+                              <div className="font-semibold text-primary">{wo["Work Order"]}</div>
                               <div className="text-muted-foreground truncate" title={wo["Description"]}>
                                 {wo["Description"]}
                               </div>
@@ -295,15 +313,15 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
                           );
                         })
                       ) : (
-                        <div className="text-xs text-muted-foreground text-center py-2">No WOs</div>
+                        <div className="text-[10px] text-muted-foreground text-center py-2">—</div>
                       )}
                     </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                  </td>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
       </CardContent>
     </Card>
   );
