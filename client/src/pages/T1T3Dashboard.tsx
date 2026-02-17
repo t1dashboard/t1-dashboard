@@ -14,7 +14,7 @@ import T1NotInReadyTab from "@/components/T1NotInReadyTab";
 import T2NotInReadyTab from "@/components/T2NotInReadyTab";
 import T3NotInReadyTab from "@/components/T3NotInReadyTab";
 import ComplianceCheckTab from "@/components/ComplianceCheckTab";
-import { getNextWeekRange, getT2WeekRange, getT3WeekRange, isNextWeek } from "@/lib/dateUtils";
+import { getTWeekRange, isTWeek } from "@/lib/dateUtils";
 import { getUploadMetadata, getComplianceAlerts, ComplianceAlert } from "@/lib/api";
 import {
   Search, ClipboardList, AlertTriangle, CheckCircle2, Clock, Bell, X, Shield
@@ -56,24 +56,19 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T
     loadAlerts();
   }, []);
 
-  const nextWeekRange = useMemo(() => {
-    const { start, end } = getNextWeekRange();
-    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-  }, []);
-
-  const t2WeekRange = useMemo(() => {
-    const { start, end } = getT2WeekRange();
-    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-  }, []);
-
-  const t3WeekRange = useMemo(() => {
-    const { start, end } = getT3WeekRange();
-    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  const weekRanges = useMemo(() => {
+    return Array.from({ length: 8 }, (_, i) => {
+      const n = i + 1;
+      const { start, end } = getTWeekRange(n);
+      const fmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const fmtYear = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return `T${n}: ${fmt(start)} - ${fmtYear(end)}`;
+    });
   }, []);
 
   // KPI calculations
   const kpis = useMemo(() => {
-    const t1WorkOrders = workOrders.filter(wo => isNextWeek(wo["Sched. Start Date"]));
+    const t1WorkOrders = workOrders.filter(wo => isTWeek(wo["Sched. Start Date"], 1));
     const readyCount = t1WorkOrders.filter(wo => (wo["Status"] || "").toLowerCase() === "ready").length;
     const notReadyCount = t1WorkOrders.filter(wo => (wo["Status"] || "").toLowerCase() !== "ready" 
       && (wo["Status"] || "").toLowerCase() !== "closed" 
@@ -132,7 +127,10 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T
         <div>
           <h2 className="text-2xl font-medium text-foreground">T1-T3 Dashboard</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            T1: {nextWeekRange} | T2: {t2WeekRange} | T3: {t3WeekRange}
+            {weekRanges.slice(0, 4).join(' | ')}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {weekRanges.slice(4).join(' | ')}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">

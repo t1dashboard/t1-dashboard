@@ -145,3 +145,43 @@ export function isT3Week(date: any): boolean {
   const { start, end } = getT3WeekRange();
   return parsed >= start && parsed <= end;
 }
+
+/**
+ * Generic: Get the start and end dates for T(n) week.
+ * T1 = next week, T2 = 2 weeks out, ... T8 = 8 weeks out.
+ * Each week runs Monday to Sunday.
+ */
+export function getTWeekRange(n: number): { start: Date; end: Date } {
+  const today = new Date();
+  const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  
+  // Days until next Monday
+  const daysUntilNextMonday = currentDay === 0 ? 1 : (8 - currentDay);
+  
+  // Next Monday (T1 start)
+  const t1Monday = new Date(today);
+  t1Monday.setDate(today.getDate() + daysUntilNextMonday);
+  t1Monday.setHours(0, 0, 0, 0);
+  
+  // T(n) Monday = T1 Monday + (n-1) weeks
+  const tnMonday = new Date(t1Monday);
+  tnMonday.setDate(t1Monday.getDate() + (n - 1) * 7);
+  
+  // T(n) Sunday = T(n) Monday + 6 days
+  const tnSunday = new Date(tnMonday);
+  tnSunday.setDate(tnMonday.getDate() + 6);
+  tnSunday.setHours(23, 59, 59, 999);
+  
+  return { start: tnMonday, end: tnSunday };
+}
+
+/**
+ * Generic: Check if a date falls within T(n) week.
+ */
+export function isTWeek(date: any, n: number): boolean {
+  const parsed = parseExcelDate(date);
+  if (!parsed) return false;
+  
+  const { start, end } = getTWeekRange(n);
+  return parsed >= start && parsed <= end;
+}

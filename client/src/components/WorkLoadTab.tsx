@@ -9,7 +9,7 @@ import { useMemo, useState } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { formatDate, parseExcelDate, isNextWeek, isT2Week, isT3Week, getNextWeekRange, getT2WeekRange, getT3WeekRange } from "@/lib/dateUtils";
+import { formatDate, parseExcelDate, getTWeekRange, isTWeek } from "@/lib/dateUtils";
 import { isNightShift } from "@/lib/nightShiftEmployees";
 import { Calendar, List } from "lucide-react";
 import {
@@ -20,7 +20,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export type WeekFilter = "t1" | "t2" | "t3";
+export type WeekFilter = "t1" | "t2" | "t3" | "t4" | "t5" | "t6" | "t7" | "t8";
+
+/** Map a WeekFilter string to its numeric offset (1–8). */
+function weekNumber(filter: WeekFilter): number {
+  return parseInt(filter.slice(1), 10);
+}
 
 interface WorkLoadTabProps {
   workOrders: WorkOrder[];
@@ -73,29 +78,18 @@ function getRiskRowBg(risk: 'high' | 'medium' | 'low'): string {
 
 /** Return the correct week-check function for the given filter. */
 function getWeekChecker(filter: WeekFilter): (date: any) => boolean {
-  switch (filter) {
-    case "t1": return isNextWeek;
-    case "t2": return isT2Week;
-    case "t3": return isT3Week;
-  }
+  const n = weekNumber(filter);
+  return (date: any) => isTWeek(date, n);
 }
 
 /** Return the correct week range for the given filter. */
 function getWeekRange(filter: WeekFilter): { start: Date; end: Date } {
-  switch (filter) {
-    case "t1": return getNextWeekRange();
-    case "t2": return getT2WeekRange();
-    case "t3": return getT3WeekRange();
-  }
+  return getTWeekRange(weekNumber(filter));
 }
 
 /** Human-readable label for the week filter. */
 function getWeekLabel(filter: WeekFilter): string {
-  switch (filter) {
-    case "t1": return "T1";
-    case "t2": return "T2";
-    case "t3": return "T3";
-  }
+  return filter.toUpperCase();
 }
 
 export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChange }: WorkLoadTabProps) {
@@ -411,13 +405,22 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
               </div>
               {onWeekChange && (
                 <Select value={weekFilter} onValueChange={(v) => onWeekChange(v as WeekFilter)}>
-                  <SelectTrigger className="w-[130px] h-9">
+                  <SelectTrigger className="w-[240px] h-9">
                     <SelectValue placeholder="Week" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="t1">T1 Week</SelectItem>
-                    <SelectItem value="t2">T2 Week</SelectItem>
-                    <SelectItem value="t3">T3 Week</SelectItem>
+                    {(["t1","t2","t3","t4","t5","t6","t7","t8"] as WeekFilter[]).map((wk) => {
+                      const n = weekNumber(wk);
+                      const { start, end } = getTWeekRange(n);
+                      const label = `T${n} Week`;
+                      const dateHint = `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                      return (
+                        <SelectItem key={wk} value={wk}>
+                          <span className="font-medium">{label}</span>
+                          <span className="text-muted-foreground ml-2 text-xs">{dateHint}</span>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               )}

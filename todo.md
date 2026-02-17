@@ -91,3 +91,4 @@
 - [x] Make calendar view the default view (instead of list view)
 - [x] Add T1/T2/T3 dropdown selector to Workload tab (T1 default)
 - [x] Move T1/T2/T3 week dropdown from tab bar to below List/Calendar toggle in Workload Summary card
+- [x] Expand week dropdown from T1-T3 to T1-T8 with correct date ranges for each week
