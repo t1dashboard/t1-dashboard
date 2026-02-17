@@ -87,3 +87,6 @@
 - [x] Upgrade project to web-db-user template with tRPC + Manus Auth support
 - [x] Add comprehensive test suite for dashboard enhancements (22 tests passing)
 - [x] Add test script to package.json
+- [x] Rename "T1 Workload" tab to "Workload"
+- [x] Make calendar view the default view (instead of list view)
+- [x] Add T1/T2/T3 dropdown selector to Workload tab (T1 default)

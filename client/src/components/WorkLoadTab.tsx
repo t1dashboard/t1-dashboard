@@ -2,18 +2,22 @@
  * Swiss Rationalism: Hairline dividers, systematic grid, monospace work order numbers
  * Separated into Day Shift (7:00 AM - 6:59 PM) and Night Shift sections
  * Color-coded by risk level: green (low/none), yellow (medium), red (high)
+ * Supports T1/T2/T3 week selection via weekFilter prop
  */
 
 import { useMemo, useState } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { formatDate, parseExcelDate, isNextWeek, getNextWeekRange } from "@/lib/dateUtils";
+import { formatDate, parseExcelDate, isNextWeek, isT2Week, isT3Week, getNextWeekRange, getT2WeekRange, getT3WeekRange } from "@/lib/dateUtils";
 import { isNightShift } from "@/lib/nightShiftEmployees";
 import { Calendar, List } from "lucide-react";
 
+export type WeekFilter = "t1" | "t2" | "t3";
+
 interface WorkLoadTabProps {
   workOrders: WorkOrder[];
+  weekFilter?: WeekFilter;
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
@@ -59,12 +63,43 @@ function getRiskRowBg(risk: 'high' | 'medium' | 'low'): string {
   }
 }
 
-export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+/** Return the correct week-check function for the given filter. */
+function getWeekChecker(filter: WeekFilter): (date: any) => boolean {
+  switch (filter) {
+    case "t1": return isNextWeek;
+    case "t2": return isT2Week;
+    case "t3": return isT3Week;
+  }
+}
 
-  // Get In Process work orders that span the T1 week
+/** Return the correct week range for the given filter. */
+function getWeekRange(filter: WeekFilter): { start: Date; end: Date } {
+  switch (filter) {
+    case "t1": return getNextWeekRange();
+    case "t2": return getT2WeekRange();
+    case "t3": return getT3WeekRange();
+  }
+}
+
+/** Human-readable label for the week filter. */
+function getWeekLabel(filter: WeekFilter): string {
+  switch (filter) {
+    case "t1": return "T1";
+    case "t2": return "T2";
+    case "t3": return "T3";
+  }
+}
+
+export default function WorkLoadTab({ workOrders, weekFilter = "t1" }: WorkLoadTabProps) {
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
+
+  const isInWeek = useMemo(() => getWeekChecker(weekFilter), [weekFilter]);
+  const weekRange = useMemo(() => getWeekRange(weekFilter), [weekFilter]);
+  const weekLabel = getWeekLabel(weekFilter);
+
+  // Get In Process work orders that span the selected week
   const inProcessOrders = useMemo(() => {
-    const { start: weekStart, end: weekEnd } = getNextWeekRange();
+    const { start: weekStart, end: weekEnd } = weekRange;
     
     const filtered = workOrders.filter((wo) => {
       const isInProcess = wo["Status"]?.toUpperCase() === "IN PROCESS" || wo["Status"]?.toUpperCase() === "INPROCESS" || wo["Status"]?.toUpperCase() === "IN-PROCESS";
@@ -80,7 +115,7 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
       
       if (!schedStart || !schedEnd) return false;
       
-      // Check if the work order overlaps with T1 week
+      // Check if the work order overlaps with the selected week
       return schedStart <= weekEnd && schedEnd >= weekStart;
     });
     
@@ -90,15 +125,15 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
       const dcB = b["Data Center"] || "";
       return dcA.localeCompare(dcB);
     });
-  }, [workOrders]);
+  }, [workOrders, weekRange]);
 
   const workloadByDay = useMemo(() => {
-    // Filter for next week's work orders only, excluding cancelled, CMCC Daily Work Orders, and weekly work orders
+    // Filter for selected week's work orders only, excluding cancelled, CMCC Daily Work Orders, and weekly work orders
     const filtered = workOrders.filter((wo) => {
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
       const isWeekly = wo["Description"]?.toUpperCase().includes("WEEKLY");
-      return !isCancelled && !isCMCC && !isWeekly && wo["Sched. Start Date"] && wo["Sched. Start Date"] !== "" && isNextWeek(wo["Sched. Start Date"]);
+      return !isCancelled && !isCMCC && !isWeekly && wo["Sched. Start Date"] && wo["Sched. Start Date"] !== "" && isInWeek(wo["Sched. Start Date"]);
     });
 
     // Group by day of week and shift
@@ -133,7 +168,7 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
     });
 
     return grouped;
-  }, [workOrders]);
+  }, [workOrders, isInWeek]);
 
   const renderTable = (orders: WorkOrder[]) => (
     <div className="overflow-x-auto">
@@ -196,6 +231,12 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
     }, 0);
     return scheduledTotal + inProcessOrders.length;
   }, [workloadByDay, inProcessOrders]);
+
+  // Format week range for display
+  const weekRangeLabel = useMemo(() => {
+    const { start, end } = weekRange;
+    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  }, [weekRange]);
 
   // Render calendar view as one big table-style layout with Day/Night horizontal divider
   const renderCalendarView = () => (
@@ -334,10 +375,11 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-2xl font-medium text-foreground">
-                T1 Workload Summary
+                {weekLabel} Workload Summary
               </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">{weekRangeLabel}</p>
               <p className="text-lg text-foreground mt-2">
-                <span className="font-semibold">{totalWorkOrders}</span> total work orders for next week
+                <span className="font-semibold">{totalWorkOrders}</span> total work orders for {weekLabel} week
               </p>
             </div>
             <div className="flex gap-2">
@@ -431,7 +473,7 @@ export default function WorkLoadTab({ workOrders }: WorkLoadTabProps) {
           <CardHeader className="border-b border-border pb-4">
             <CardTitle className="text-xl font-medium">In Process Work Orders</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              {inProcessOrders.length} work orders currently in process that span the T1 week
+              {inProcessOrders.length} work orders currently in process that span the {weekLabel} week
             </p>
           </CardHeader>
           <CardContent className="p-0">
