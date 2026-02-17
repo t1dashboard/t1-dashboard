@@ -5,7 +5,7 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2, Lock, KeyRound } from "lucide-react";
+import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2, Lock, KeyRound, Menu, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { WorkOrder, ScheduledLabor, PMCode } from "@/types/workOrder";
 import T1T3Dashboard from "./T1T3Dashboard";
@@ -31,6 +31,7 @@ export default function Home() {
 
   const [activeView, setActiveView] = useState<ActiveView>("upload");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [uploadUnlocked, setUploadUnlocked] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
@@ -141,12 +142,26 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background flex">
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-1">
+          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+        <h1 className="text-sm font-medium text-foreground">Work Planning Dashboard</h1>
+        <div className="w-6" />
+      </div>
+
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
+      )}
+
       {/* Sidebar */}
-      <aside className={`border-r border-border bg-card flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
+      <aside className={`border-r border-border bg-card flex flex-col transition-all duration-300 fixed md:static z-40 h-full ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
         {/* Title - Clickable to go to upload */}
         <div className="border-b border-border">
           <button 
-            onClick={() => setActiveView("upload")}
+            onClick={() => { setActiveView("upload"); setMobileMenuOpen(false); }}
             className="p-6 text-left hover:bg-muted/50 transition-colors w-full"
           >
             {!sidebarCollapsed && (
@@ -165,7 +180,7 @@ export default function Home() {
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
 
           <button
-            onClick={() => setActiveView("t1t3")}
+            onClick={() => { setActiveView("t1t3"); setMobileMenuOpen(false); }}
             className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
               activeView === "t1t3"
                 ? "bg-primary text-primary-foreground"
@@ -184,7 +199,7 @@ export default function Home() {
           </button>
           
           <button
-            onClick={() => setActiveView("t4t8")}
+            onClick={() => { setActiveView("t4t8"); setMobileMenuOpen(false); }}
             className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
               activeView === "t4t8"
                 ? "bg-primary text-primary-foreground"
@@ -203,7 +218,7 @@ export default function Home() {
           </button>
           
           <button
-            onClick={() => setActiveView("schedule-lock")}
+            onClick={() => { setActiveView("schedule-lock"); setMobileMenuOpen(false); }}
             className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
               activeView === "schedule-lock"
                 ? "bg-primary text-primary-foreground"
@@ -222,7 +237,7 @@ export default function Home() {
           </button>
           
           <button
-            onClick={() => setActiveView("schedule-lock-review")}
+            onClick={() => { setActiveView("schedule-lock-review"); setMobileMenuOpen(false); }}
             className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
               activeView === "schedule-lock-review"
                 ? "bg-primary text-primary-foreground"
@@ -241,7 +256,7 @@ export default function Home() {
           </button>
           
           <button
-            onClick={() => setActiveView("scheduled-labor-review")}
+            onClick={() => { setActiveView("scheduled-labor-review"); setMobileMenuOpen(false); }}
             className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
               activeView === "scheduled-labor-review"
                 ? "bg-primary text-primary-foreground"
@@ -281,7 +296,7 @@ export default function Home() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto min-w-0">
+      <main className="flex-1 overflow-auto min-w-0 pt-14 md:pt-0">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
           {activeView === "upload" && !uploadUnlocked && (
             <Card>

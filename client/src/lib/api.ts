@@ -122,6 +122,34 @@ export async function getScheduleLocksByWeek(week: string): Promise<ScheduleLock
   return res.json();
 }
 
+export interface UploadMetadata {
+  workOrders: string | null;
+  scheduledLabor: string | null;
+  pmCodes: string | null;
+}
+
+export async function getUploadMetadata(): Promise<UploadMetadata> {
+  const res = await fetch(`${API_BASE}/upload-metadata`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export interface ComplianceAlert {
+  workOrderNumber: string;
+  description: string;
+  dataCenter: string;
+  complianceEndDate: string;
+  schedStartDate: string;
+  assignedTo: string;
+  status: string;
+}
+
+export async function getComplianceAlerts(): Promise<ComplianceAlert[]> {
+  const res = await fetch(`${API_BASE}/compliance-alerts`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function unlockWorkOrders(workOrderNumbers: string[]): Promise<{ success: boolean }> {
   const res = await fetch(`${API_BASE}/schedule-locks/unlock`, {
     method: "POST",

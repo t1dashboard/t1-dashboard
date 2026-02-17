@@ -371,4 +371,86 @@ router.post("/schedule-locks/unlock", async (req: Request, res: Response) => {
   }
 });
 
+// ============================================================
+// Upload Metadata - Last uploaded timestamps
+// ============================================================
+
+router.get("/upload-metadata", async (_req: Request, res: Response) => {
+  try {
+    // Get the most recent upload timestamps from each table
+    const [woRows] = await Promise.all([
+      query("SELECT MAX(uploaded_at) as last_uploaded FROM work_orders"),
+    ]);
+    const [slRows] = await Promise.all([
+      query("SELECT MAX(uploaded_at) as last_uploaded FROM scheduled_labor"),
+    ]);
+    const [pmRows] = await Promise.all([
+      query("SELECT MAX(uploaded_at) as last_uploaded FROM pm_codes"),
+    ]);
+
+    res.json({
+      workOrders: woRows[0]?.last_uploaded || null,
+      scheduledLabor: slRows[0]?.last_uploaded || null,
+      pmCodes: pmRows[0]?.last_uploaded || null,
+    });
+  } catch (error: any) {
+    console.error("Error fetching upload metadata:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================
+// Compliance Alerts - WOs within 3 days of compliance (non-daily/weekly)
+// ============================================================
+
+router.get("/compliance-alerts", async (_req: Request, res: Response) => {
+  try {
+    const rows = await query(`
+      SELECT work_order_number, description, data_center, compliance_window_end_date,
+             sched_start_date, assigned_to_name, status
+      FROM work_orders
+      WHERE status NOT IN ('Closed', 'Work Complete', 'Cancelled', 'QA Rejected')
+        AND compliance_window_end_date IS NOT NULL
+        AND compliance_window_end_date != ''
+    `);
+
+    const now = new Date();
+    const alerts = rows.filter((row: any) => {
+      const desc = (row.description || "").toUpperCase();
+      // Exclude daily and weekly work orders
+      if (desc.includes("DAILY") || desc.includes("WEEKLY")) return false;
+
+      // Parse the compliance end date
+      let endDate: Date | null = null;
+      const dateStr = row.compliance_window_end_date;
+      if (dateStr) {
+        // Try parsing as a number (Excel serial)
+        const num = Number(dateStr);
+        if (!isNaN(num) && num > 40000) {
+          endDate = new Date((num - 25569) * 86400000);
+        } else {
+          endDate = new Date(dateStr);
+        }
+      }
+      if (!endDate || isNaN(endDate.getTime())) return false;
+
+      const diffDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays <= 3;
+    }).map((row: any) => ({
+      workOrderNumber: row.work_order_number,
+      description: row.description,
+      dataCenter: row.data_center,
+      complianceEndDate: row.compliance_window_end_date,
+      schedStartDate: row.sched_start_date,
+      assignedTo: row.assigned_to_name,
+      status: row.status,
+    }));
+
+    res.json(alerts);
+  } catch (error: any) {
+    console.error("Error fetching compliance alerts:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

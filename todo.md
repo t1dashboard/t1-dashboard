@@ -78,3 +78,12 @@
 - [x] T1 Workload: Redesign calendar as one large full-width view with horizontal Day/Night divider, no scrolling
 - [x] Fix: T1 Workload calendar overflowing outside the white background
 - [x] Add week selector to Export Locked button on Schedule Lock page
+- [x] Add "Last uploaded" timestamp on every tab with stale data warning (>7 days)
+- [x] Add dashboard summary KPI cards (total T1 WOs, Ready vs Not Ready, high risk, compliance alerts)
+- [x] Add search/filter bar across all tabs
+- [x] Add compliance notification for non-daily/non-weekly WOs within 3 days of compliance
+- [x] Add mobile-responsive layout with collapsible sidebar
+- [x] Fix API server routing - ensure Express API starts correctly with Vite dev server
+- [x] Upgrade project to web-db-user template with tRPC + Manus Auth support
+- [x] Add comprehensive test suite for dashboard enhancements (22 tests passing)
+- [x] Add test script to package.json

@@ -14,21 +14,19 @@ async function startServer() {
   // Parse JSON bodies (50MB limit for large Excel uploads)
   app.use(express.json({ limit: "50mb" }));
 
-  // Mount API routes
+  // Mount API routes FIRST - before any static file serving
   app.use("/api", apiRouter);
 
-  // Serve static files from dist/public in production
-  const staticPath =
-    process.env.NODE_ENV === "production"
-      ? path.resolve(__dirname, "public")
-      : path.resolve(__dirname, "..", "dist", "public");
+  // Only serve static files in production
+  if (process.env.NODE_ENV === "production") {
+    const staticPath = path.resolve(__dirname, "public");
+    app.use(express.static(staticPath));
 
-  app.use(express.static(staticPath));
-
-  // Handle client-side routing - serve index.html for all routes
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(staticPath, "index.html"));
-  });
+    // Handle client-side routing - serve index.html for all non-API routes
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(staticPath, "index.html"));
+    });
+  }
 
   // In dev mode, Vite runs on 3000 and proxies /api to 3001
   // In production, the server serves everything on one port
