@@ -112,3 +112,7 @@
 - [x] Add Assigned To Name column to >90 Days Deferral table display
 - [x] Add Missing Deferral category (WOs with YES deferral not in any of the 6 deferral files)
 - [x] Add Missing Deferral counter at the top of the Deferral Dashboard
+- [x] Add total per data center summary row at the bottom of each category tab in Deferral Dashboard
+- [x] Move >90 Days Deferral from sidebar into T4-T8 Dashboard (replace existing >90 Days tab)
+- [x] Remove >90 Days Deferral sidebar entry
+- [x] Update all work order links to use EAM production URL (eamprod.thefacebook.com)

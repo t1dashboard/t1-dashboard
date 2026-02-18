@@ -156,7 +156,7 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
                       <tr key={wo["Work Order"]} className="border-b border-border/50 hover:bg-muted/30">
                         <td className="py-2 px-3">
                           <a
-                            href={`https://maximo.amazon.com/maximo/ui/maximo.jsp?event=loadapp&value=wotrack&uniqueid=${wo["Work Order"]}`}
+                            href={`https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=${wo["Work Order"]}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary hover:underline font-medium"
@@ -188,6 +188,25 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
             </div>
           </div>
         ))}
+
+        {/* Summary: Total per Data Center */}
+        {dataCenters.length > 1 && (
+          <div className="mt-4 pt-4 border-t-2 border-border">
+            <h4 className="text-sm font-semibold text-foreground mb-3 px-2">Summary by Data Center</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 px-2">
+              {dataCenters.map((dc) => (
+                <div key={dc} className="flex items-center justify-between px-3 py-2 bg-muted/40 rounded-md border border-border/50">
+                  <span className="text-sm font-medium text-foreground">{dc}</span>
+                  <span className="text-sm font-bold text-primary ml-2">{byDataCenter[dc].length}</span>
+                </div>
+              ))}
+              <div className="flex items-center justify-between px-3 py-2 bg-primary/10 rounded-md border border-primary/30">
+                <span className="text-sm font-bold text-foreground">Total</span>
+                <span className="text-sm font-bold text-primary ml-2">{orders.length}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

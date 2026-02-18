@@ -7,9 +7,9 @@ import { WorkOrder } from "@/types/workOrder";
 import T1NotInReadyTab from "@/components/T1NotInReadyTab";
 import T4T8NotInApprovedTab from "@/components/T4T8NotInApprovedTab";
 import WOsOver30DaysTab from "@/components/WOsOver30DaysTab";
-import WOsOver90DaysTab from "@/components/WOsOver90DaysTab";
+import DeferralDashboard from "@/pages/DeferralDashboard";
 import ComplianceCheckTab from "@/components/ComplianceCheckTab";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 interface T4T8DashboardProps {
   workOrders: WorkOrder[];
@@ -17,13 +17,6 @@ interface T4T8DashboardProps {
 
 export default function T4T8Dashboard({ workOrders }: T4T8DashboardProps) {
   const [activeTab, setActiveTab] = useState("t1notready");
-
-  // Handle redirect for >90 days tab
-  useEffect(() => {
-    if (activeTab === "over90days") {
-      window.location.href = "https://workdash-uzwepqa5.manus.space/pending";
-    }
-  }, [activeTab]);
 
   return (
     <div className="space-y-6">
@@ -56,7 +49,7 @@ export default function T4T8Dashboard({ workOrders }: T4T8DashboardProps) {
         </TabsContent>
 
         <TabsContent value="over90days" className="mt-6">
-          <WOsOver90DaysTab workOrders={workOrders} />
+          <DeferralDashboard workOrders={workOrders} />
         </TabsContent>
 
         <TabsContent value="compliance" className="mt-6">
