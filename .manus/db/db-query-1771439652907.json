@@ -1,0 +1,110 @@
+{
+  "query": "SELECT work_order_number, GROUP_CONCAT(DISTINCT deferral_category) as categories, COUNT(DISTINCT deferral_category) as cat_count FROM deferral_work_orders GROUP BY work_order_number HAVING cat_count > 1 LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT work_order_number, GROUP_CONCAT(DISTINCT deferral_category) as categories, COUNT(DISTINCT deferral_category) as cat_count FROM deferral_work_orders GROUP BY work_order_number HAVING cat_count > 1 LIMIT 20;",
+  "rows": [
+    {
+      "work_order_number": "2586088",
+      "categories": "Pending Procedure,Vendor Action Required",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "2586135",
+      "categories": "Vendor Action Required,Awaiting Invoice,Waiting Conditions",
+      "cat_count": "3"
+    },
+    {
+      "work_order_number": "2585810",
+      "categories": "Vendor Action Required,Pending Parts",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "2585668",
+      "categories": "Vendor Action Required,Awaiting Invoice,Waiting Conditions",
+      "cat_count": "3"
+    },
+    {
+      "work_order_number": "2585646",
+      "categories": "Vendor Action Required,Pending Parts",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "2585118",
+      "categories": "Vendor Action Required,Awaiting Invoice,Waiting Conditions",
+      "cat_count": "3"
+    },
+    {
+      "work_order_number": "2584970",
+      "categories": "Vendor Action Required,Pending Parts",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "3268846",
+      "categories": "Awaiting Invoice,Waiting Conditions,Pending Parts",
+      "cat_count": "3"
+    },
+    {
+      "work_order_number": "3243967",
+      "categories": "Awaiting Invoice,Waiting Conditions",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "3201591",
+      "categories": "Awaiting Invoice,Waiting Conditions",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "2923560",
+      "categories": "Awaiting Invoice,Waiting Conditions",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "2923559",
+      "categories": "Awaiting Invoice,Waiting Conditions",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "2923546",
+      "categories": "Awaiting Invoice,Waiting Conditions",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "2923547",
+      "categories": "Awaiting Invoice,Waiting Conditions",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "2923545",
+      "categories": "Awaiting Invoice,Waiting Conditions",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "2923543",
+      "categories": "Awaiting Invoice,Waiting Conditions",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "2923542",
+      "categories": "Awaiting Invoice,Waiting Conditions",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "2923544",
+      "categories": "Awaiting Invoice,Waiting Conditions",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "2618956",
+      "categories": "Awaiting Invoice,Waiting Conditions",
+      "cat_count": "2"
+    },
+    {
+      "work_order_number": "2618950",
+      "categories": "Awaiting Invoice,Waiting Conditions",
+      "cat_count": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "work_order_number\tcategories\tcat_count\n2586088\tPending Procedure,Vendor Action Required\t2\n2586135\tVendor Action Required,Awaiting Invoice,Waiting Conditions\t3\n2585810\tVendor Action Required,Pending Parts\t2\n2585668\tVendor Action Required,Awaiting Invoice,Waiting Conditions\t3\n2585646\tVendor Action Required,Pending Parts\t2\n2585118\tVendor Action Required,Awaiting Invoice,Waiting Conditions\t3\n2584970\tVendor Action Required,Pending Parts\t2\n3268846\tAwaiting Invoice,Waiting Conditions,Pending Parts\t3\n3243967\tAwaiting Invoice,Waiting Conditions\t2\n3201591\tAwaiting Invoice,Waiting Conditions\t2\n2923560\tAwaiting Invoice,Waiting Conditions\t2\n2923559\tAwaiting Invoice,Waiting Conditions\t2\n2923546\tAwaiting Invoice,Waiting Conditions\t2\n2923547\tAwaiting Invoice,Waiting Conditions\t2\n2923545\tAwaiting Invoice,Waiting Conditions\t2\n2923543\tAwaiting Invoice,Waiting Conditions\t2\n2923542\tAwaiting Invoice,Waiting Conditions\t2\n2923544\tAwaiting Invoice,Waiting Conditions\t2\n2618956\tAwaiting Invoice,Waiting Conditions\t2\n2618950\tAwaiting Invoice,Waiting Conditions\t2\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

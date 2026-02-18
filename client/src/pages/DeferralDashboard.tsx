@@ -14,7 +14,7 @@ const DEFERRAL_CATEGORIES = [
   { key: "oos-lock", label: "OOS Lock", match: "OOS Lock" },
 ] as const;
 
-const ALLOWED_STATUSES = ["Planning", "Ready to Schedule", "Approved"];
+const ALLOWED_STATUSES = ["Planning", "Ready to Schedule", "Approved", "Work Complete"];
 
 function calculateDaysOver90(schedStartDate: string | null | undefined): number | null {
   if (!schedStartDate) return null;
@@ -218,7 +218,7 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
         <div>
           <h2 className="text-2xl font-semibold text-foreground">{">"}90 Days Deferral</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {totalFiltered} work orders with status Planning, Ready to Schedule, or Approved that are {">"}90 days past scheduled start date
+            {totalFiltered} work orders with status Planning, Ready to Schedule, Approved, or Work Complete that are {">"}90 days past scheduled start date
           </p>
         </div>
         <div className="flex-shrink-0">

@@ -116,3 +116,5 @@
 - [x] Move >90 Days Deferral from sidebar into T4-T8 Dashboard (replace existing >90 Days tab)
 - [x] Remove >90 Days Deferral sidebar entry
 - [x] Update all work order links to use EAM production URL (eamprod.thefacebook.com)
+- [x] Allow work orders to appear in multiple deferral categories if present in multiple uploaded spreadsheets (already working - DB stores separate rows per category)
+- [x] Add 'Work Complete' status to allowed statuses in >90 Days Deferral tabs
