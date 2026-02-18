@@ -13,6 +13,7 @@ import T4T8Dashboard from "./T4T8Dashboard";
 import ScheduleLockTab from "@/components/ScheduleLockTab";
 import ScheduleLockReviewTab from "@/components/ScheduleLockReviewTab";
 import ScheduledLaborReviewTab from "@/components/ScheduledLaborReviewTab";
+import InboxReview from "./InboxReview";
 import {
   getWorkOrders, uploadWorkOrdersFile,
   getScheduledLabor, uploadScheduledLaborFile,
@@ -20,7 +21,7 @@ import {
 } from "@/lib/api";
 import { toast } from "sonner";
 
-type ActiveView = "upload" | "schedule-lock" | "schedule-lock-review" | "scheduled-labor-review" | "t1t3" | "t4t8";
+type ActiveView = "upload" | "schedule-lock" | "schedule-lock-review" | "scheduled-labor-review" | "inbox-review" | "t1t3" | "t4t8";
 
 export default function Home() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
@@ -256,21 +257,21 @@ export default function Home() {
           </button>
           
           <button
-            onClick={() => { setActiveView("scheduled-labor-review"); setMobileMenuOpen(false); }}
+            onClick={() => { setActiveView("inbox-review"); setMobileMenuOpen(false); }}
             className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
-              activeView === "scheduled-labor-review"
+              activeView === "inbox-review"
                 ? "bg-primary text-primary-foreground"
                 : "hover:bg-muted text-foreground"
             }`}
-            title={sidebarCollapsed ? "Scheduled Labor Review" : ""}
+            title={sidebarCollapsed ? "Inbox Review" : ""}
           >
             {!sidebarCollapsed ? (
               <>
-                <div className="font-medium">Scheduled Labor Review</div>
-                <div className="text-xs opacity-80 mt-1">Review scheduled labor</div>
+                <div className="font-medium">Inbox Review</div>
+                <div className="text-xs opacity-80 mt-1">Campaigns, labor & closure</div>
               </>
             ) : (
-              <div className="font-medium text-center text-xs">Labor</div>
+              <div className="font-medium text-center text-xs">Inbox</div>
             )}
           </button>
         </nav>
@@ -475,6 +476,10 @@ export default function Home() {
 
           {activeView === "scheduled-labor-review" && workOrders.length > 0 && (
             <ScheduledLaborReviewTab workOrders={workOrders} scheduledLabor={scheduledLabor} />
+          )}
+
+          {activeView === "inbox-review" && workOrders.length > 0 && (
+            <InboxReview workOrders={workOrders} scheduledLabor={scheduledLabor} />
           )}
 
           {activeView !== "upload" && workOrders.length === 0 && (

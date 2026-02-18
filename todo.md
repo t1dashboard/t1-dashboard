@@ -95,3 +95,8 @@
 - [x] Add T0 (this week) option to the Workload week dropdown
 - [x] Restrict Schedule Lock and Schedule Lock Review sidebar buttons to owner only (hidden behind PIN)
 - [x] Fix: Restore Schedule Lock/Review sidebar buttons for everyone; only hide lock/unlock action buttons behind PIN
+- [x] Add Inbox Review sidebar menu item
+- [x] Create WO Campaign sub-tab (filter by description containing "WO Campaign", show WO#, desc, assigned to, sched start, sched end, sorted by WO#, clickable links)
+- [x] Move Scheduled Labor Review from sidebar into Inbox Review as sub-tab
+- [x] Create WOs Awaiting Closure sub-tab (Work Complete status + Deferral Reason = No)
+- [x] Add In Process work orders section to bottom of calendar view in Workload tab

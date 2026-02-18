@@ -430,7 +430,23 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
       </Card>
       
       {viewMode === 'calendar' ? (
-        renderCalendarView()
+        <>
+          {renderCalendarView()}
+          {/* In Process Work Orders Section - shown below calendar */}
+          {inProcessOrders.length > 0 && (
+            <Card className="border-orange-500/30 bg-orange-50/30 dark:bg-orange-950/20">
+              <CardHeader className="border-b border-border pb-4">
+                <CardTitle className="text-xl font-medium">In Process Work Orders</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {inProcessOrders.length} work orders currently in process that span the {weekLabel} week
+                </p>
+              </CardHeader>
+              <CardContent className="p-0">
+                {renderTable(inProcessOrders)}
+              </CardContent>
+            </Card>
+          )}
+        </>
       ) : (
         <>
         {/* Risk Legend for List View */}
