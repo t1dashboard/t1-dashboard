@@ -146,6 +146,7 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
                     <th className="text-left py-2 px-3 font-medium">Description</th>
                     <th className="text-left py-2 px-3 font-medium">Data Center</th>
                     {showAssignedTo && <th className="text-left py-2 px-3 font-medium">Assigned To</th>}
+                    <th className="text-left py-2 px-3 font-medium">Sched Start Date</th>
                     <th className="text-right py-2 px-3 font-medium">Days {">"}90</th>
                   </tr>
                 </thead>
@@ -167,6 +168,7 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
                         <td className="py-2 px-3">{wo["Description"]}</td>
                         <td className="py-2 px-3 font-medium">{wo["Data Center"]}</td>
                         {showAssignedTo && <td className="py-2 px-3">{wo["Assigned To Name"] || "—"}</td>}
+                        <td className="py-2 px-3 text-muted-foreground">{wo["Sched. Start Date"] || "—"}</td>
                         <td className="py-2 px-3 text-right">
                           {daysOver !== null ? (
                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${

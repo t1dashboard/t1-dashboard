@@ -118,3 +118,4 @@
 - [x] Update all work order links to use EAM production URL (eamprod.thefacebook.com)
 - [x] Allow work orders to appear in multiple deferral categories if present in multiple uploaded spreadsheets (already working - DB stores separate rows per category)
 - [x] Add 'Work Complete' status to allowed statuses in >90 Days Deferral tabs
+- [x] Add Sched Start Date column to >90 Days Deferral category tables
