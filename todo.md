@@ -101,3 +101,14 @@
 - [x] Create WOs Awaiting Closure sub-tab (Work Complete status + Deferral Reason = No)
 - [x] Add In Process work orders section to bottom of calendar view in Workload tab
 - [x] Change WOs Awaiting Closure to show Supervisor Name instead of Assigned To Name
+- [x] Create database table for >90 Days Deferral upload data
+- [x] Add API endpoints for deferral data upload and query
+- [x] Add deferral upload area on the upload screen (6 separate category uploads)
+- [x] Create >90 Days Deferral page with 6 categories (Pending Procedure, Vendor Action Required, Awaiting Invoice, Waiting Conditions, Pending Parts, OOS Lock)
+- [x] Red count badges per category, organized by data center
+- [x] Filter to only show Planning, Ready to Schedule, Approved status WOs
+- [x] Display WO number, description, data center, days >90 since sched start date
+- [x] Add sidebar navigation entry for >90 Days Deferral
+- [x] Add Assigned To Name column to >90 Days Deferral table display
+- [x] Add Missing Deferral category (WOs with YES deferral not in any of the 6 deferral files)
+- [x] Add Missing Deferral counter at the top of the Deferral Dashboard

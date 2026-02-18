@@ -390,10 +390,15 @@ router.get("/upload-metadata", async (_req: Request, res: Response) => {
       query("SELECT MAX(uploaded_at) as last_uploaded FROM pm_codes"),
     ]);
 
+    const [defRows] = await Promise.all([
+      query("SELECT MAX(uploaded_at) as last_uploaded FROM deferral_work_orders"),
+    ]);
+
     res.json({
       workOrders: woRows[0]?.last_uploaded || null,
       scheduledLabor: slRows[0]?.last_uploaded || null,
       pmCodes: pmRows[0]?.last_uploaded || null,
+      deferralWorkOrders: defRows[0]?.last_uploaded || null,
     });
   } catch (error: any) {
     console.error("Error fetching upload metadata:", error);
@@ -451,6 +456,103 @@ router.get("/compliance-alerts", async (_req: Request, res: Response) => {
     res.json(alerts);
   } catch (error: any) {
     console.error("Error fetching compliance alerts:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================
+// Deferral Work Orders (>90 Days) - Separate Upload
+// ============================================================
+
+const VALID_DEFERRAL_CATEGORIES = [
+  "Pending Procedure",
+  "Vendor Action Required",
+  "Awaiting Invoice",
+  "Waiting Conditions",
+  "Pending Parts",
+  "OOS Lock",
+];
+
+router.post("/deferral-work-orders/upload", upload.single("file"), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const category = req.query.category as string;
+    if (!category || !VALID_DEFERRAL_CATEGORIES.includes(category)) {
+      return res.status(400).json({ error: `Invalid category. Must be one of: ${VALID_DEFERRAL_CATEGORIES.join(", ")}` });
+    }
+
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer", cellDates: true });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(worksheet, { raw: false, dateNF: "yyyy-mm-dd" }) as any[];
+
+    if (rows.length === 0) {
+      return res.status(400).json({ error: "No data found in spreadsheet" });
+    }
+
+    // Clear only this category's deferral work orders
+    await execute("DELETE FROM deferral_work_orders WHERE deferral_category = ?", [category]);
+
+    // Insert in batches of 100
+    const batchSize = 100;
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const batch = rows.slice(i, i + batchSize);
+      const values = batch.flatMap((wo: any) => [
+        String(wo["Work Order"] || ""),
+        wo["Description"] || null,
+        wo["Data Center"] || null,
+        wo["Sched. Start Date"] || null,
+        wo["Sched. End Date"] || null,
+        wo["Assigned To Name"] || null,
+        wo["Supervisor"] || null,
+        wo["Status"] || null,
+        wo["Type"] || null,
+        category,
+        wo["Priority"] || null,
+        wo["Equipment Description"] || null,
+        wo["Trade"] || null,
+      ]);
+
+      const sql = `INSERT INTO deferral_work_orders (
+        work_order_number, description, data_center, sched_start_date, sched_end_date,
+        assigned_to_name, supervisor, status, type, deferral_category,
+        priority, equipment_description, trade, uploaded_by
+      ) VALUES ${batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)").join(", ")}`;
+
+      await execute(sql, values);
+    }
+
+    res.json({ success: true, count: rows.length, category });
+  } catch (error: any) {
+    console.error("Error uploading deferral work orders:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/deferral-work-orders", async (_req: Request, res: Response) => {
+  try {
+    const rows = await query("SELECT * FROM deferral_work_orders ORDER BY data_center, work_order_number");
+    const workOrders = rows.map((row: any) => ({
+      "Work Order": row.work_order_number,
+      "Description": row.description,
+      "Data Center": row.data_center,
+      "Sched. Start Date": row.sched_start_date,
+      "Sched. End Date": row.sched_end_date,
+      "Assigned To Name": row.assigned_to_name,
+      "Supervisor": row.supervisor,
+      "Status": row.status,
+      "Type": row.type,
+      "Deferral Reason Selected": row.deferral_category,
+      "Priority": row.priority,
+      "Equipment Description": row.equipment_description,
+      "Trade": row.trade,
+    }));
+    res.json(workOrders);
+  } catch (error: any) {
+    console.error("Error fetching deferral work orders:", error);
     res.status(500).json({ error: error.message });
   }
 });

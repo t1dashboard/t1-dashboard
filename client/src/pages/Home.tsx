@@ -14,19 +14,23 @@ import ScheduleLockTab from "@/components/ScheduleLockTab";
 import ScheduleLockReviewTab from "@/components/ScheduleLockReviewTab";
 import ScheduledLaborReviewTab from "@/components/ScheduledLaborReviewTab";
 import InboxReview from "./InboxReview";
+import DeferralDashboard from "./DeferralDashboard";
 import {
   getWorkOrders, uploadWorkOrdersFile,
   getScheduledLabor, uploadScheduledLaborFile,
   getPMCodes, uploadPMCodesFile,
+  getDeferralWorkOrders, uploadDeferralWorkOrdersFile,
+  DeferralWorkOrder, DeferralCategory,
 } from "@/lib/api";
 import { toast } from "sonner";
 
-type ActiveView = "upload" | "schedule-lock" | "schedule-lock-review" | "scheduled-labor-review" | "inbox-review" | "t1t3" | "t4t8";
+type ActiveView = "upload" | "schedule-lock" | "schedule-lock-review" | "scheduled-labor-review" | "inbox-review" | "deferral" | "t1t3" | "t4t8";
 
 export default function Home() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [scheduledLabor, setScheduledLabor] = useState<ScheduledLabor[]>([]);
   const [pmCodes, setPmCodes] = useState<PMCode[]>([]);
+  const [deferralWorkOrders, setDeferralWorkOrders] = useState<DeferralWorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
 
@@ -54,14 +58,16 @@ export default function Home() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [wo, sl, pm] = await Promise.all([
+        const [wo, sl, pm, dwo] = await Promise.all([
           getWorkOrders(),
           getScheduledLabor(),
           getPMCodes(),
+          getDeferralWorkOrders(),
         ]);
         setWorkOrders(wo);
         setScheduledLabor(sl);
         setPmCodes(pm);
+        setDeferralWorkOrders(dwo);
         if (wo.length > 0) {
           setActiveView("t1t3");
         }
@@ -125,6 +131,24 @@ export default function Home() {
     } catch (error: any) {
       console.error("Error uploading PM codes:", error);
       toast.error("Failed to upload PM codes: " + error.message);
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleDeferralCategoryUpload = async (e: ChangeEvent<HTMLInputElement>, category: DeferralCategory) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(`deferral-${category}`);
+    try {
+      const result = await uploadDeferralWorkOrdersFile(file, category);
+      const dwo = await getDeferralWorkOrders();
+      setDeferralWorkOrders(dwo);
+      toast.success(`Uploaded ${result.count} ${category} work orders`);
+    } catch (error: any) {
+      console.error(`Error uploading ${category} work orders:`, error);
+      toast.error(`Failed to upload ${category}: ` + error.message);
     } finally {
       setUploading(null);
     }
@@ -272,6 +296,25 @@ export default function Home() {
               </>
             ) : (
               <div className="font-medium text-center text-xs">Inbox</div>
+            )}
+          </button>
+          
+          <button
+            onClick={() => { setActiveView("deferral"); setMobileMenuOpen(false); }}
+            className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
+              activeView === "deferral"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-foreground"
+            }`}
+            title={sidebarCollapsed ? ">90 Days Deferral" : ""}
+          >
+            {!sidebarCollapsed ? (
+              <>
+                <div className="font-medium">{">"}90 Days Deferral</div>
+                <div className="text-xs opacity-80 mt-1">Deferred work orders</div>
+              </>
+            ) : (
+              <div className="font-medium text-center text-xs">{">"}90</div>
             )}
           </button>
         </nav>
@@ -435,6 +478,47 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Deferral Work Orders Upload - 6 Categories */}
+                <div className="mt-6">
+                  <label className="block text-sm font-medium mb-3">{">"}90 Days Deferral Work Orders</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {(["Pending Procedure", "Vendor Action Required", "Awaiting Invoice", "Waiting Conditions", "Pending Parts", "OOS Lock"] as DeferralCategory[]).map((cat) => {
+                      const catCount = deferralWorkOrders.filter(wo => wo["Deferral Reason Selected"] === cat).length;
+                      const isUploading = uploading === `deferral-${cat}`;
+                      return (
+                        <div key={cat}>
+                          <label className={`flex flex-col items-center justify-center h-28 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors ${isUploading ? "opacity-50 pointer-events-none" : ""}`}>
+                            {isUploading ? (
+                              <>
+                                <Loader2 className="h-5 w-5 text-muted-foreground mb-1 animate-spin" />
+                                <span className="text-xs text-muted-foreground">Uploading...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-5 w-5 text-muted-foreground mb-1" />
+                                <span className="text-xs text-muted-foreground text-center px-2">{cat}</span>
+                              </>
+                            )}
+                            <input
+                              type="file"
+                              accept=".xlsx,.xls"
+                              onChange={(e) => handleDeferralCategoryUpload(e, cat)}
+                              className="hidden"
+                              disabled={uploading !== null}
+                            />
+                          </label>
+                          {catCount > 0 && (
+                            <p className="text-xs text-green-600 mt-1 text-center">✓ {catCount} loaded</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {deferralWorkOrders.length > 0 && (
+                    <p className="text-xs text-green-600 mt-2">✓ {deferralWorkOrders.length} total deferral work orders loaded</p>
+                  )}
+                </div>
+
                 <Card className="bg-muted/30">
                   <CardContent className="py-4">
                     <div className="flex items-start gap-3">
@@ -482,7 +566,11 @@ export default function Home() {
             <InboxReview workOrders={workOrders} scheduledLabor={scheduledLabor} />
           )}
 
-          {activeView !== "upload" && workOrders.length === 0 && (
+          {activeView === "deferral" && (
+            <DeferralDashboard workOrders={workOrders} />
+          )}
+
+          {activeView !== "upload" && activeView !== "deferral" && workOrders.length === 0 && (
             <Card>
               <CardContent className="py-12 text-center">
                 <FileSpreadsheet className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

@@ -150,6 +150,54 @@ export async function getComplianceAlerts(): Promise<ComplianceAlert[]> {
   return res.json();
 }
 
+// ============================================================
+// Deferral Work Orders (>90 Days)
+// ============================================================
+
+export interface DeferralWorkOrder {
+  "Work Order": string;
+  "Description": string;
+  "Data Center": string;
+  "Sched. Start Date": string;
+  "Sched. End Date": string;
+  "Assigned To Name": string;
+  "Supervisor": string;
+  "Status": string;
+  "Type": string;
+  "Deferral Reason Selected": string;
+  "Priority": string;
+  "Equipment Description": string;
+  "Trade": string;
+}
+
+export type DeferralCategory = 
+  | "Pending Procedure"
+  | "Vendor Action Required"
+  | "Awaiting Invoice"
+  | "Waiting Conditions"
+  | "Pending Parts"
+  | "OOS Lock";
+
+export async function uploadDeferralWorkOrdersFile(file: File, category: DeferralCategory): Promise<{ success: boolean; count: number; category: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${API_BASE}/deferral-work-orders/upload?category=${encodeURIComponent(category)}`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Upload failed with status ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function getDeferralWorkOrders(): Promise<DeferralWorkOrder[]> {
+  const res = await fetch(`${API_BASE}/deferral-work-orders`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function unlockWorkOrders(workOrderNumbers: string[]): Promise<{ success: boolean }> {
   const res = await fetch(`${API_BASE}/schedule-locks/unlock`, {
     method: "POST",
