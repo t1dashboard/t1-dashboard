@@ -62,6 +62,7 @@ router.post("/work-orders/upload", upload.single("file"), async (req: Request, r
         wo["PM Code"] || null,
         wo["Assigned To"] || null,
         wo["Date Created"] || null,
+        wo["Supervisor"] || null,
       ]);
 
       const sql = `INSERT INTO work_orders (
@@ -71,8 +72,8 @@ router.post("/work-orders/upload", upload.single("file"), async (req: Request, r
         route, sched_end_date, production_impact,
         compliance_window_start_date, compliance_window_end_date,
         discipline, organization, department, equipment, class,
-        reported_by, pm_code, assigned_to, date_created, uploaded_by
-      ) VALUES ${batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)").join(", ")}`;
+        reported_by, pm_code, assigned_to, date_created, supervisor, uploaded_by
+      ) VALUES ${batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)").join(", ")}`;
 
       await execute(sql, values);
     }
@@ -117,6 +118,7 @@ router.get("/work-orders", async (_req: Request, res: Response) => {
       "Date Created": row.date_created,
       "Deferral Reason Selected": row.deferral_reason_selected,
       "Trade": row.trade,
+      "Supervisor": row.supervisor,
     }));
     res.json(workOrders);
   } catch (error: any) {

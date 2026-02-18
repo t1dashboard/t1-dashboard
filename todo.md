@@ -100,3 +100,4 @@
 - [x] Move Scheduled Labor Review from sidebar into Inbox Review as sub-tab
 - [x] Create WOs Awaiting Closure sub-tab (Work Complete status + Deferral Reason = No)
 - [x] Add In Process work orders section to bottom of calendar view in Workload tab
+- [x] Change WOs Awaiting Closure to show Supervisor Name instead of Assigned To Name

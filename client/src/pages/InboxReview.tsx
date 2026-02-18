@@ -151,7 +151,7 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
                         <th className="text-left py-3 px-4 font-medium">Work Order</th>
                         <th className="text-left py-3 px-4 font-medium">Description</th>
                         <th className="text-left py-3 px-4 font-medium">Data Center</th>
-                        <th className="text-left py-3 px-4 font-medium">Assigned To</th>
+                        <th className="text-left py-3 px-4 font-medium">Supervisor</th>
                         <th className="text-left py-3 px-4 font-medium">Sched Start Date</th>
                         <th className="text-left py-3 px-4 font-medium">Status</th>
                         <th className="text-left py-3 px-4 font-medium">Deferral Reason</th>
@@ -172,7 +172,7 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
                           </td>
                           <td className="py-3 px-4">{wo["Description"]}</td>
                           <td className="py-3 px-4 font-medium">{wo["Data Center"]}</td>
-                          <td className="py-3 px-4">{wo["Assigned To Name"]}</td>
+                          <td className="py-3 px-4">{wo["Supervisor"] || "—"}</td>
                           <td className="py-3 px-4">{formatDate(wo["Sched. Start Date"])}</td>
                           <td className="py-3 px-4">{wo["Status"]}</td>
                           <td className="py-3 px-4">{wo["Deferral Reason Selected"]}</td>
