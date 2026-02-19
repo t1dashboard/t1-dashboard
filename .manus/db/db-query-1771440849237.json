@@ -1,0 +1,46 @@
+{
+  "query": "SELECT work_order_number, deferral_reason_selected, status, data_center FROM work_orders WHERE work_order_number IN ('2585086', '2586022', '2585778', '2595531', '2585827', '2585578');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT work_order_number, deferral_reason_selected, status, data_center FROM work_orders WHERE work_order_number IN ('2585086', '2586022', '2585778', '2595531', '2585827', '2585578');",
+  "rows": [
+    {
+      "work_order_number": "2585086",
+      "deferral_reason_selected": "YES",
+      "status": "Planning",
+      "data_center": "MWG6"
+    },
+    {
+      "work_order_number": "2585578",
+      "deferral_reason_selected": "YES",
+      "status": "Planning",
+      "data_center": "NCG5"
+    },
+    {
+      "work_order_number": "2585778",
+      "deferral_reason_selected": "YES",
+      "status": "Planning",
+      "data_center": "MWGGH1"
+    },
+    {
+      "work_order_number": "2585827",
+      "deferral_reason_selected": "YES",
+      "status": "Planning",
+      "data_center": "MWGW1"
+    },
+    {
+      "work_order_number": "2586022",
+      "deferral_reason_selected": "YES",
+      "status": "Planning",
+      "data_center": "MWG6"
+    },
+    {
+      "work_order_number": "2595531",
+      "deferral_reason_selected": "YES",
+      "status": "Planning",
+      "data_center": "MWGSS"
+    }
+  ],
+  "messages": [],
+  "stdout": "work_order_number\tdeferral_reason_selected\tstatus\tdata_center\n2585086\tYES\tPlanning\tMWG6\n2585578\tYES\tPlanning\tNCG5\n2585778\tYES\tPlanning\tMWGGH1\n2585827\tYES\tPlanning\tMWGW1\n2586022\tYES\tPlanning\tMWG6\n2595531\tYES\tPlanning\tMWGSS\n",
+  "stderr": "",
+  "execution_time_ms": 81
+}

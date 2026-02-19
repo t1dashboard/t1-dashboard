@@ -15,6 +15,7 @@ const DEFERRAL_CATEGORIES = [
 ] as const;
 
 const ALLOWED_STATUSES = ["Planning", "Ready to Schedule", "Approved", "Work Complete"];
+const EXCLUDED_STATUSES = ["Cancelled"];
 
 function calculateDaysOver90(schedStartDate: string | null | undefined): number | null {
   if (!schedStartDate) return null;
@@ -49,10 +50,12 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
     loadData();
   }, []);
 
-  // Filter deferral orders to only allowed statuses and >90 days
+  // Filter deferral orders to only allowed statuses, exclude Cancelled, and >90 days
   const filteredOrders = useMemo(() => {
     return deferralOrders.filter((wo) => {
       const status = (wo["Status"] || "").trim();
+      // Exclude cancelled work orders
+      if (EXCLUDED_STATUSES.some(s => status.toLowerCase() === s.toLowerCase())) return false;
       if (!ALLOWED_STATUSES.some(s => status.toLowerCase() === s.toLowerCase())) return false;
       const daysOver = calculateDaysOver90(wo["Sched. Start Date"]);
       return daysOver !== null && daysOver > 0;
@@ -73,19 +76,29 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
     return result;
   }, [filteredOrders]);
 
-  // Missing Deferral: WOs from main data with YES deferral not in any of the 6 deferral files
+  // Missing Deferral: WOs from main data with an actual deferral category code (not just "YES")
+  // that are NOT in any of the 6 deferral files
   const missingDeferralOrders = useMemo(() => {
     // Get all WO numbers from the deferral files
     const deferralWONumbers = new Set(
       deferralOrders.map(wo => String(wo["Work Order"]).trim())
     );
 
-    // Find main WOs with deferral = YES that are NOT in any deferral file
+    // Known deferral category values (actual codes, not just "YES")
+    const knownDeferralCategories = DEFERRAL_CATEGORIES.map(c => c.match.toLowerCase());
+
+    // Find main WOs with a real deferral code that are NOT in any deferral file
     return workOrders
       .filter((wo) => {
         const deferral = (wo["Deferral Reason Selected"] || "").trim().toLowerCase();
-        if (deferral !== "yes") return false;
+        // Only include WOs that have an actual deferral category code
+        // Exclude "yes" (no specific category) and empty/no values
+        if (!deferral || deferral === "no" || deferral === "yes") return false;
+        // Must be a recognized deferral category
+        if (!knownDeferralCategories.includes(deferral)) return false;
         const status = (wo["Status"] || "").trim();
+        // Exclude cancelled
+        if (EXCLUDED_STATUSES.some(s => status.toLowerCase() === s.toLowerCase())) return false;
         if (!ALLOWED_STATUSES.some(s => status.toLowerCase() === s.toLowerCase())) return false;
         const woNum = String(wo["Work Order"]).trim();
         return !deferralWONumbers.has(woNum);

@@ -1,0 +1,8 @@
+{
+  "query": "SELECT work_order, deferral_reason_selected, status, data_center FROM work_orders WHERE work_order IN (2585086, 2586022, 2585778, 2595531, 2585827, 2585578);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT work_order, deferral_reason_selected, status, data_center FROM work_orders WHERE work_order IN (2585086, 2586022, 2585778, 2595531, 2585827, 2585578);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'work_order' in 'where clause'"
+  ]
+}

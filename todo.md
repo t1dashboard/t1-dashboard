@@ -119,3 +119,8 @@
 - [x] Allow work orders to appear in multiple deferral categories if present in multiple uploaded spreadsheets (already working - DB stores separate rows per category)
 - [x] Add 'Work Complete' status to allowed statuses in >90 Days Deferral tabs
 - [x] Add Sched Start Date column to >90 Days Deferral category tables
+- [x] Fix Missing Deferral logic — WOs showing as missing but they actually have deferral categories (mostly Waiting Conditions) — resolved by uploading Waiting Conditions spreadsheet
+- [x] Upload 8 WOs from user spreadsheet as Waiting Conditions deferral category
+- [x] Exclude work orders with status "Cancelled" from >90 Days Deferral tabs
+- [x] Only show work orders where sched start date is actually >90 days in the past (exclude positive/future dates)
+- [x] Fix Missing Deferral logic — only show WOs with actual deferral code, not "YES" without a category (mark as "No" deferral)
