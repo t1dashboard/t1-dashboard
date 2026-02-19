@@ -125,3 +125,4 @@
 - [x] Only show work orders where sched start date is actually >90 days in the past (exclude positive/future dates)
 - [x] Fix Missing Deferral logic — only show WOs with actual deferral code, not "YES" without a category (mark as "No" deferral)
 - [x] Change Days >90 column to show total days since sched start date instead of days beyond 90-day threshold
+- [x] Fix table column alignment across data center sections — use consistent fixed column widths so all sections align

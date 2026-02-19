@@ -152,7 +152,15 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
               {dc} ({byDataCenter[dc].length})
             </h4>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm table-fixed">
+                <colgroup>
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: showAssignedTo ? "33%" : "43%" }} />
+                  <col style={{ width: "10%" }} />
+                  {showAssignedTo && <col style={{ width: "15%" }} />}
+                  <col style={{ width: "13%" }} />
+                  <col style={{ width: "12%" }} />
+                </colgroup>
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-2 px-3 font-medium">Work Order</th>
@@ -178,7 +186,7 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
                             {wo["Work Order"]}
                           </a>
                         </td>
-                        <td className="py-2 px-3">{wo["Description"]}</td>
+                        <td className="py-2 px-3 truncate">{wo["Description"]}</td>
                         <td className="py-2 px-3 font-medium">{wo["Data Center"]}</td>
                         {showAssignedTo && <td className="py-2 px-3">{wo["Assigned To Name"] || "—"}</td>}
                         <td className="py-2 px-3 text-muted-foreground">{wo["Sched. Start Date"] || "—"}</td>
