@@ -19,12 +19,13 @@ export default function ScheduledLaborReviewTab({ workOrders, scheduledLabor }: 
     // Create a set of work order numbers from scheduled labor
     const scheduledWONumbers = new Set(scheduledLabor.map(sl => String(sl.workOrderNumber)));
 
-    // Find matching work orders and remove duplicates
+    // Find matching work orders with Ready status and remove duplicates
     const uniqueWorkOrders = new Map<string, WorkOrder>();
     
     workOrders.forEach(wo => {
       const woNumber = String(wo["Work Order"]);
-      if (scheduledWONumbers.has(woNumber) && !uniqueWorkOrders.has(woNumber)) {
+      const status = (wo["Status"] || "").toUpperCase();
+      if (scheduledWONumbers.has(woNumber) && !uniqueWorkOrders.has(woNumber) && status === "READY") {
         uniqueWorkOrders.set(woNumber, wo);
       }
     });
@@ -53,14 +54,8 @@ export default function ScheduledLaborReviewTab({ workOrders, scheduledLabor }: 
         })
       }));
 
-    // Count Ready status work orders
-    const readyCount = matchedWorkOrders.filter(wo => 
-      wo["Status"]?.toUpperCase() === "READY"
-    ).length;
-
     return {
       groups: sortedGroups,
-      readyCount,
       totalCount: matchedWorkOrders.length
     };
   }, [workOrders, scheduledLabor]);
@@ -79,20 +74,10 @@ export default function ScheduledLaborReviewTab({ workOrders, scheduledLabor }: 
           <CardTitle>Scheduled Labor Summary</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div>
-              <div className="text-2xl font-bold">{scheduledLaborAnalysis.totalCount}</div>
-              <div className="text-sm text-muted-foreground">Total Work Orders</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-red-600">{scheduledLaborAnalysis.readyCount}</div>
-              <div className="text-sm text-muted-foreground">Ready Status</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-orange-600">
-                {scheduledLaborAnalysis.totalCount - scheduledLaborAnalysis.readyCount}
-              </div>
-              <div className="text-sm text-muted-foreground">Other Status</div>
+              <div className="text-2xl font-bold text-red-600">{scheduledLaborAnalysis.totalCount}</div>
+              <div className="text-sm text-muted-foreground">Work Orders in Ready Status</div>
             </div>
           </div>
         </CardContent>
@@ -103,7 +88,7 @@ export default function ScheduledLaborReviewTab({ workOrders, scheduledLabor }: 
         <CardHeader>
           <CardTitle>Work Orders Breakdown</CardTitle>
           <p className="text-sm text-muted-foreground">
-            All work orders from the scheduled labor file
+            Work orders from the scheduled labor file with Ready status only
           </p>
         </CardHeader>
         <CardContent>
