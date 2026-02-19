@@ -129,3 +129,5 @@
 - [x] Fix table column alignment in ALL dashboard tabs (T1-T3, T4-T8 Not in Approved, etc.)
 - [x] WO Campaign: Group by similar description, sort by sched start date oldest first within each group
 - [x] Scheduled Labor Review: Only include work orders with Ready status
+- [x] Revert WO Campaign to flat table (no grouping by description), sort by sched start date oldest first
+- [x] Exclude Work Complete and Closed status work orders from WO Campaign
