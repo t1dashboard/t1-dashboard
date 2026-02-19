@@ -115,7 +115,13 @@ export default function ScheduledLaborReviewTab({ workOrders, scheduledLabor }: 
                     {group.person} ({group.workOrders.length} work orders)
                   </h3>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm table-fixed">
+                      <colgroup>
+                        <col style={{ width: "12%" }} />
+                        <col style={{ width: "12%" }} />
+                        <col style={{ width: "60%" }} />
+                        <col style={{ width: "16%" }} />
+                      </colgroup>
                       <thead>
                         <tr className="border-b">
                           <th className="text-left p-2">Data Center</th>

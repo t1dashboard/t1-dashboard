@@ -68,7 +68,15 @@ export default function T2NotInReadyTab({ workOrders }: T2NotInReadyTabProps) {
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full table-fixed">
+            <colgroup>
+              <col style={{ width: "9%" }} />
+              <col style={{ width: "33%" }} />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "14%" }} />
+              <col style={{ width: "20%" }} />
+              <col style={{ width: "14%" }} />
+            </colgroup>
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>
@@ -96,7 +104,7 @@ export default function T2NotInReadyTab({ workOrders }: T2NotInReadyTabProps) {
                       {wo["Work Order"]}
                     </a>
                   </td>
-                  <td className="py-3 px-4 text-sm">{wo["Description"]}</td>
+                  <td className="py-3 px-4 text-sm truncate">{wo["Description"]}</td>
                   <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
                   <td className="py-3 px-4 text-sm">
                     {formatDate(wo["Sched. Start Date"])}

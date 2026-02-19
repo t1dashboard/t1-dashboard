@@ -126,3 +126,4 @@
 - [x] Fix Missing Deferral logic — only show WOs with actual deferral code, not "YES" without a category (mark as "No" deferral)
 - [x] Change Days >90 column to show total days since sched start date instead of days beyond 90-day threshold
 - [x] Fix table column alignment across data center sections — use consistent fixed column widths so all sections align
+- [x] Fix table column alignment in ALL dashboard tabs (T1-T3, T4-T8 Not in Approved, etc.)

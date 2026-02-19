@@ -87,7 +87,14 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
             <CardContent>
               {woCampaignOrders.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm table-fixed">
+                    <colgroup>
+                      <col style={{ width: "10%" }} />
+                      <col style={{ width: "40%" }} />
+                      <col style={{ width: "20%" }} />
+                      <col style={{ width: "15%" }} />
+                      <col style={{ width: "15%" }} />
+                    </colgroup>
                     <thead>
                       <tr className="border-b border-border bg-muted/30">
                         <th className="text-left py-3 px-4 font-medium">Work Order</th>
@@ -145,7 +152,16 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
             <CardContent>
               {awaitingClosureOrders.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm table-fixed">
+                    <colgroup>
+                      <col style={{ width: "9%" }} />
+                      <col style={{ width: "28%" }} />
+                      <col style={{ width: "9%" }} />
+                      <col style={{ width: "14%" }} />
+                      <col style={{ width: "14%" }} />
+                      <col style={{ width: "12%" }} />
+                      <col style={{ width: "14%" }} />
+                    </colgroup>
                     <thead>
                       <tr className="border-b border-border bg-muted/30">
                         <th className="text-left py-3 px-4 font-medium">Work Order</th>

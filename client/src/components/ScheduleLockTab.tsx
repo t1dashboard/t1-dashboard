@@ -379,7 +379,16 @@ export default function ScheduleLockTab({ workOrders, canLock = false }: Schedul
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: "4%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "33%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "14%" }} />
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "12%" }} />
+              </colgroup>
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left py-3 px-4 w-12">

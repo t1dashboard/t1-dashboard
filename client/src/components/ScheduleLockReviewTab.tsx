@@ -186,7 +186,19 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full table-fixed">
+                  <colgroup>
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "20%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "16%" }} />
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "10%" }} />
+                  </colgroup>
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>
@@ -265,7 +277,19 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full table-fixed">
+                  <colgroup>
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "20%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "16%" }} />
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "10%" }} />
+                  </colgroup>
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>

@@ -174,7 +174,17 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
 
   const renderTable = (orders: WorkOrder[]) => (
     <div className="overflow-x-auto">
-      <table className="w-full">
+      <table className="w-full table-fixed">
+        <colgroup>
+          <col style={{ width: "8%" }} />
+          <col style={{ width: "24%" }} />
+          <col style={{ width: "9%" }} />
+          <col style={{ width: "12%" }} />
+          <col style={{ width: "12%" }} />
+          <col style={{ width: "15%" }} />
+          <col style={{ width: "12%" }} />
+          <col style={{ width: "8%" }} />
+        </colgroup>
         <thead>
           <tr className="border-b border-border bg-muted/30">
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>
@@ -206,7 +216,7 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
                     {wo["Work Order"]}
                   </a>
                 </td>
-                <td className="py-3 px-4 text-sm">{wo["Description"]}</td>
+                <td className="py-3 px-4 text-sm truncate">{wo["Description"]}</td>
                 <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
                 <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
                 <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. End Date"])}</td>

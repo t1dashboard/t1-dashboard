@@ -160,7 +160,20 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-fixed">
+              <colgroup>
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "7%" }} />
+              </colgroup>
               <thead className="bg-muted">
                 <tr>
                   <th className="py-3 px-4 text-left font-medium">Data Center</th>
@@ -202,7 +215,7 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
                           {wo["Work Order"]}
                         </a>
                       </td>
-                      <td className="py-3 px-4">{wo["Description"]}</td>
+                      <td className="py-3 px-4 truncate">{wo["Description"]}</td>
                       <td className="py-3 px-4">{wo["Assigned To Name"]}</td>
                       <td className="py-3 px-4">{wo["Status"]}</td>
                       <td className="py-3 px-4">
