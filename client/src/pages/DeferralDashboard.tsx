@@ -17,7 +17,7 @@ const DEFERRAL_CATEGORIES = [
 const ALLOWED_STATUSES = ["Planning", "Ready to Schedule", "Approved", "Work Complete"];
 const EXCLUDED_STATUSES = ["Cancelled"];
 
-function calculateDaysOver90(schedStartDate: string | null | undefined): number | null {
+function calculateDaysSinceStart(schedStartDate: string | null | undefined): number | null {
   if (!schedStartDate) return null;
   const d = new Date(schedStartDate);
   if (isNaN(d.getTime())) return null;
@@ -25,7 +25,7 @@ function calculateDaysOver90(schedStartDate: string | null | undefined): number 
   const diffMs = now.getTime() - d.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   if (diffDays <= 90) return null;
-  return diffDays - 90;
+  return diffDays;
 }
 
 interface DeferralDashboardProps {
@@ -57,8 +57,8 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
       // Exclude cancelled work orders
       if (EXCLUDED_STATUSES.some(s => status.toLowerCase() === s.toLowerCase())) return false;
       if (!ALLOWED_STATUSES.some(s => status.toLowerCase() === s.toLowerCase())) return false;
-      const daysOver = calculateDaysOver90(wo["Sched. Start Date"]);
-      return daysOver !== null && daysOver > 0;
+      const totalDays = calculateDaysSinceStart(wo["Sched. Start Date"]);
+      return totalDays !== null && totalDays > 90;
     });
   }, [deferralOrders]);
 
@@ -160,12 +160,12 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
                     <th className="text-left py-2 px-3 font-medium">Data Center</th>
                     {showAssignedTo && <th className="text-left py-2 px-3 font-medium">Assigned To</th>}
                     <th className="text-left py-2 px-3 font-medium">Sched Start Date</th>
-                    <th className="text-right py-2 px-3 font-medium">Days {">"}90</th>
+                    <th className="text-right py-2 px-3 font-medium">Days Since Start</th>
                   </tr>
                 </thead>
                 <tbody>
                   {byDataCenter[dc].map((wo: any) => {
-                    const daysOver = calculateDaysOver90(wo["Sched. Start Date"]);
+                    const totalDays = calculateDaysSinceStart(wo["Sched. Start Date"]);
                     return (
                       <tr key={wo["Work Order"]} className="border-b border-border/50 hover:bg-muted/30">
                         <td className="py-2 px-3">
@@ -183,13 +183,13 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
                         {showAssignedTo && <td className="py-2 px-3">{wo["Assigned To Name"] || "—"}</td>}
                         <td className="py-2 px-3 text-muted-foreground">{wo["Sched. Start Date"] || "—"}</td>
                         <td className="py-2 px-3 text-right">
-                          {daysOver !== null ? (
+                          {totalDays !== null ? (
                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${
-                              daysOver > 60 ? "bg-red-100 text-red-700" :
-                              daysOver > 30 ? "bg-orange-100 text-orange-700" :
+                              totalDays > 180 ? "bg-red-100 text-red-700" :
+                              totalDays > 120 ? "bg-orange-100 text-orange-700" :
                               "bg-yellow-100 text-yellow-700"
                             }`}>
-                              +{daysOver} days
+                              {totalDays} days
                             </span>
                           ) : (
                             <span className="text-muted-foreground text-xs">N/A</span>
