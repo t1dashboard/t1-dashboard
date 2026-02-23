@@ -140,3 +140,4 @@
 - [x] Fix lock week offset: lock_week is when lock was created, WOs are planned for the following week. Use lock_week from 2 weeks ago for previous week review.
 - [x] Schedule Lock Review: Exclude WOs with shift code GNSF, GNSG, GNSH, GNSI, GNSJ unless description contains LOTO or PTW
 - [x] Make week headers larger across the entire dashboard
+- [x] Schedule Lock Review: Exclude 'In Process' status from Incomplete Locked Orders section

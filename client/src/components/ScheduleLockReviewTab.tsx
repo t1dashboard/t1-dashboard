@@ -211,7 +211,8 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       if (!currentWO) return true;
       
       const status = currentWO?.["Status"]?.toUpperCase() || "";
-      return status !== "WORK COMPLETE" && status !== "CLOSED";
+      // Exclude Work Complete, Closed, and In Process
+      return status !== "WORK COMPLETE" && status !== "CLOSED" && status !== "IN PROCESS";
     }).sort((a, b) => {
       const dcA = a.dataCenter || "";
       const dcB = b.dataCenter || "";
