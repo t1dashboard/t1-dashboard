@@ -1,0 +1,26 @@
+{
+  "query": "SELECT * FROM schedule_locks WHERE work_order_number = '2593164'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT * FROM schedule_locks WHERE work_order_number = '2593164'",
+  "rows": [
+    {
+      "id": "30002",
+      "work_order_number": "2593164",
+      "description": "FIRE HYDRANT ANNUAL PM",
+      "data_center": "MWG",
+      "sched_start_date": "2/17/26",
+      "assigned_to_name": "Rodney Burnett",
+      "status": "Ready",
+      "type": "Preventive maintenance",
+      "equipment_description": "MWG",
+      "priority": "2 - Preventive maintenance, planned corrective work",
+      "shift": "GNSB",
+      "lock_week": "2026-02-09",
+      "locked_at": "2026-02-13 14:48:22",
+      "locked_by": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\twork_order_number\tdescription\tdata_center\tsched_start_date\tassigned_to_name\tstatus\ttype\tequipment_description\tpriority\tshift\tlock_week\tlocked_at\tlocked_by\n30002\t2593164\tFIRE HYDRANT ANNUAL PM\tMWG\t2/17/26\tRodney Burnett\tReady\tPreventive maintenance\tMWG\t2 - Preventive maintenance, planned corrective work\tGNSB\t2026-02-09\t2026-02-13 14:48:22\t0\n",
+  "stderr": "",
+  "execution_time_ms": 200
+}

@@ -1,0 +1,8 @@
+{
+  "query": "SELECT work_order_number, description, data_center, sched_start_date, assigned_to, status, lock_week FROM schedule_locks WHERE work_order_number = '2593164'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT work_order_number, description, data_center, sched_start_date, assigned_to, status, lock_week FROM schedule_locks WHERE work_order_number = '2593164'",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'assigned_to' in 'field list'"
+  ]
+}

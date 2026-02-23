@@ -83,6 +83,9 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       return lockDate >= lastMonday && lockDate <= lastSunday;
     });
 
+    // Use ALL locked WO numbers (across all weeks) to exclude from unplanned list
+    // A WO locked in any week should never appear as "unplanned"
+    const allLockedWONumbers = new Set(lockedOrders.map(wo => String(wo.workOrderNumber)));
     const lockedWONumbers = new Set(previousWeekLocked.map(wo => String(wo.workOrderNumber)));
 
     // Find unplanned work orders (scheduled for previous week but not locked)
@@ -111,7 +114,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       const isInPreviousWeek = schedDate && schedDate >= lastMonday && schedDate <= lastSunday;
       
       const woNumber = String(wo["Work Order"]);
-      const wasNotLocked = !lockedWONumbers.has(woNumber);
+      const wasNotLocked = !allLockedWONumbers.has(woNumber);
       
       return isInPreviousWeek && wasNotLocked;
     });

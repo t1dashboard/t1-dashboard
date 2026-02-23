@@ -136,3 +136,4 @@
 - [x] Unplanned Schedule Review: Include work orders with door or wall repairs in description
 - [x] Unplanned Schedule Review: Separate LOTO/PTW work orders into their own section at the top
 - [x] Unplanned Schedule Review: Organize remaining work orders by building
+- [x] Fix Unplanned Schedule Review: locked WOs should be excluded from unplanned list even if sched start date falls outside the lock week
