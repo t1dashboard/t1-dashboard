@@ -131,3 +131,8 @@
 - [x] Scheduled Labor Review: Only include work orders with Ready status
 - [x] Revert WO Campaign to flat table (no grouping by description), sort by sched start date oldest first
 - [x] Exclude Work Complete and Closed status work orders from WO Campaign
+- [x] Unplanned Schedule Review: Only include Work Complete or Closed status work orders
+- [x] Unplanned Schedule Review: Exclude work orders with description containing '000' (e.g., T256086299)
+- [x] Unplanned Schedule Review: Include work orders with door or wall repairs in description
+- [x] Unplanned Schedule Review: Separate LOTO/PTW work orders into their own section at the top
+- [x] Unplanned Schedule Review: Organize remaining work orders by building

@@ -48,7 +48,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     loadLocks();
   }, []);
 
-  const { unplannedWorkOrders, incompleteLockedOrders } = useMemo(() => {
+  const { lotoOrders, buildingGroups, unplannedTotal, incompleteLockedOrders } = useMemo(() => {
     // Get previous week's date range
     const today = new Date();
     const currentDay = today.getDay();
@@ -86,10 +86,26 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     const lockedWONumbers = new Set(previousWeekLocked.map(wo => String(wo.workOrderNumber)));
 
     // Find unplanned work orders (scheduled for previous week but not locked)
+    // NEW RULES:
+    // 1. Only include Work Complete or Closed status
+    // 2. Exclude descriptions containing "000" (e.g., T256086299)
+    // 3. Include door or wall repairs
+    // 4. Exclude cancelled, CMCC, weekly (existing rules)
     const unplanned = workOrders.filter((wo) => {
-      const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
-      const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
-      const isWeekly = wo["Description"]?.toUpperCase().includes("WEEKLY");
+      const status = wo["Status"]?.toUpperCase() || "";
+      const description = wo["Description"]?.toUpperCase() || "";
+      
+      // Only include Work Complete or Closed
+      const isWorkCompleteOrClosed = status === "WORK COMPLETE" || status === "CLOSED";
+      if (!isWorkCompleteOrClosed) return false;
+      
+      // Exclude descriptions containing "000"
+      if (description.includes("000")) return false;
+      
+      // Existing exclusions
+      const isCMCC = description.includes("CMCC");
+      const isWeekly = description.includes("WEEKLY");
+      if (isCMCC || isWeekly) return false;
       
       const schedDate = parseExcelDate(wo["Sched. Start Date"]);
       const isInPreviousWeek = schedDate && schedDate >= lastMonday && schedDate <= lastSunday;
@@ -97,18 +113,59 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       const woNumber = String(wo["Work Order"]);
       const wasNotLocked = !lockedWONumbers.has(woNumber);
       
-      return !isCancelled && !isCMCC && !isWeekly && isInPreviousWeek && wasNotLocked;
-    }).sort((a, b) => {
+      return isInPreviousWeek && wasNotLocked;
+    });
+
+    // Separate LOTO/PTW work orders from the rest
+    const loto: WorkOrder[] = [];
+    const rest: WorkOrder[] = [];
+    
+    unplanned.forEach(wo => {
+      const description = wo["Description"]?.toUpperCase() || "";
+      if (description.includes("LOTO") || description.includes("PTW")) {
+        loto.push(wo);
+      } else {
+        rest.push(wo);
+      }
+    });
+
+    // Sort LOTO/PTW by data center
+    loto.sort((a, b) => {
       const dcA = a["Data Center"] || "";
       const dcB = b["Data Center"] || "";
       return dcA.localeCompare(dcB);
     });
 
+    // Group remaining by building (Data Center), sorted alphabetically
+    const groups: Record<string, WorkOrder[]> = {};
+    rest.forEach(wo => {
+      const dc = wo["Data Center"] || "Unknown";
+      if (!groups[dc]) groups[dc] = [];
+      groups[dc].push(wo);
+    });
+
+    // Sort within each building group by sched start date
+    Object.values(groups).forEach(groupWOs => {
+      groupWOs.sort((a, b) => {
+        const dateA = parseExcelDate(a["Sched. Start Date"]);
+        const dateB = parseExcelDate(b["Sched. Start Date"]);
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return dateA.getTime() - dateB.getTime();
+      });
+    });
+
+    // Sort building keys alphabetically
+    const sortedGroups = Object.keys(groups).sort().map(key => ({
+      building: key,
+      orders: groups[key]
+    }));
+
     // Find incomplete locked orders (locked but not Work Complete or Closed)
     const incomplete = previousWeekLocked.filter(locked => {
-      // Find current status from work orders
       const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
-      if (!currentWO) return true; // If not found, consider incomplete
+      if (!currentWO) return true;
       
       const status = currentWO["Status"]?.toUpperCase() || "";
       return status !== "WORK COMPLETE" && status !== "CLOSED";
@@ -119,7 +176,9 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     });
 
     return {
-      unplannedWorkOrders: unplanned,
+      lotoOrders: loto,
+      buildingGroups: sortedGroups,
+      unplannedTotal: unplanned.length,
       incompleteLockedOrders: incomplete
     };
   }, [workOrders, serverLocks]);
@@ -137,6 +196,66 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     
     return getWorkWeekLeaders(lastMonday);
   }, []);
+
+  const renderTableHeader = () => (
+    <thead>
+      <tr className="border-b border-border bg-muted/30">
+        <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>
+        <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Description</th>
+        <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Type</th>
+        <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Equipment Description</th>
+        <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
+        <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
+        <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Priority</th>
+        <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
+        <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
+        <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
+      </tr>
+    </thead>
+  );
+
+  const renderColgroup = () => (
+    <colgroup>
+      <col style={{ width: "8%" }} />
+      <col style={{ width: "20%" }} />
+      <col style={{ width: "10%" }} />
+      <col style={{ width: "16%" }} />
+      <col style={{ width: "8%" }} />
+      <col style={{ width: "8%" }} />
+      <col style={{ width: "7%" }} />
+      <col style={{ width: "7%" }} />
+      <col style={{ width: "10%" }} />
+      <col style={{ width: "10%" }} />
+    </colgroup>
+  );
+
+  const renderWorkOrderRow = (wo: WorkOrder) => (
+    <tr 
+      key={wo["Work Order"]} 
+      className="border-b border-border/50 hover:bg-muted/20 transition-colors"
+      style={{ borderBottomWidth: '0.5px' }}
+    >
+      <td className="py-3 px-4">
+        <a
+          href={`${BASE_URL}${wo["Work Order"]}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-destructive hover:underline font-medium"
+        >
+          {wo["Work Order"]}
+        </a>
+      </td>
+      <td className="py-3 px-4 text-sm truncate" title={wo["Description"]}>{wo["Description"]}</td>
+      <td className="py-3 px-4 text-sm">{wo["Type"]}</td>
+      <td className="py-3 px-4 text-sm truncate" title={wo["Equipment Description"]}>{wo["Equipment Description"]}</td>
+      <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
+      <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
+      <td className="py-3 px-4 text-sm">{wo["Priority"]}</td>
+      <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
+      <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
+      <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
+    </tr>
+  );
 
   if (loadingLocks) {
     return (
@@ -156,19 +275,19 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
         <Card className="bg-destructive/5 border-destructive/20 mb-4">
           <CardContent className="py-6">
             <div className="text-center">
-              <div className="text-4xl font-bold text-destructive">{unplannedWorkOrders.length}</div>
+              <div className="text-4xl font-bold text-destructive">{unplannedTotal}</div>
               <div className="text-sm text-muted-foreground mt-2">Unplanned Work Orders (Previous Week)</div>
-              <div className="text-xs text-muted-foreground mt-1">Scheduled but not on locked list</div>
+              <div className="text-xs text-muted-foreground mt-1">Work Complete or Closed, scheduled but not on locked list</div>
             </div>
           </CardContent>
         </Card>
 
-        {unplannedWorkOrders.length > 0 ? (
+        {unplannedTotal > 0 ? (
           <Card>
             <CardHeader className="border-b border-border pb-4">
               <CardTitle className="text-xl font-medium">Unplanned Schedule Review</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Work orders scheduled for previous week that were not on the locked schedule
+                Work orders with Work Complete or Closed status, scheduled for previous week but not on the locked schedule
               </p>
               {previousWeekLeaders && (
                 <div className="mt-3 pt-3 border-t border-border/50">
@@ -185,65 +304,51 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
               )}
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full table-fixed">
-                  <colgroup>
-                    <col style={{ width: "8%" }} />
-                    <col style={{ width: "20%" }} />
-                    <col style={{ width: "10%" }} />
-                    <col style={{ width: "16%" }} />
-                    <col style={{ width: "8%" }} />
-                    <col style={{ width: "8%" }} />
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "10%" }} />
-                    <col style={{ width: "10%" }} />
-                  </colgroup>
-                  <thead>
-                    <tr className="border-b border-border bg-muted/30">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Description</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Type</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Equipment Description</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Priority</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {unplannedWorkOrders.map((wo) => (
-                      <tr 
-                        key={wo["Work Order"]} 
-                        className="border-b border-border/50 hover:bg-muted/20 transition-colors"
-                        style={{ borderBottomWidth: '0.5px' }}
-                      >
-                        <td className="py-3 px-4">
-                          <a
-                            href={`${BASE_URL}${wo["Work Order"]}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-destructive hover:underline font-medium"
-                          >
-                            {wo["Work Order"]}
-                          </a>
-                        </td>
-                        <td className="py-3 px-4 text-sm">{wo["Description"]}</td>
-                        <td className="py-3 px-4 text-sm">{wo["Type"]}</td>
-                        <td className="py-3 px-4 text-sm">{wo["Equipment Description"]}</td>
-                        <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
-                        <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
-                        <td className="py-3 px-4 text-sm">{wo["Priority"]}</td>
-                        <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
-                        <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
-                        <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {/* LOTO/PTW Section at the top */}
+              {lotoOrders.length > 0 && (
+                <div className="border-b border-border">
+                  <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/20 border-b border-border">
+                    <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                      LOTO / PTW ({lotoOrders.length})
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full table-fixed">
+                      {renderColgroup()}
+                      {renderTableHeader()}
+                      <tbody>
+                        {lotoOrders.map(wo => renderWorkOrderRow(wo))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Building sections */}
+              {buildingGroups.map(group => (
+                <div key={group.building} className="border-b border-border last:border-b-0">
+                  <div className="px-4 py-3 bg-muted/40 border-b border-border">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      {group.building} ({group.orders.length})
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full table-fixed">
+                      {renderColgroup()}
+                      {renderTableHeader()}
+                      <tbody>
+                        {group.orders.map(wo => renderWorkOrderRow(wo))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+
+              {lotoOrders.length === 0 && buildingGroups.length === 0 && (
+                <div className="py-12 text-center">
+                  <p className="text-muted-foreground">No unplanned work orders from previous week</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -278,18 +383,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full table-fixed">
-                  <colgroup>
-                    <col style={{ width: "8%" }} />
-                    <col style={{ width: "20%" }} />
-                    <col style={{ width: "10%" }} />
-                    <col style={{ width: "16%" }} />
-                    <col style={{ width: "8%" }} />
-                    <col style={{ width: "8%" }} />
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "10%" }} />
-                    <col style={{ width: "10%" }} />
-                  </colgroup>
+                  {renderColgroup()}
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>
@@ -306,7 +400,6 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                   </thead>
                   <tbody>
                     {incompleteLockedOrders.map((locked) => {
-                      // Get current status from work orders
                       const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
                       const currentStatus = currentWO?.["Status"] || locked.status;
                       
@@ -326,9 +419,9 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                               {locked.workOrderNumber}
                             </a>
                           </td>
-                          <td className="py-3 px-4 text-sm">{locked.description}</td>
+                          <td className="py-3 px-4 text-sm truncate" title={locked.description}>{locked.description}</td>
                           <td className="py-3 px-4 text-sm">{locked.type}</td>
-                          <td className="py-3 px-4 text-sm">{locked.equipmentDescription}</td>
+                          <td className="py-3 px-4 text-sm truncate" title={locked.equipmentDescription}>{locked.equipmentDescription}</td>
                           <td className="py-3 px-4 text-sm">{currentStatus}</td>
                           <td className="py-3 px-4 text-sm font-medium">{locked.dataCenter}</td>
                           <td className="py-3 px-4 text-sm">{locked.priority}</td>
