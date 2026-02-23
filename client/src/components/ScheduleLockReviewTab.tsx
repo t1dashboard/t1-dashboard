@@ -50,17 +50,37 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
 
   const { lotoOrders, buildingGroups, unplannedTotal, incompleteLockedOrders } = useMemo(() => {
     // Get previous week's date range
+    // Use date-only comparison (YYYY-MM-DD strings) to avoid timezone issues
     const today = new Date();
     const currentDay = today.getDay();
     const diff = currentDay === 0 ? -6 : 1 - currentDay;
+    
     const thisMonday = new Date(today);
     thisMonday.setDate(today.getDate() + diff);
+    thisMonday.setHours(0, 0, 0, 0);
     
     const lastMonday = new Date(thisMonday);
     lastMonday.setDate(thisMonday.getDate() - 7);
     
     const lastSunday = new Date(lastMonday);
     lastSunday.setDate(lastMonday.getDate() + 6);
+    lastSunday.setHours(23, 59, 59, 999);
+    
+    // Helper to get YYYY-MM-DD string for date-only comparison
+    const toDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const lastMondayStr = toDateStr(lastMonday);
+    const lastSundayStr = toDateStr(lastSunday);
+    
+    // Lock week offset: lock_week is when the lock was CREATED.
+    // Locked WOs are planned for the FOLLOWING week.
+    // So for previous week review (e.g., Feb 16-22), we need the lock list
+    // created the week BEFORE that (e.g., lock_week = Feb 9-15).
+    const lockCreatedMonday = new Date(lastMonday);
+    lockCreatedMonday.setDate(lastMonday.getDate() - 7);
+    const lockCreatedSunday = new Date(lockCreatedMonday);
+    lockCreatedSunday.setDate(lockCreatedMonday.getDate() + 6);
+    const lockCreatedMondayStr = toDateStr(lockCreatedMonday);
+    const lockCreatedSundayStr = toDateStr(lockCreatedSunday);
 
     // Use server locks instead of localStorage
     const lockedOrders: LockedWorkOrder[] = serverLocks.map(lock => ({
@@ -77,15 +97,15 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       lockWeek: lock.lockWeek
     }));
     
-    // Filter for previous week's locked orders
+    // Filter for the lock list that was created for the previous week.
+    // lock_week stores when the lock was created (e.g., Feb 9).
+    // Those WOs are planned for the following week (e.g., Feb 16-22).
+    // So we look for lock_week in the week BEFORE the previous week.
     const previousWeekLocked = lockedOrders.filter(locked => {
-      const lockDate = new Date(locked.lockWeek);
-      return lockDate >= lastMonday && lockDate <= lastSunday;
+      const lockWeekStr = locked.lockWeek; // Already "YYYY-MM-DD" format
+      return lockWeekStr >= lockCreatedMondayStr && lockWeekStr <= lockCreatedSundayStr;
     });
 
-    // Use ALL locked WO numbers (across all weeks) to exclude from unplanned list
-    // A WO locked in any week should never appear as "unplanned"
-    const allLockedWONumbers = new Set(lockedOrders.map(wo => String(wo.workOrderNumber)));
     const lockedWONumbers = new Set(previousWeekLocked.map(wo => String(wo.workOrderNumber)));
 
     // Find unplanned work orders (scheduled for previous week but not locked)
@@ -111,10 +131,13 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       if (isCMCC || isWeekly) return false;
       
       const schedDate = parseExcelDate(wo["Sched. Start Date"]);
-      const isInPreviousWeek = schedDate && schedDate >= lastMonday && schedDate <= lastSunday;
+      const isInPreviousWeek = schedDate ? (() => {
+        const schedStr = toDateStr(schedDate);
+        return schedStr >= lastMondayStr && schedStr <= lastSundayStr;
+      })() : false;
       
       const woNumber = String(wo["Work Order"]);
-      const wasNotLocked = !allLockedWONumbers.has(woNumber);
+      const wasNotLocked = !lockedWONumbers.has(woNumber);
       
       return isInPreviousWeek && wasNotLocked;
     });

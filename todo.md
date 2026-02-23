@@ -137,3 +137,4 @@
 - [x] Unplanned Schedule Review: Separate LOTO/PTW work orders into their own section at the top
 - [x] Unplanned Schedule Review: Organize remaining work orders by building
 - [x] Fix Unplanned Schedule Review: locked WOs should be excluded from unplanned list even if sched start date falls outside the lock week
+- [x] Fix lock week offset: lock_week is when lock was created, WOs are planned for the following week. Use lock_week from 2 weeks ago for previous week review.
