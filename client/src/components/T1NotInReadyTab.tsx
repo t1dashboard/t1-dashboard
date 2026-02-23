@@ -54,14 +54,14 @@ export default function T1NotInReadyTab({ workOrders }: T1NotInReadyTabProps) {
         </p>
         {weekLeaders && (
           <div className="mt-3 pt-3 border-t border-border/50">
-            <p className="text-xs font-medium text-muted-foreground mb-2">Work Week Leaders:</p>
-            <div className="flex flex-wrap gap-3 text-xs">
-              <span><span className="font-medium">COM:</span> {weekLeaders.COM}</span>
-              <span><span className="font-medium">LBE:</span> {weekLeaders.LBE}</span>
-              <span><span className="font-medium">SME Lead:</span> {weekLeaders.SMELead}</span>
-              <span><span className="font-medium">cSME:</span> {weekLeaders.cSME}</span>
-              <span><span className="font-medium">mSME:</span> {weekLeaders.mSME}</span>
-              <span><span className="font-medium">eSME:</span> {weekLeaders.eSME}</span>
+            <p className="text-sm font-semibold text-muted-foreground mb-2">Work Week Leaders:</p>
+            <div className="flex flex-wrap gap-4 text-sm">
+              <span><span className="font-semibold">COM:</span> {weekLeaders.COM}</span>
+              <span><span className="font-semibold">LBE:</span> {weekLeaders.LBE}</span>
+              <span><span className="font-semibold">SME Lead:</span> {weekLeaders.SMELead}</span>
+              <span><span className="font-semibold">cSME:</span> {weekLeaders.cSME}</span>
+              <span><span className="font-semibold">mSME:</span> {weekLeaders.mSME}</span>
+              <span><span className="font-semibold">eSME:</span> {weekLeaders.eSME}</span>
             </div>
           </div>
         )}

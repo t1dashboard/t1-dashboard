@@ -108,12 +108,16 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
 
     const lockedWONumbers = new Set(previousWeekLocked.map(wo => String(wo.workOrderNumber)));
 
+    // Shift codes to exclude unless description contains LOTO or PTW
+    const EXCLUDED_SHIFT_CODES = new Set(["GNSF", "GNSG", "GNSH", "GNSI", "GNSJ"]);
+
     // Find unplanned work orders (scheduled for previous week but not locked)
     // NEW RULES:
     // 1. Only include Work Complete or Closed status
     // 2. Exclude descriptions containing "000" (e.g., T256086299)
     // 3. Include door or wall repairs
     // 4. Exclude cancelled, CMCC, weekly (existing rules)
+    // 5. Exclude shift codes GNSF/GNSG/GNSH/GNSI/GNSJ unless description contains LOTO or PTW
     const unplanned = workOrders.filter((wo) => {
       const status = wo["Status"]?.toUpperCase() || "";
       const description = wo["Description"]?.toUpperCase() || "";
@@ -129,6 +133,11 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       const isCMCC = description.includes("CMCC");
       const isWeekly = description.includes("WEEKLY");
       if (isCMCC || isWeekly) return false;
+      
+      // Exclude shift codes GNSF, GNSG, GNSH, GNSI, GNSJ unless description has LOTO or PTW
+      const shift = wo["Shift"]?.toUpperCase()?.trim() || "";
+      const hasLotoPtw = description.includes("LOTO") || description.includes("PTW");
+      if (EXCLUDED_SHIFT_CODES.has(shift) && !hasLotoPtw) return false;
       
       const schedDate = parseExcelDate(wo["Sched. Start Date"]);
       const isInPreviousWeek = schedDate ? (() => {
@@ -189,11 +198,19 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     }));
 
     // Find incomplete locked orders (locked but not Work Complete or Closed)
+    // Also exclude shift codes GNSF/GNSG/GNSH/GNSI/GNSJ unless description contains LOTO or PTW
     const incomplete = previousWeekLocked.filter(locked => {
       const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
+      
+      // Exclude shift codes GNSF/GNSG/GNSH/GNSI/GNSJ unless description has LOTO or PTW
+      const lockedDesc = locked.description?.toUpperCase() || "";
+      const lockedShift = locked.shift?.toUpperCase()?.trim() || "";
+      const lockedHasLotoPtw = lockedDesc.includes("LOTO") || lockedDesc.includes("PTW");
+      if (EXCLUDED_SHIFT_CODES.has(lockedShift) && !lockedHasLotoPtw) return false;
+      
       if (!currentWO) return true;
       
-      const status = currentWO["Status"]?.toUpperCase() || "";
+      const status = currentWO?.["Status"]?.toUpperCase() || "";
       return status !== "WORK COMPLETE" && status !== "CLOSED";
     }).sort((a, b) => {
       const dcA = a.dataCenter || "";
@@ -317,14 +334,14 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
               </p>
               {previousWeekLeaders && (
                 <div className="mt-3 pt-3 border-t border-border/50">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Previous Week Leaders:</p>
-                  <div className="flex flex-wrap gap-3 text-xs">
-                    <span><span className="font-medium">COM:</span> {previousWeekLeaders.COM}</span>
-                    <span><span className="font-medium">LBE:</span> {previousWeekLeaders.LBE}</span>
-                    <span><span className="font-medium">SME Lead:</span> {previousWeekLeaders.SMELead}</span>
-                    <span><span className="font-medium">cSME:</span> {previousWeekLeaders.cSME}</span>
-                    <span><span className="font-medium">mSME:</span> {previousWeekLeaders.mSME}</span>
-                    <span><span className="font-medium">eSME:</span> {previousWeekLeaders.eSME}</span>
+                  <p className="text-sm font-semibold text-muted-foreground mb-2">Previous Week Leaders:</p>
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <span><span className="font-semibold">COM:</span> {previousWeekLeaders.COM}</span>
+                    <span><span className="font-semibold">LBE:</span> {previousWeekLeaders.LBE}</span>
+                    <span><span className="font-semibold">SME Lead:</span> {previousWeekLeaders.SMELead}</span>
+                    <span><span className="font-semibold">cSME:</span> {previousWeekLeaders.cSME}</span>
+                    <span><span className="font-semibold">mSME:</span> {previousWeekLeaders.mSME}</span>
+                    <span><span className="font-semibold">eSME:</span> {previousWeekLeaders.eSME}</span>
                   </div>
                 </div>
               )}

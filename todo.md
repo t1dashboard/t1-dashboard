@@ -138,3 +138,5 @@
 - [x] Unplanned Schedule Review: Organize remaining work orders by building
 - [x] Fix Unplanned Schedule Review: locked WOs should be excluded from unplanned list even if sched start date falls outside the lock week
 - [x] Fix lock week offset: lock_week is when lock was created, WOs are planned for the following week. Use lock_week from 2 weeks ago for previous week review.
+- [x] Schedule Lock Review: Exclude WOs with shift code GNSF, GNSG, GNSH, GNSI, GNSJ unless description contains LOTO or PTW
+- [x] Make week headers larger across the entire dashboard
