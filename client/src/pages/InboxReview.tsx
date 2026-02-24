@@ -57,6 +57,20 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
       });
   }, [workOrders]);
 
+  // Group awaiting closure orders by data center
+  const awaitingClosureByDC = useMemo(() => {
+    const groups: Record<string, WorkOrder[]> = {};
+    awaitingClosureOrders.forEach(wo => {
+      const dc = wo["Data Center"] || "Unknown";
+      if (!groups[dc]) groups[dc] = [];
+      groups[dc].push(wo);
+    });
+    return Object.keys(groups).sort().map(dc => ({
+      dataCenter: dc,
+      orders: groups[dc]
+    }));
+  }, [awaitingClosureOrders]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -158,54 +172,60 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
                 {awaitingClosureOrders.length} work orders in "Work Complete" status with Deferral Reason Selected = "No"
               </p>
             </CardHeader>
-            <CardContent>
-              {awaitingClosureOrders.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm table-fixed">
-                    <colgroup>
-                      <col style={{ width: "9%" }} />
-                      <col style={{ width: "28%" }} />
-                      <col style={{ width: "9%" }} />
-                      <col style={{ width: "14%" }} />
-                      <col style={{ width: "14%" }} />
-                      <col style={{ width: "12%" }} />
-                      <col style={{ width: "14%" }} />
-                    </colgroup>
-                    <thead>
-                      <tr className="border-b border-border bg-muted/30">
-                        <th className="text-left py-3 px-4 font-medium">Work Order</th>
-                        <th className="text-left py-3 px-4 font-medium">Description</th>
-                        <th className="text-left py-3 px-4 font-medium">Data Center</th>
-                        <th className="text-left py-3 px-4 font-medium">Supervisor</th>
-                        <th className="text-left py-3 px-4 font-medium">Sched Start Date</th>
-                        <th className="text-left py-3 px-4 font-medium">Status</th>
-                        <th className="text-left py-3 px-4 font-medium">Deferral Reason</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {awaitingClosureOrders.map((wo) => (
-                        <tr key={wo["Work Order"]} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
-                          <td className="py-3 px-4">
-                            <a
-                              href={`${BASE_URL}${wo["Work Order"]}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline font-mono"
-                            >
-                              {wo["Work Order"]}
-                            </a>
-                          </td>
-                          <td className="py-3 px-4">{wo["Description"]}</td>
-                          <td className="py-3 px-4 font-medium">{wo["Data Center"]}</td>
-                          <td className="py-3 px-4">{wo["Supervisor"] || "—"}</td>
-                          <td className="py-3 px-4">{formatDate(wo["Sched. Start Date"])}</td>
-                          <td className="py-3 px-4">{wo["Status"]}</td>
-                          <td className="py-3 px-4">{wo["Deferral Reason Selected"]}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+            <CardContent className="p-0">
+              {awaitingClosureByDC.length > 0 ? (
+                awaitingClosureByDC.map(group => (
+                  <div key={group.dataCenter} className="border-b border-border last:border-b-0">
+                    <div className="px-4 py-3 bg-muted/40 border-b border-border">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        {group.dataCenter} ({group.orders.length})
+                      </h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm table-fixed">
+                        <colgroup>
+                          <col style={{ width: "10%" }} />
+                          <col style={{ width: "35%" }} />
+                          <col style={{ width: "15%" }} />
+                          <col style={{ width: "15%" }} />
+                          <col style={{ width: "10%" }} />
+                          <col style={{ width: "15%" }} />
+                        </colgroup>
+                        <thead>
+                          <tr className="border-b border-border bg-muted/30">
+                            <th className="text-left py-3 px-4 font-medium">Work Order</th>
+                            <th className="text-left py-3 px-4 font-medium">Description</th>
+                            <th className="text-left py-3 px-4 font-medium">Assigned To</th>
+                            <th className="text-left py-3 px-4 font-medium">Sched Start Date</th>
+                            <th className="text-left py-3 px-4 font-medium">Status</th>
+                            <th className="text-left py-3 px-4 font-medium">Deferral Reason</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {group.orders.map((wo) => (
+                            <tr key={wo["Work Order"]} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
+                              <td className="py-3 px-4">
+                                <a
+                                  href={`${BASE_URL}${wo["Work Order"]}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline font-mono"
+                                >
+                                  {wo["Work Order"]}
+                                </a>
+                              </td>
+                              <td className="py-3 px-4 truncate" title={wo["Description"]}>{wo["Description"]}</td>
+                              <td className="py-3 px-4">{wo["Assigned To Name"]}</td>
+                              <td className="py-3 px-4">{formatDate(wo["Sched. Start Date"])}</td>
+                              <td className="py-3 px-4">{wo["Status"]}</td>
+                              <td className="py-3 px-4">{wo["Deferral Reason Selected"]}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))
               ) : (
                 <p className="text-muted-foreground text-center py-8">
                   No work orders found in "Work Complete" status with Deferral Reason = "No"

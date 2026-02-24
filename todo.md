@@ -141,3 +141,5 @@
 - [x] Schedule Lock Review: Exclude WOs with shift code GNSF, GNSG, GNSH, GNSI, GNSJ unless description contains LOTO or PTW
 - [x] Make week headers larger across the entire dashboard
 - [x] Schedule Lock Review: Exclude 'In Process' status from Incomplete Locked Orders section
+- [x] WOs Awaiting Closure: Remove Supervisor column
+- [x] WOs Awaiting Closure: Organize by data center sections
