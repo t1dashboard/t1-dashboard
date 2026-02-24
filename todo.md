@@ -143,3 +143,4 @@
 - [x] Schedule Lock Review: Exclude 'In Process' status from Incomplete Locked Orders section
 - [x] WOs Awaiting Closure: Remove Supervisor column
 - [x] WOs Awaiting Closure: Organize by data center sections
+- [x] Workload tab: Add daily view option to calendar (in addition to weekly view)

@@ -3,6 +3,7 @@
  * Separated into Day Shift (7:00 AM - 6:59 PM) and Night Shift sections
  * Color-coded by risk level: green (low/none), yellow (medium), red (high)
  * Supports T1/T2/T3 week selection via weekFilter prop
+ * Calendar view supports both weekly and daily modes
  */
 
 import { useMemo, useState } from "react";
@@ -11,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate, parseExcelDate, getTWeekRange, isTWeek } from "@/lib/dateUtils";
 import { isNightShift } from "@/lib/nightShiftEmployees";
-import { Calendar, List } from "lucide-react";
+import { Calendar, List, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -94,6 +95,8 @@ function getWeekLabel(filter: WeekFilter): string {
 
 export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChange }: WorkLoadTabProps) {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
+  const [calendarMode, setCalendarMode] = useState<'weekly' | 'daily'>('weekly');
+  const [selectedDayIndex, setSelectedDayIndex] = useState(0); // 0 = Monday
 
   const isInWeek = useMemo(() => getWeekChecker(weekFilter), [weekFilter]);
   const weekRange = useMemo(() => getWeekRange(weekFilter), [weekFilter]);
@@ -250,26 +253,67 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
     return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   }, [weekRange]);
 
-  // Render calendar view as one big table-style layout with Day/Night horizontal divider
-  const renderCalendarView = () => (
+  // Get the actual date for a given day index in the selected week
+  const getDayDate = (dayIndex: number): Date => {
+    const { start } = weekRange;
+    const date = new Date(start);
+    date.setDate(start.getDate() + dayIndex);
+    return date;
+  };
+
+  // Format the selected day's date for display
+  const selectedDayLabel = useMemo(() => {
+    const date = getDayDate(selectedDayIndex);
+    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  }, [selectedDayIndex, weekRange]);
+
+  // Get the selected day's name
+  const selectedDayName = DAYS_OF_WEEK[selectedDayIndex];
+
+  // Render the risk legend
+  const renderRiskLegend = () => (
+    <div className="flex items-center gap-4 mb-4 text-xs">
+      <span className="font-medium text-muted-foreground">Risk Level:</span>
+      <span className="flex items-center gap-1">
+        <span className="inline-block w-3 h-3 rounded bg-green-200 border border-green-400"></span>
+        Low
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="inline-block w-3 h-3 rounded bg-yellow-200 border border-yellow-400"></span>
+        Medium
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="inline-block w-3 h-3 rounded bg-red-200 border border-red-400"></span>
+        High
+      </span>
+    </div>
+  );
+
+  // Render a single WO card for calendar views
+  const renderWOCard = (wo: WorkOrder) => {
+    const risk = getRiskLevel(wo);
+    return (
+      <a
+        key={wo["Work Order"]}
+        href={`${BASE_URL}${wo["Work Order"]}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`block p-1 border rounded text-[10px] leading-tight hover:opacity-80 transition-colors ${getRiskBgClass(risk)}`}
+      >
+        <div className="font-semibold text-primary">{wo["Work Order"]}</div>
+        <div className="text-muted-foreground truncate" title={wo["Description"]}>
+          {wo["Description"]}
+        </div>
+        <div className="font-medium mt-0.5">{wo["Data Center"]}</div>
+      </a>
+    );
+  };
+
+  // Render weekly calendar view as one big table-style layout with Day/Night horizontal divider
+  const renderWeeklyCalendarView = () => (
     <Card>
       <CardContent className="p-4">
-        {/* Risk Legend */}
-        <div className="flex items-center gap-4 mb-4 text-xs">
-          <span className="font-medium text-muted-foreground">Risk Level:</span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-3 rounded bg-green-200 border border-green-400"></span>
-            Low
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-3 rounded bg-yellow-200 border border-yellow-400"></span>
-            Medium
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-3 rounded bg-red-200 border border-red-400"></span>
-            High
-          </span>
-        </div>
+        {renderRiskLegend()}
 
         <table className="w-full border-collapse border border-border">
           {/* Header Row - Day Names */}
@@ -302,24 +346,7 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
                   <td key={day} className="border border-border p-1.5 align-top">
                     <div className="space-y-1">
                       {dayOrders.day.length > 0 ? (
-                        dayOrders.day.map((wo) => {
-                          const risk = getRiskLevel(wo);
-                          return (
-                            <a
-                              key={wo["Work Order"]}
-                              href={`${BASE_URL}${wo["Work Order"]}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`block p-1 border rounded text-[10px] leading-tight hover:opacity-80 transition-colors ${getRiskBgClass(risk)}`}
-                            >
-                              <div className="font-semibold text-primary">{wo["Work Order"]}</div>
-                              <div className="text-muted-foreground truncate" title={wo["Description"]}>
-                                {wo["Description"]}
-                              </div>
-                              <div className="font-medium mt-0.5">{wo["Data Center"]}</div>
-                            </a>
-                          );
-                        })
+                        dayOrders.day.map((wo) => renderWOCard(wo))
                       ) : (
                         <div className="text-[10px] text-muted-foreground text-center py-2">—</div>
                       )}
@@ -347,24 +374,7 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
                   <td key={day} className="border border-border p-1.5 align-top">
                     <div className="space-y-1">
                       {dayOrders.night.length > 0 ? (
-                        dayOrders.night.map((wo) => {
-                          const risk = getRiskLevel(wo);
-                          return (
-                            <a
-                              key={wo["Work Order"]}
-                              href={`${BASE_URL}${wo["Work Order"]}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`block p-1 border rounded text-[10px] leading-tight hover:opacity-80 transition-colors ${getRiskBgClass(risk)}`}
-                            >
-                              <div className="font-semibold text-primary">{wo["Work Order"]}</div>
-                              <div className="text-muted-foreground truncate" title={wo["Description"]}>
-                                {wo["Description"]}
-                              </div>
-                              <div className="font-medium mt-0.5">{wo["Data Center"]}</div>
-                            </a>
-                          );
-                        })
+                        dayOrders.night.map((wo) => renderWOCard(wo))
                       ) : (
                         <div className="text-[10px] text-muted-foreground text-center py-2">—</div>
                       )}
@@ -378,6 +388,188 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
       </CardContent>
     </Card>
   );
+
+  // Render daily calendar view - expanded view for a single day
+  const renderDailyCalendarView = () => {
+    const dayOrders = workloadByDay[selectedDayName];
+    const totalOrders = dayOrders.day.length + dayOrders.night.length;
+    const dayDate = getDayDate(selectedDayIndex);
+    const dateStr = dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    // Group day shift by data center
+    const dayShiftByDC: Record<string, WorkOrder[]> = {};
+    dayOrders.day.forEach(wo => {
+      const dc = wo["Data Center"] || "Unknown";
+      if (!dayShiftByDC[dc]) dayShiftByDC[dc] = [];
+      dayShiftByDC[dc].push(wo);
+    });
+    const sortedDayDCs = Object.keys(dayShiftByDC).sort();
+
+    // Group night shift by data center
+    const nightShiftByDC: Record<string, WorkOrder[]> = {};
+    dayOrders.night.forEach(wo => {
+      const dc = wo["Data Center"] || "Unknown";
+      if (!nightShiftByDC[dc]) nightShiftByDC[dc] = [];
+      nightShiftByDC[dc].push(wo);
+    });
+    const sortedNightDCs = Object.keys(nightShiftByDC).sort();
+
+    return (
+      <Card>
+        <CardContent className="p-4">
+          {renderRiskLegend()}
+
+          {/* Day Navigation */}
+          <div className="flex items-center justify-between mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedDayIndex(Math.max(0, selectedDayIndex - 1))}
+              disabled={selectedDayIndex === 0}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <div className="text-center">
+              <div className="text-lg font-semibold">{selectedDayName}</div>
+              <div className="text-sm text-muted-foreground">{dateStr} — {totalOrders} work orders</div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedDayIndex(Math.min(6, selectedDayIndex + 1))}
+              disabled={selectedDayIndex === 6}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+
+          {/* Day selector pills */}
+          <div className="flex gap-1 mb-4 justify-center">
+            {DAYS_OF_WEEK.map((day, idx) => {
+              const orders = workloadByDay[day];
+              const count = orders.day.length + orders.night.length;
+              return (
+                <button
+                  key={day}
+                  onClick={() => setSelectedDayIndex(idx)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    idx === selectedDayIndex
+                      ? 'bg-primary text-primary-foreground'
+                      : count > 0
+                        ? 'bg-muted hover:bg-muted/80 text-foreground'
+                        : 'bg-muted/30 hover:bg-muted/50 text-muted-foreground'
+                  }`}
+                >
+                  {day.slice(0, 3)}
+                  {count > 0 && (
+                    <span className={`ml-1 ${idx === selectedDayIndex ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                      ({count})
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {totalOrders === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              No work orders scheduled for {selectedDayName}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Day Shift Section */}
+              {dayOrders.day.length > 0 && (
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <div className="bg-amber-50 dark:bg-amber-950/30 px-4 py-3 border-b border-border">
+                    <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                      ☀️ Day Shift ({dayOrders.day.length})
+                      <span className="text-xs font-normal text-muted-foreground">7:00 AM – 6:59 PM</span>
+                    </h4>
+                  </div>
+                  {sortedDayDCs.map(dc => (
+                    <div key={dc} className="border-b border-border/50 last:border-b-0">
+                      <div className="px-4 py-2 bg-muted/30 border-b border-border/50">
+                        <span className="text-xs font-semibold text-foreground">{dc} ({dayShiftByDC[dc].length})</span>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 p-3">
+                        {dayShiftByDC[dc].map(wo => {
+                          const risk = getRiskLevel(wo);
+                          return (
+                            <a
+                              key={wo["Work Order"]}
+                              href={`${BASE_URL}${wo["Work Order"]}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`block p-2 border rounded text-xs leading-tight hover:opacity-80 transition-colors ${getRiskBgClass(risk)}`}
+                            >
+                              <div className="font-semibold text-primary">{wo["Work Order"]}</div>
+                              <div className="text-muted-foreground mt-0.5 line-clamp-2" title={wo["Description"]}>
+                                {wo["Description"]}
+                              </div>
+                              <div className="flex justify-between items-center mt-1">
+                                <span className="font-medium">{wo["Data Center"]}</span>
+                                <span className="text-muted-foreground">{wo["Assigned To Name"]?.split(' ')[0] || ''}</span>
+                              </div>
+                              <div className="text-muted-foreground mt-0.5">{wo["Status"]}</div>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Night Shift Section */}
+              {dayOrders.night.length > 0 && (
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <div className="bg-indigo-50 dark:bg-indigo-950/30 px-4 py-3 border-b border-border">
+                    <h4 className="text-sm font-semibold text-indigo-800 dark:text-indigo-300 flex items-center gap-2">
+                      🌙 Night Shift ({dayOrders.night.length})
+                      <span className="text-xs font-normal text-muted-foreground">7:00 PM – 6:59 AM</span>
+                    </h4>
+                  </div>
+                  {sortedNightDCs.map(dc => (
+                    <div key={dc} className="border-b border-border/50 last:border-b-0">
+                      <div className="px-4 py-2 bg-muted/30 border-b border-border/50">
+                        <span className="text-xs font-semibold text-foreground">{dc} ({nightShiftByDC[dc].length})</span>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 p-3">
+                        {nightShiftByDC[dc].map(wo => {
+                          const risk = getRiskLevel(wo);
+                          return (
+                            <a
+                              key={wo["Work Order"]}
+                              href={`${BASE_URL}${wo["Work Order"]}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`block p-2 border rounded text-xs leading-tight hover:opacity-80 transition-colors ${getRiskBgClass(risk)}`}
+                            >
+                              <div className="font-semibold text-primary">{wo["Work Order"]}</div>
+                              <div className="text-muted-foreground mt-0.5 line-clamp-2" title={wo["Description"]}>
+                                {wo["Description"]}
+                              </div>
+                              <div className="flex justify-between items-center mt-1">
+                                <span className="font-medium">{wo["Data Center"]}</span>
+                                <span className="text-muted-foreground">{wo["Assigned To Name"]?.split(' ')[0] || ''}</span>
+                              </div>
+                              <div className="text-muted-foreground mt-0.5">{wo["Status"]}</div>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -413,6 +605,31 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
                   Calendar
                 </Button>
               </div>
+              {/* Calendar sub-mode toggle: Weekly / Daily */}
+              {viewMode === 'calendar' && (
+                <div className="flex gap-1 bg-muted rounded-md p-0.5">
+                  <button
+                    onClick={() => setCalendarMode('weekly')}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                      calendarMode === 'weekly'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Weekly
+                  </button>
+                  <button
+                    onClick={() => setCalendarMode('daily')}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                      calendarMode === 'daily'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Daily
+                  </button>
+                </div>
+              )}
               {onWeekChange && (
                 <Select value={weekFilter} onValueChange={(v) => onWeekChange(v as WeekFilter)}>
                   <SelectTrigger className="w-[240px] h-9">
@@ -441,7 +658,7 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
       
       {viewMode === 'calendar' ? (
         <>
-          {renderCalendarView()}
+          {calendarMode === 'weekly' ? renderWeeklyCalendarView() : renderDailyCalendarView()}
           {/* In Process Work Orders Section - shown below calendar */}
           {inProcessOrders.length > 0 && (
             <Card className="border-orange-500/30 bg-orange-50/30 dark:bg-orange-950/20">
