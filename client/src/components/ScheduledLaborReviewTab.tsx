@@ -32,21 +32,21 @@ export default function ScheduledLaborReviewTab({ workOrders, scheduledLabor }: 
 
     const matchedWorkOrders = Array.from(uniqueWorkOrders.values());
 
-    // Group by assigned person, then sort by person name
-    const groupedByPerson = new Map<string, WorkOrder[]>();
+    // Group by shift code, then sort by shift code
+    const groupedByShift = new Map<string, WorkOrder[]>();
     matchedWorkOrders.forEach(wo => {
-      const assignedTo = wo["Assigned To Name"] || "Unassigned";
-      if (!groupedByPerson.has(assignedTo)) {
-        groupedByPerson.set(assignedTo, []);
+      const shift = wo["Shift"] || "Unassigned";
+      if (!groupedByShift.has(shift)) {
+        groupedByShift.set(shift, []);
       }
-      groupedByPerson.get(assignedTo)!.push(wo);
+      groupedByShift.get(shift)!.push(wo);
     });
 
-    // Sort persons alphabetically and their work orders by data center
-    const sortedGroups = Array.from(groupedByPerson.entries())
+    // Sort shifts alphabetically and their work orders by data center
+    const sortedGroups = Array.from(groupedByShift.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([person, wos]) => ({
-        person,
+      .map(([shift, wos]) => ({
+        person: shift,
         workOrders: wos.sort((a, b) => {
           const dcA = a["Data Center"] || "";
           const dcB = b["Data Center"] || "";
@@ -97,7 +97,7 @@ export default function ScheduledLaborReviewTab({ workOrders, scheduledLabor }: 
               {scheduledLaborAnalysis.groups.map((group, groupIndex) => (
                 <div key={groupIndex}>
                   <h3 className="font-semibold text-lg mb-3 text-primary">
-                    {group.person} ({group.workOrders.length} work orders)
+                    Shift: {group.person} ({group.workOrders.length} work orders)
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm table-fixed">

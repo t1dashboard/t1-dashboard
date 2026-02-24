@@ -100,7 +100,7 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T
       String(wo["Work Order"] || "").toLowerCase().includes(q) ||
       (wo["Description"] || "").toLowerCase().includes(q) ||
       (wo["Data Center"] || "").toLowerCase().includes(q) ||
-      (wo["Assigned To Name"] || "").toLowerCase().includes(q) ||
+      (wo["Shift"] || "").toLowerCase().includes(q) ||
       (wo["Status"] || "").toLowerCase().includes(q) ||
       (wo["Equipment Description"] || "").toLowerCase().includes(q)
     );

@@ -144,3 +144,4 @@
 - [x] WOs Awaiting Closure: Remove Supervisor column
 - [x] WOs Awaiting Closure: Organize by data center sections
 - [x] Workload tab: Add daily view option to calendar (in addition to weekly view)
+- [x] Replace 'Assigned To Name' column with 'Shift' code column across all sections of the dashboard

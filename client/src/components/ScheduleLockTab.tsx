@@ -136,12 +136,11 @@ export default function ScheduleLockTab({ workOrders, canLock = false }: Schedul
         "Description": order.description,
         "Data Center": order.dataCenter,
         "Sched Start Date": order.schedStartDate,
-        "Assigned To": order.assignedTo,
+        "Shift": order.shift,
         "Status": order.status,
         "Type": order.type,
         "Equipment Description": order.equipmentDescription,
         "Priority": order.priority,
-        "Shift": order.shift,
         "Lock Week": order.lockWeek
       }));
 
@@ -223,7 +222,7 @@ export default function ScheduleLockTab({ workOrders, canLock = false }: Schedul
           description: wo["Description"],
           dataCenter: wo["Data Center"],
           schedStartDate: wo["Sched. Start Date"],
-          assignedTo: wo["Assigned To Name"],
+          assignedTo: wo["Shift"],
           status: wo["Status"],
           type: wo["Type"],
           equipmentDescription: wo["Equipment Description"],
@@ -401,7 +400,7 @@ export default function ScheduleLockTab({ workOrders, canLock = false }: Schedul
                   <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Description</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
                 </tr>
               </thead>
@@ -446,7 +445,7 @@ export default function ScheduleLockTab({ workOrders, canLock = false }: Schedul
                       <td className="py-3 px-4 text-sm">
                         {formatDate(wo["Sched. Start Date"])}
                       </td>
-                      <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
+                      <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
                       <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
                     </tr>
                   );

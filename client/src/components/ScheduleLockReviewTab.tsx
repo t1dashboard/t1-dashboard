@@ -252,7 +252,6 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
         <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
         <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Priority</th>
         <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
-        <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
         <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
       </tr>
     </thead>
@@ -296,7 +295,6 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
       <td className="py-3 px-4 text-sm">{wo["Priority"]}</td>
       <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
-      <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
       <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
     </tr>
   );
@@ -438,7 +436,6 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Priority</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
                     </tr>
                   </thead>
@@ -470,7 +467,6 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                           <td className="py-3 px-4 text-sm font-medium">{locked.dataCenter}</td>
                           <td className="py-3 px-4 text-sm">{locked.priority}</td>
                           <td className="py-3 px-4 text-sm">{locked.shift}</td>
-                          <td className="py-3 px-4 text-sm">{locked.assignedTo}</td>
                           <td className="py-3 px-4 text-sm">{formatDate(locked.schedStartDate)}</td>
                         </tr>
                       );

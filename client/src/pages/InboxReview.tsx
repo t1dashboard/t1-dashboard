@@ -120,7 +120,7 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
                       <tr className="border-b border-border bg-muted/30">
                         <th className="text-left py-3 px-4 font-medium">Work Order</th>
                         <th className="text-left py-3 px-4 font-medium">Description</th>
-                        <th className="text-left py-3 px-4 font-medium">Assigned To</th>
+                        <th className="text-left py-3 px-4 font-medium">Shift</th>
                         <th className="text-left py-3 px-4 font-medium">Sched Start Date</th>
                         <th className="text-left py-3 px-4 font-medium">Sched End Date</th>
                         <th className="text-left py-3 px-4 font-medium">Status</th>
@@ -140,7 +140,7 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
                             </a>
                           </td>
                           <td className="py-3 px-4 truncate">{wo["Description"]}</td>
-                          <td className="py-3 px-4">{wo["Assigned To Name"]}</td>
+                          <td className="py-3 px-4">{wo["Shift"]}</td>
                           <td className="py-3 px-4">{formatDate(wo["Sched. Start Date"])}</td>
                           <td className="py-3 px-4">{formatDate(wo["Sched. End Date"])}</td>
                           <td className="py-3 px-4">{wo["Status"]}</td>
@@ -195,7 +195,7 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
                           <tr className="border-b border-border bg-muted/30">
                             <th className="text-left py-3 px-4 font-medium">Work Order</th>
                             <th className="text-left py-3 px-4 font-medium">Description</th>
-                            <th className="text-left py-3 px-4 font-medium">Assigned To</th>
+                            <th className="text-left py-3 px-4 font-medium">Shift</th>
                             <th className="text-left py-3 px-4 font-medium">Sched Start Date</th>
                             <th className="text-left py-3 px-4 font-medium">Status</th>
                             <th className="text-left py-3 px-4 font-medium">Deferral Reason</th>
@@ -215,7 +215,7 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
                                 </a>
                               </td>
                               <td className="py-3 px-4 truncate" title={wo["Description"]}>{wo["Description"]}</td>
-                              <td className="py-3 px-4">{wo["Assigned To Name"]}</td>
+                              <td className="py-3 px-4">{wo["Shift"]}</td>
                               <td className="py-3 px-4">{formatDate(wo["Sched. Start Date"])}</td>
                               <td className="py-3 px-4">{wo["Status"]}</td>
                               <td className="py-3 px-4">{wo["Deferral Reason Selected"]}</td>

@@ -93,7 +93,7 @@ export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTa
                     <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Description</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
                   </tr>
                 </thead>
@@ -118,7 +118,7 @@ export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTa
                       <td className="py-3 px-4 text-sm">
                         {formatDate(wo["Sched. Start Date"])}
                       </td>
-                      <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
+                      <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
                       <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
                     </tr>
                   ))}

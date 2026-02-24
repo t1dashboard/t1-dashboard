@@ -70,7 +70,7 @@ export default function WOsOver90DaysTab({ workOrders }: WOsOver90DaysTabProps) 
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Date Created</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Deferral Reason</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
               </tr>
             </thead>
@@ -97,7 +97,7 @@ export default function WOsOver90DaysTab({ workOrders }: WOsOver90DaysTabProps) 
                     {formatDate(wo["Date Created"])}
                   </td>
                   <td className="py-3 px-4 text-sm">{wo["Deferral Reason Selected"]}</td>
-                  <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
+                  <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
                   <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
                 </tr>
               ))}

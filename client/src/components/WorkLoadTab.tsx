@@ -195,7 +195,7 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched End Date</th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Risk</th>
           </tr>
@@ -223,7 +223,7 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
                 <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
                 <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
                 <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. End Date"])}</td>
-                <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
+                <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
                 <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
                 <td className="py-3 px-4 text-sm font-medium">
                   {risk === 'high' && <span className="text-red-600 dark:text-red-400">High</span>}
@@ -510,7 +510,7 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
                               </div>
                               <div className="flex justify-between items-center mt-1">
                                 <span className="font-medium">{wo["Data Center"]}</span>
-                                <span className="text-muted-foreground">{wo["Assigned To Name"]?.split(' ')[0] || ''}</span>
+                                <span className="text-muted-foreground">{wo["Shift"]}</span>
                               </div>
                               <div className="text-muted-foreground mt-0.5">{wo["Status"]}</div>
                             </a>
@@ -553,7 +553,7 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
                               </div>
                               <div className="flex justify-between items-center mt-1">
                                 <span className="font-medium">{wo["Data Center"]}</span>
-                                <span className="text-muted-foreground">{wo["Assigned To Name"]?.split(' ')[0] || ''}</span>
+                                <span className="text-muted-foreground">{wo["Shift"]}</span>
                               </div>
                               <div className="text-muted-foreground mt-0.5">{wo["Status"]}</div>
                             </a>

@@ -83,7 +83,7 @@ export default function T3NotInReadyTab({ workOrders }: T3NotInReadyTabProps) {
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Description</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
               </tr>
             </thead>
@@ -109,7 +109,7 @@ export default function T3NotInReadyTab({ workOrders }: T3NotInReadyTabProps) {
                   <td className="py-3 px-4 text-sm">
                     {formatDate(wo["Sched. Start Date"])}
                   </td>
-                  <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
+                  <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
                   <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
                 </tr>
               ))}
