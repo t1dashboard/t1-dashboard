@@ -1,5 +1,5 @@
 /**
- * Inbox Review: Contains WO Campaign, Scheduled Labor Review, and WOs Awaiting Closure sub-tabs
+ * Inbox Review: Contains WO Campaign, Scheduled Labor Review, WOs Awaiting Closure, and Production Impact sub-tabs
  */
 
 import { useState, useMemo } from "react";
@@ -16,6 +16,9 @@ interface InboxReviewProps {
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
+
+// Production Impact values to include (exclude 40)
+const INCLUDED_PRODUCTION_IMPACTS = [10, 15, 20, 25, 30];
 
 export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewProps) {
   const [activeTab, setActiveTab] = useState("wo-campaign");
@@ -71,17 +74,49 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
     }));
   }, [awaitingClosureOrders]);
 
+  // Production Impact: filter work orders with Production Impact of 10, 15, 20, 25, or 30
+  const productionImpactOrders = useMemo(() => {
+    return workOrders
+      .filter((wo) => {
+        const impact = Number(wo["Production Impact"]);
+        return INCLUDED_PRODUCTION_IMPACTS.includes(impact);
+      })
+      .sort((a, b) => {
+        // Sort by data center first, then by production impact (ascending)
+        const dcA = (a["Data Center"] || "").toUpperCase();
+        const dcB = (b["Data Center"] || "").toUpperCase();
+        if (dcA !== dcB) return dcA.localeCompare(dcB);
+        const impactA = Number(a["Production Impact"]) || 0;
+        const impactB = Number(b["Production Impact"]) || 0;
+        return impactA - impactB;
+      });
+  }, [workOrders]);
+
+  // Group production impact orders by data center
+  const productionImpactByDC = useMemo(() => {
+    const groups: Record<string, WorkOrder[]> = {};
+    productionImpactOrders.forEach(wo => {
+      const dc = wo["Data Center"] || "Unknown";
+      if (!groups[dc]) groups[dc] = [];
+      groups[dc].push(wo);
+    });
+    return Object.keys(groups).sort().map(dc => ({
+      dataCenter: dc,
+      orders: groups[dc]
+    }));
+  }, [productionImpactOrders]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h2 className="text-2xl font-semibold text-foreground">Inbox Review</h2>
-        <p className="text-sm text-muted-foreground mt-1">Review work order campaigns, scheduled labor, and work orders awaiting closure</p>
+        <p className="text-sm text-muted-foreground mt-1">Review work order campaigns, scheduled labor, work orders awaiting closure, and production impact</p>
       </div>
 
       {/* Sub-tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="wo-campaign" className="flex items-center gap-2">
             WO Campaign
             <Badge variant="secondary" className="text-xs">{woCampaignOrders.length}</Badge>
@@ -92,6 +127,10 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
           <TabsTrigger value="awaiting-closure" className="flex items-center gap-2">
             WOs Awaiting Closure
             <Badge variant="secondary" className="text-xs">{awaitingClosureOrders.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="production-impact" className="flex items-center gap-2">
+            Production Impact
+            <Badge variant="secondary" className="text-xs">{productionImpactOrders.length}</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -229,6 +268,95 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
               ) : (
                 <p className="text-muted-foreground text-center py-8">
                   No work orders found in "Work Complete" status with Deferral Reason = "No"
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Production Impact Tab */}
+        <TabsContent value="production-impact" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Production Impact</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {productionImpactOrders.length} work orders with Production Impact of 10, 15, 20, 25, or 30 (excluding 40), organized by data center
+              </p>
+            </CardHeader>
+            <CardContent className="p-0">
+              {productionImpactByDC.length > 0 ? (
+                productionImpactByDC.map(group => (
+                  <div key={group.dataCenter} className="border-b border-border last:border-b-0">
+                    <div className="px-4 py-3 bg-muted/40 border-b border-border">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        {group.dataCenter} ({group.orders.length})
+                      </h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm table-fixed">
+                        <colgroup>
+                          <col style={{ width: "10%" }} />
+                          <col style={{ width: "28%" }} />
+                          <col style={{ width: "10%" }} />
+                          <col style={{ width: "12%" }} />
+                          <col style={{ width: "12%" }} />
+                          <col style={{ width: "10%" }} />
+                          <col style={{ width: "8%" }} />
+                          <col style={{ width: "10%" }} />
+                        </colgroup>
+                        <thead>
+                          <tr className="border-b border-border bg-muted/30">
+                            <th className="text-left py-3 px-4 font-medium">Work Order</th>
+                            <th className="text-left py-3 px-4 font-medium">Description</th>
+                            <th className="text-left py-3 px-4 font-medium">Data Center</th>
+                            <th className="text-left py-3 px-4 font-medium">Sched Start Date</th>
+                            <th className="text-left py-3 px-4 font-medium">Shift</th>
+                            <th className="text-left py-3 px-4 font-medium">Status</th>
+                            <th className="text-left py-3 px-4 font-medium">Impact</th>
+                            <th className="text-left py-3 px-4 font-medium">Priority</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {group.orders.map((wo) => {
+                            const impact = Number(wo["Production Impact"]);
+                            // Color-code by impact severity: lower number = higher impact
+                            const impactColor = impact <= 15
+                              ? "text-red-600 font-semibold"
+                              : impact <= 20
+                                ? "text-orange-600 font-semibold"
+                                : impact <= 25
+                                  ? "text-yellow-600 font-medium"
+                                  : "text-foreground";
+                            return (
+                              <tr key={wo["Work Order"]} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
+                                <td className="py-3 px-4">
+                                  <a
+                                    href={`${BASE_URL}${wo["Work Order"]}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline font-mono"
+                                  >
+                                    {wo["Work Order"]}
+                                  </a>
+                                </td>
+                                <td className="py-3 px-4 truncate" title={wo["Description"]}>{wo["Description"]}</td>
+                                <td className="py-3 px-4">{wo["Data Center"]}</td>
+                                <td className="py-3 px-4">{formatDate(wo["Sched. Start Date"])}</td>
+                                <td className="py-3 px-4">{wo["Shift"]}</td>
+                                <td className="py-3 px-4">{wo["Status"]}</td>
+                                <td className={`py-3 px-4 ${impactColor}`}>{impact}</td>
+                                <td className="py-3 px-4">{wo["Priority"]}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-center py-8">
+                  No work orders found with Production Impact of 10, 15, 20, 25, or 30
                 </p>
               )}
             </CardContent>

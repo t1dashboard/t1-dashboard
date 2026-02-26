@@ -145,3 +145,4 @@
 - [x] WOs Awaiting Closure: Organize by data center sections
 - [x] Workload tab: Add daily view option to calendar (in addition to weekly view)
 - [x] Replace 'Assigned To Name' column with 'Shift' code column across all sections of the dashboard
+- [x] Add Production Impact sub-tab under Inbox Review (show WOs with Production Impact = 10, 15, 20, 25, or 30; exclude 40)
