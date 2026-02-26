@@ -146,3 +146,4 @@
 - [x] Workload tab: Add daily view option to calendar (in addition to weekly view)
 - [x] Replace 'Assigned To Name' column with 'Shift' code column across all sections of the dashboard
 - [x] Add Production Impact sub-tab under Inbox Review (show WOs with Production Impact = 10, 15, 20, 25, or 30; exclude 40)
+- [x] Production Impact: Only show T1-T3 work orders (sched start within next 3 weeks)

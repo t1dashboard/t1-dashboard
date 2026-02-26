@@ -7,7 +7,7 @@ import { WorkOrder, ScheduledLabor } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { formatDate, parseExcelDate } from "@/lib/dateUtils";
+import { formatDate, parseExcelDate, getTWeekRange } from "@/lib/dateUtils";
 import ScheduledLaborReviewTab from "@/components/ScheduledLaborReviewTab";
 
 interface InboxReviewProps {
@@ -75,11 +75,20 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
   }, [awaitingClosureOrders]);
 
   // Production Impact: filter work orders with Production Impact of 10, 15, 20, 25, or 30
+  // Only include T1-T3 work orders (sched start within next 3 weeks)
   const productionImpactOrders = useMemo(() => {
+    const t1Range = getTWeekRange(1);
+    const t3Range = getTWeekRange(3);
+    const t1Start = t1Range.start;
+    const t3End = t3Range.end;
+
     return workOrders
       .filter((wo) => {
         const impact = Number(wo["Production Impact"]);
-        return INCLUDED_PRODUCTION_IMPACTS.includes(impact);
+        if (!INCLUDED_PRODUCTION_IMPACTS.includes(impact)) return false;
+        const schedDate = parseExcelDate(wo["Sched. Start Date"]);
+        if (!schedDate) return false;
+        return schedDate >= t1Start && schedDate <= t3End;
       })
       .sort((a, b) => {
         // Sort by data center first, then by production impact (ascending)
@@ -280,7 +289,7 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
             <CardHeader>
               <CardTitle>Production Impact</CardTitle>
               <p className="text-sm text-muted-foreground">
-                {productionImpactOrders.length} work orders with Production Impact of 10, 15, 20, 25, or 30 (excluding 40), organized by data center
+                {productionImpactOrders.length} T1-T3 work orders with Production Impact of 10, 15, 20, 25, or 30 (excluding 40), organized by data center
               </p>
             </CardHeader>
             <CardContent className="p-0">
