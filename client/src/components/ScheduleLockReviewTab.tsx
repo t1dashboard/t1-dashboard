@@ -106,18 +106,33 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       return lockWeekStr >= lockCreatedMondayStr && lockWeekStr <= lockCreatedSundayStr;
     });
 
+    // Build a map of locked WO numbers to their stored sched start dates
+    const lockedWOMap = new Map<string, string | null>();
+    previousWeekLocked.forEach(wo => {
+      lockedWOMap.set(String(wo.workOrderNumber), wo.schedStartDate || null);
+    });
     const lockedWONumbers = new Set(previousWeekLocked.map(wo => String(wo.workOrderNumber)));
 
     // Shift codes to exclude unless description contains LOTO or PTW
     const EXCLUDED_SHIFT_CODES = new Set(["GNSF", "GNSG", "GNSH", "GNSI", "GNSJ"]);
 
-    // Find unplanned work orders (scheduled for previous week but not locked)
-    // NEW RULES:
+    // Helper to normalize dates for comparison
+    const normalizeDateStr = (dateVal: any): string => {
+      const parsed = parseExcelDate(dateVal);
+      if (!parsed) return "";
+      return toDateStr(parsed);
+    };
+
+    // Find unplanned work orders:
+    // Only include WOs that were in the locked schedule but whose sched start date
+    // was CHANGED compared to the stored lock data.
+    // RULES:
     // 1. Only include Work Complete or Closed status
-    // 2. Exclude descriptions containing "000" (e.g., T256086299)
-    // 3. Include door or wall repairs
-    // 4. Exclude cancelled, CMCC, weekly (existing rules)
-    // 5. Exclude shift codes GNSF/GNSG/GNSH/GNSI/GNSJ unless description contains LOTO or PTW
+    // 2. Exclude descriptions containing "000"
+    // 3. Exclude cancelled, CMCC, weekly
+    // 4. Exclude shift codes GNSF/GNSG/GNSH/GNSI/GNSJ unless description contains LOTO or PTW
+    // 5. WO must have been locked AND its current sched start date differs from the locked sched start date
+    //    OR WO was NOT locked but appeared in previous week (truly unplanned)
     const unplanned = workOrders.filter((wo) => {
       const status = wo["Status"]?.toUpperCase() || "";
       const description = wo["Description"]?.toUpperCase() || "";
@@ -146,9 +161,17 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       })() : false;
       
       const woNumber = String(wo["Work Order"]);
-      const wasNotLocked = !lockedWONumbers.has(woNumber);
       
-      return isInPreviousWeek && wasNotLocked;
+      if (lockedWONumbers.has(woNumber)) {
+        // WO was locked — only show if sched start date was changed
+        const lockedSchedDate = normalizeDateStr(lockedWOMap.get(woNumber));
+        const currentSchedDate = normalizeDateStr(wo["Sched. Start Date"]);
+        const dateChanged = lockedSchedDate !== currentSchedDate;
+        return isInPreviousWeek && dateChanged;
+      } else {
+        // WO was NOT locked — truly unplanned work
+        return isInPreviousWeek;
+      }
     });
 
     // Separate LOTO/PTW work orders from the rest

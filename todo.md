@@ -147,3 +147,6 @@
 - [x] Replace 'Assigned To Name' column with 'Shift' code column across all sections of the dashboard
 - [x] Add Production Impact sub-tab under Inbox Review (show WOs with Production Impact = 10, 15, 20, 25, or 30; exclude 40)
 - [x] Production Impact: Only show T1-T3 work orders (sched start within next 3 weeks)
+- [x] Fix Schedule Lock table alignment — lock icon needs its own column so data isn't shifted right
+- [x] Incomplete Locked Orders: Ensure In Process status is excluded (re-verified — already in place)
+- [x] Unplanned Schedule Review: Only show WOs where sched start date was changed compared to stored lock data

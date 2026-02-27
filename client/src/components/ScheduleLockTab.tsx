@@ -381,12 +381,13 @@ export default function ScheduleLockTab({ workOrders, canLock = false }: Schedul
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: "4%" }} />
+                <col style={{ width: "4%" }} />
                 <col style={{ width: "9%" }} />
-                <col style={{ width: "33%" }} />
+                <col style={{ width: "30%" }} />
                 <col style={{ width: "10%" }} />
-                <col style={{ width: "14%" }} />
-                <col style={{ width: "18%" }} />
                 <col style={{ width: "12%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "10%" }} />
               </colgroup>
               <thead>
                 <tr className="border-b border-border bg-muted/30">
@@ -396,6 +397,7 @@ export default function ScheduleLockTab({ workOrders, canLock = false }: Schedul
                       onCheckedChange={handleSelectAll}
                     />
                   </th>
+                  <th className="text-center py-3 px-2 text-sm font-medium text-foreground"><Lock className="h-4 w-4 mx-auto text-muted-foreground" /></th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Description</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
@@ -422,11 +424,11 @@ export default function ScheduleLockTab({ workOrders, canLock = false }: Schedul
                           onCheckedChange={() => handleToggleWorkOrder(woNumber)}
                         />
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-2 text-center">
                         {lockedWorkOrders.has(woNumber) ? (
-                          <Lock className="h-4 w-4 text-green-600" />
+                          <Lock className="h-4 w-4 text-green-600 mx-auto" />
                         ) : (
-                          <Unlock className="h-4 w-4 text-red-600" />
+                          <Unlock className="h-4 w-4 text-red-600 mx-auto" />
                         )}
                       </td>
                       <td className="py-3 px-4">
