@@ -7,9 +7,10 @@ import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { formatDate, isNextWeek } from "@/lib/dateUtils";
 import { toast } from "sonner";
-import { Lock, Unlock, Download, Loader2, X } from "lucide-react";
+import { Lock, Unlock, Download, Loader2, X, KeyRound } from "lucide-react";
 import * as XLSX from "xlsx";
 import { getScheduleLocks, lockWorkOrders, unlockWorkOrders, getScheduleLockWeeks, getScheduleLocksByWeek, ScheduleLock } from "@/lib/api";
 
@@ -20,13 +21,35 @@ interface ScheduleLockTabProps {
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
-export default function ScheduleLockTab({ workOrders, canLock = false }: ScheduleLockTabProps) {
+export default function ScheduleLockTab({ workOrders, canLock: initialCanLock = false }: ScheduleLockTabProps) {
   const [selectedWorkOrders, setSelectedWorkOrders] = useState<Set<string>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [lockedWorkOrders, setLockedWorkOrders] = useState<Set<string>>(new Set());
   const [allLocks, setAllLocks] = useState<ScheduleLock[]>([]);
   const [loadingLocks, setLoadingLocks] = useState(true);
   const [locking, setLocking] = useState(false);
+
+  // PIN unlock state for lock/unlock buttons
+  const [pinUnlocked, setPinUnlocked] = useState(initialCanLock);
+  const [showPinDialog, setShowPinDialog] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState(false);
+  const UPLOAD_PIN = import.meta.env.VITE_UPLOAD_PIN || "1171";
+
+  const canLock = initialCanLock || pinUnlocked;
+
+  const handlePinSubmit = () => {
+    if (pinInput === UPLOAD_PIN) {
+      setPinUnlocked(true);
+      setShowPinDialog(false);
+      setPinError(false);
+      setPinInput("");
+      toast.success("Lock controls unlocked");
+    } else {
+      setPinError(true);
+      setPinInput("");
+    }
+  };
 
   // Export dialog state
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -330,6 +353,46 @@ export default function ScheduleLockTab({ workOrders, canLock = false }: Schedul
         </div>
       )}
 
+      {/* PIN Unlock Dialog */}
+      {showPinDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-sm mx-4">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-lg font-medium flex items-center gap-2">
+                <KeyRound className="h-5 w-5" />
+                Enter PIN
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setShowPinDialog(false); setPinError(false); setPinInput(""); }}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">Enter the PIN to unlock lock/unlock controls</p>
+              <div className="flex gap-2">
+                <Input
+                  type="password"
+                  placeholder="Enter PIN"
+                  value={pinInput}
+                  onChange={(e) => { setPinInput(e.target.value); setPinError(false); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handlePinSubmit(); }}
+                  className={pinError ? 'border-red-500' : ''}
+                  autoFocus
+                />
+                <Button onClick={handlePinSubmit}>Unlock</Button>
+              </div>
+              {pinError && (
+                <p className="text-xs text-red-500 mt-2">Incorrect PIN. Please try again.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Card className="bg-primary/5 border-primary/20">
         <CardContent className="py-4 flex items-center justify-between">
           <div>
@@ -346,23 +409,32 @@ export default function ScheduleLockTab({ workOrders, canLock = false }: Schedul
               <Download className="h-4 w-4" />
               Export Locked
             </Button>
-            {canLock && (
+            {canLock ? (
+              <>
+                <Button 
+                  onClick={handleLockSchedule}
+                  disabled={selectedWorkOrders.size === 0 || locking}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {locking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Lock Schedule
+                </Button>
+                <Button 
+                  onClick={handleUnlockSchedule}
+                  disabled={selectedWorkOrders.size === 0 || locking}
+                  variant="destructive"
+                >
+                  Unlock Selected
+                </Button>
+              </>
+            ) : (
               <Button 
-                onClick={handleLockSchedule}
-                disabled={selectedWorkOrders.size === 0 || locking}
-                className="bg-primary hover:bg-primary/90"
+                onClick={() => setShowPinDialog(true)}
+                variant="outline"
+                className="flex items-center gap-2"
               >
-                {locking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Lock Schedule
-              </Button>
-            )}
-            {canLock && (
-              <Button 
-                onClick={handleUnlockSchedule}
-                disabled={selectedWorkOrders.size === 0 || locking}
-                variant="destructive"
-              >
-                Unlock Selected
+                <KeyRound className="h-4 w-4" />
+                Unlock Controls
               </Button>
             )}
           </div>

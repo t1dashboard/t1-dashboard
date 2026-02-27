@@ -150,3 +150,4 @@
 - [x] Fix Schedule Lock table alignment — lock icon needs its own column so data isn't shifted right
 - [x] Incomplete Locked Orders: Ensure In Process status is excluded (re-verified — already in place)
 - [x] Unplanned Schedule Review: Only show WOs where sched start date was changed compared to stored lock data
+- [x] Restore Lock Schedule and Unlock Selected buttons on Schedule Lock tab (PIN protected)
