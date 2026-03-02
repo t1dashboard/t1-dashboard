@@ -1,10 +1,12 @@
 /**
- * Swiss Rationalism: Deconfliction tab — identifies work orders on the same day,
- * in the same data center, that reference matching critical equipment identifiers
- * (MSB, EG, UPS, PTX with their associated numbers/letters).
+ * Swiss Rationalism: Deconfliction tab — identifies work orders whose work windows
+ * overlap (sched start through sched end) in the same data center, where both
+ * reference related critical equipment (MSB, EG, UPS, PTX).
  *
- * Example: "3EG-N3" and "3MSB-N3" both reference the N3 infrastructure chain
- * and would be flagged if scheduled on the same day in the same data center.
+ * Example: WO with "3EG-N3" spanning Mon-Fri and WO with "3UPS-N3" starting Tue
+ * would be flagged because they share the N3 infrastructure chain and overlap.
+ *
+ * Each unique set of conflicting WOs appears only once per data center (no duplicates).
  */
 
 import { useMemo, useState } from "react";
@@ -21,55 +23,74 @@ interface DeconflictionTabProps {
 const EQUIPMENT_PATTERNS = ["MSB", "EG", "UPS", "PTX"];
 
 /**
- * Extract equipment identifiers from a text string.
- * Looks for patterns like: 3EG-N3, MSB-N3, 2UPS-A1, PTX-B2, etc.
- * Returns an array of normalized identifiers, e.g. ["EG-N3", "MSB-N3"]
- * We strip the leading number prefix to get the core equipment type + identifier.
+ * Extract the infrastructure chain identifier from text.
+ * For "3EG-N3" → chain is "N3", equipment type is "EG"
+ * For "3MSB-N3" → chain is "N3", equipment type is "MSB"
+ * Returns array of { type, chain } objects.
  */
-function extractEquipmentIds(text: string): string[] {
+function extractEquipmentInfo(text: string): Array<{ type: string; chain: string; fullId: string }> {
   if (!text) return [];
-  const ids: string[] = [];
+  const results: Array<{ type: string; chain: string; fullId: string }> = [];
 
-  // Pattern: optional leading digits, then equipment type, then a separator (dash, space, or nothing),
-  // then an identifier (alphanumeric). Examples: 3EG-N3, MSB-N3, 2UPS-A1, PTX B2, EG3
   for (const eqType of EQUIPMENT_PATTERNS) {
-    // Match patterns like: 3EG-N3, EG-N3, 3EG N3, EGN3, etc.
-    // Also match: EG-3, MSB-1A, UPS-2B, etc.
     const regex = new RegExp(
       `\\d*${eqType}[\\s\\-]?([A-Za-z0-9]+[A-Za-z0-9\\-]*)`,
       "gi"
     );
     let match;
     while ((match = regex.exec(text)) !== null) {
-      // Normalize: extract the identifier part after the equipment type
       const fullMatch = match[0];
-      // Get the part after the equipment type name
       const afterType = fullMatch.replace(/^\d*/, "").replace(new RegExp(`^${eqType}[\\s\\-]?`, "i"), "");
       if (afterType) {
-        // Normalize to uppercase: "EG-N3" format
-        ids.push(`${eqType}-${afterType.toUpperCase()}`);
+        const chain = afterType.toUpperCase();
+        results.push({
+          type: eqType,
+          chain,
+          fullId: `${eqType}-${chain}`,
+        });
       }
     }
   }
 
-  return ids;
+  return results;
 }
 
 /**
- * Get a date key string (YYYY-MM-DD) from a work order's sched start date
+ * Get the date range (start, end) for a work order.
+ * Uses sched start and sched end dates. If end date is missing, assumes same day.
  */
-function getDateKey(date: any): string | null {
-  const parsed = parseExcelDate(date);
-  if (!parsed) return null;
-  return parsed.toISOString().split("T")[0];
+function getWorkWindow(wo: WorkOrder): { start: Date; end: Date } | null {
+  const startParsed = parseExcelDate(wo["Sched. Start Date"]);
+  if (!startParsed) return null;
+
+  const endParsed = parseExcelDate(wo["Sched. End Date"]);
+  const start = new Date(startParsed);
+  start.setHours(0, 0, 0, 0);
+
+  const end = endParsed ? new Date(endParsed) : new Date(start);
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+}
+
+/**
+ * Check if two date ranges overlap.
+ */
+function dateRangesOverlap(
+  a: { start: Date; end: Date },
+  b: { start: Date; end: Date }
+): boolean {
+  return a.start <= b.end && b.start <= a.end;
 }
 
 interface ConflictGroup {
-  dateKey: string;
-  dateFormatted: string;
   dataCenter: string;
-  equipmentId: string;
+  chain: string; // The shared infrastructure chain (e.g., "N3")
+  equipmentTypes: string[]; // The equipment types involved (e.g., ["EG", "UPS"])
   workOrders: WorkOrder[];
+  overlapStart: string; // Earliest start date formatted
+  overlapEnd: string; // Latest end date formatted
+  sortKey: string; // For sorting
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
@@ -77,88 +98,168 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  // Filter to T1-T3 work orders and find conflicts
   const { conflictsByDC, totalConflicts } = useMemo(() => {
     // Filter to T1-T3 work orders only, exclude closed/cancelled/work complete
-    const t1t3WOs = workOrders.filter(wo => {
-      const isT1T3 = isTWeek(wo["Sched. Start Date"], 1) || 
-                     isTWeek(wo["Sched. Start Date"], 2) || 
+    const t1t3WOs = workOrders.filter((wo: WorkOrder) => {
+      const isT1T3 = isTWeek(wo["Sched. Start Date"], 1) ||
+                     isTWeek(wo["Sched. Start Date"], 2) ||
                      isTWeek(wo["Sched. Start Date"], 3);
       const status = (wo["Status"] || "").toLowerCase();
       const excluded = ["closed", "cancelled", "work complete"].includes(status);
       return isT1T3 && !excluded;
     });
 
-    // Build a map: dataCenter -> dateKey -> equipmentId -> WorkOrder[]
-    const dcDateEquipMap = new Map<string, Map<string, Map<string, WorkOrder[]>>>();
+    // For each WO, extract equipment info and work window
+    interface WOWithEquip {
+      wo: WorkOrder;
+      window: { start: Date; end: Date };
+      equipInfo: Array<{ type: string; chain: string; fullId: string }>;
+    }
 
+    const enriched: WOWithEquip[] = [];
     for (const wo of t1t3WOs) {
-      const dc = wo["Data Center"] || "Unknown";
-      const dateKey = getDateKey(wo["Sched. Start Date"]);
-      if (!dateKey) continue;
+      const window = getWorkWindow(wo);
+      if (!window) continue;
 
-      // Extract equipment IDs from both Description and Equipment Description
-      const descIds = extractEquipmentIds(wo["Description"] || "");
-      const equipDescIds = extractEquipmentIds(wo["Equipment Description"] || "");
-      const allIds = Array.from(new Set([...descIds, ...equipDescIds]));
-
-      if (allIds.length === 0) continue;
-
-      if (!dcDateEquipMap.has(dc)) dcDateEquipMap.set(dc, new Map());
-      const dateMap = dcDateEquipMap.get(dc)!;
-      if (!dateMap.has(dateKey)) dateMap.set(dateKey, new Map());
-      const equipMap = dateMap.get(dateKey)!;
-
-      for (const eqId of allIds) {
-        if (!equipMap.has(eqId)) equipMap.set(eqId, []);
-        const list = equipMap.get(eqId)!;
-        // Avoid duplicates
-        if (!list.some(w => w["Work Order"] === wo["Work Order"])) {
-          list.push(wo);
+      const descInfo = extractEquipmentInfo(wo["Description"] || "");
+      const equipDescInfo = extractEquipmentInfo(wo["Equipment Description"] || "");
+      // Deduplicate by fullId
+      const seen = new Set<string>();
+      const allInfo: Array<{ type: string; chain: string; fullId: string }> = [];
+      for (const info of [...descInfo, ...equipDescInfo]) {
+        if (!seen.has(info.fullId)) {
+          seen.add(info.fullId);
+          allInfo.push(info);
         }
+      }
+
+      if (allInfo.length > 0) {
+        enriched.push({ wo, window, equipInfo: allInfo });
       }
     }
 
-    // Collect conflict groups (where 2+ WOs share the same equipment on the same day in the same DC)
-    const conflicts: ConflictGroup[] = [];
-    Array.from(dcDateEquipMap.entries()).forEach(([dc, dateMap]) => {
-      Array.from(dateMap.entries()).forEach(([dateKey, equipMap]) => {
-        Array.from(equipMap.entries()).forEach(([eqId, wos]) => {
-          if (wos.length >= 2) {
-            const parsed = new Date(dateKey);
-            const dateFormatted = parsed.toLocaleDateString("en-US", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            });
-            conflicts.push({ dateKey, dateFormatted, dataCenter: dc, equipmentId: eqId, workOrders: wos });
+    // Group by data center
+    const byDC = new Map<string, WOWithEquip[]>();
+    for (const item of enriched) {
+      const dc = item.wo["Data Center"] || "Unknown";
+      if (!byDC.has(dc)) byDC.set(dc, []);
+      byDC.get(dc)!.push(item);
+    }
+
+    // For each DC, find conflicts: WOs that share the same chain AND have overlapping windows
+    const allConflicts: ConflictGroup[] = [];
+
+    Array.from(byDC.entries()).forEach(([dc, items]) => {
+      // Group items by chain
+      const byChain = new Map<string, WOWithEquip[]>();
+      for (const item of items) {
+        for (const eq of item.equipInfo) {
+          if (!byChain.has(eq.chain)) byChain.set(eq.chain, []);
+          const list = byChain.get(eq.chain)!;
+          if (!list.some((existing: WOWithEquip) => existing.wo["Work Order"] === item.wo["Work Order"])) {
+            list.push(item);
           }
+        }
+      }
+
+      // For each chain, find overlapping WOs
+      // Use a set to track which WO pairs we've already grouped to avoid duplicates
+      const processedPairs = new Set<string>();
+
+      Array.from(byChain.entries()).forEach(([chain, chainItems]) => {
+        if (chainItems.length < 2) return;
+
+        // Find all WOs in this chain that overlap with at least one other
+        const conflictingWOs: WOWithEquip[] = [];
+        for (let i = 0; i < chainItems.length; i++) {
+          let hasOverlap = false;
+          for (let j = 0; j < chainItems.length; j++) {
+            if (i === j) continue;
+            if (dateRangesOverlap(chainItems[i].window, chainItems[j].window)) {
+              hasOverlap = true;
+              break;
+            }
+          }
+          if (hasOverlap) {
+            conflictingWOs.push(chainItems[i]);
+          }
+        }
+
+        if (conflictingWOs.length < 2) return;
+
+        // Create a unique key for this set of WOs to prevent duplicates
+        const woIds = conflictingWOs
+          .map((item: WOWithEquip) => item.wo["Work Order"])
+          .sort((a: number, b: number) => a - b);
+        const pairKey = `${dc}-${woIds.join("-")}`;
+
+        if (processedPairs.has(pairKey)) return;
+        processedPairs.add(pairKey);
+
+        // Collect all equipment types involved
+        const eqTypesSet = new Set<string>();
+        for (const item of conflictingWOs) {
+          for (const eq of item.equipInfo) {
+            if (eq.chain === chain) {
+              eqTypesSet.add(eq.type);
+            }
+          }
+        }
+
+        // Find the overall date span
+        let earliest = conflictingWOs[0].window.start;
+        let latest = conflictingWOs[0].window.end;
+        for (const item of conflictingWOs) {
+          if (item.window.start < earliest) earliest = item.window.start;
+          if (item.window.end > latest) latest = item.window.end;
+        }
+
+        const overlapStart = earliest.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        });
+        const overlapEnd = latest.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        });
+
+        allConflicts.push({
+          dataCenter: dc,
+          chain,
+          equipmentTypes: Array.from(eqTypesSet).sort(),
+          workOrders: conflictingWOs.map((item: WOWithEquip) => item.wo),
+          overlapStart,
+          overlapEnd,
+          sortKey: earliest.toISOString().split("T")[0] + chain,
         });
       });
     });
 
-    // Group by data center, sort DCs alphabetically
-    const byDC = new Map<string, ConflictGroup[]>();
-    for (const group of conflicts) {
-      if (!byDC.has(group.dataCenter)) byDC.set(group.dataCenter, []);
-      byDC.get(group.dataCenter)!.push(group);
+    // Group conflicts by DC and sort
+    const conflictsByDCMap = new Map<string, ConflictGroup[]>();
+    for (const group of allConflicts) {
+      if (!conflictsByDCMap.has(group.dataCenter)) conflictsByDCMap.set(group.dataCenter, []);
+      conflictsByDCMap.get(group.dataCenter)!.push(group);
     }
 
-    // Sort each DC's conflicts by date then equipment
-    Array.from(byDC.entries()).forEach(([, groups]) => {
-      groups.sort((a: ConflictGroup, b: ConflictGroup) => a.dateKey.localeCompare(b.dateKey) || a.equipmentId.localeCompare(b.equipmentId));
+    Array.from(conflictsByDCMap.entries()).forEach(([, groups]) => {
+      groups.sort((a: ConflictGroup, b: ConflictGroup) => a.sortKey.localeCompare(b.sortKey));
     });
 
-    const sortedDCs = new Map<string, ConflictGroup[]>(Array.from(byDC.entries()).sort((a, b) => a[0].localeCompare(b[0])));
+    const sorted = new Map<string, ConflictGroup[]>(
+      Array.from(conflictsByDCMap.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+    );
 
     return {
-      conflictsByDC: sortedDCs,
-      totalConflicts: conflicts.length,
+      conflictsByDC: sorted,
+      totalConflicts: allConflicts.length,
     };
   }, [workOrders]);
 
   const toggleGroup = (key: string) => {
-    setExpandedGroups(prev => {
+    setExpandedGroups((prev: Set<string>) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -170,8 +271,8 @@ export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) 
     const allKeys = new Set<string>();
     Array.from(conflictsByDC.entries()).forEach(([dc, groups]: [string, ConflictGroup[]]) => {
       allKeys.add(`dc-${dc}`);
-      groups.forEach((g: ConflictGroup) => {
-        allKeys.add(`${dc}-${g.dateKey}-${g.equipmentId}`);
+      groups.forEach((g: ConflictGroup, i: number) => {
+        allKeys.add(`${dc}-${i}`);
       });
     });
     setExpandedGroups(allKeys);
@@ -190,7 +291,7 @@ export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) 
                 Deconfliction — T1-T3
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Work orders on the same day, same data center, referencing the same critical equipment (MSB, EG, UPS, PTX)
+                Work orders with overlapping work windows in the same data center referencing related critical equipment (MSB, EG, UPS, PTX)
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -214,7 +315,7 @@ export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) 
             <div className="py-12 text-center text-muted-foreground">
               <AlertTriangle className="h-10 w-10 mx-auto mb-3 opacity-30" />
               <p>No equipment conflicts found in T1-T3 work orders.</p>
-              <p className="text-xs mt-1">Checked for overlapping MSB, EG, UPS, and PTX references on the same day and data center.</p>
+              <p className="text-xs mt-1">Checked for overlapping MSB, EG, UPS, and PTX work windows within the same data center.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -246,9 +347,12 @@ export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) 
                     {/* Conflict Groups */}
                     {dcExpanded && (
                       <div className="divide-y divide-border">
-                        {groups.map((group: ConflictGroup) => {
-                          const groupKey = `${dc}-${group.dateKey}-${group.equipmentId}`;
+                        {groups.map((group: ConflictGroup, idx: number) => {
+                          const groupKey = `${dc}-${idx}`;
                           const groupExpanded = expandedGroups.has(groupKey);
+                          const dateRange = group.overlapStart === group.overlapEnd
+                            ? group.overlapStart
+                            : `${group.overlapStart} — ${group.overlapEnd}`;
 
                           return (
                             <div key={groupKey}>
@@ -258,9 +362,9 @@ export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) 
                               >
                                 <div className="flex items-center gap-3">
                                   {groupExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                                  <span className="text-sm font-medium text-foreground">{group.dateFormatted}</span>
+                                  <span className="text-sm font-medium text-foreground">{dateRange}</span>
                                   <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-mono">
-                                    {group.equipmentId}
+                                    {group.equipmentTypes.join(" / ")}-{group.chain}
                                   </span>
                                 </div>
                                 <span className="text-xs text-muted-foreground">
@@ -275,7 +379,8 @@ export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) 
                                       <tr className="border-b border-border text-left text-xs text-muted-foreground">
                                         <th className="py-2 pr-3 w-28">Work Order</th>
                                         <th className="py-2 pr-3">Description</th>
-                                        <th className="py-2 pr-3 w-40">Equipment Desc.</th>
+                                        <th className="py-2 pr-3 w-24">Start Date</th>
+                                        <th className="py-2 pr-3 w-24">End Date</th>
                                         <th className="py-2 pr-3 w-20">Shift</th>
                                         <th className="py-2 pr-3 w-24">Status</th>
                                         <th className="py-2 w-20">Priority</th>
@@ -297,7 +402,8 @@ export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) 
                                               </a>
                                             </td>
                                             <td className="py-2 pr-3 text-xs">{wo["Description"]}</td>
-                                            <td className="py-2 pr-3 text-xs text-muted-foreground">{wo["Equipment Description"]}</td>
+                                            <td className="py-2 pr-3 text-xs">{formatDate(wo["Sched. Start Date"])}</td>
+                                            <td className="py-2 pr-3 text-xs">{formatDate(wo["Sched. End Date"])}</td>
                                             <td className="py-2 pr-3 text-xs">{wo["Shift"]}</td>
                                             <td className="py-2 pr-3">
                                               <span className={`text-xs px-1.5 py-0.5 rounded ${
@@ -345,8 +451,8 @@ export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) 
                 <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded mx-1">EG</span>
                 <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded mx-1">UPS</span>
                 <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded mx-1">PTX</span>
-                followed by their identifier (e.g., 3EG-N3 and 3MSB-N3 both reference N3 infrastructure).
-                Conflicts are flagged when 2+ work orders touch the same equipment chain on the same day in the same data center.
+                followed by their chain identifier (e.g., 3EG-N3 and 3MSB-N3 both reference the N3 chain).
+                Conflicts are flagged when 2+ work orders on the same infrastructure chain have overlapping work windows (start date through end date) in the same data center.
               </p>
             </div>
           </div>

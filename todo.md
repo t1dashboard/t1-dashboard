@@ -152,3 +152,5 @@
 - [x] Unplanned Schedule Review: Only show WOs where sched start date was changed compared to stored lock data
 - [x] Restore Lock Schedule and Unlock Selected buttons on Schedule Lock tab (PIN protected)
 - [x] Add Deconfliction tab to T1-T3 Dashboard (beside Workload) — group by data center, flag WOs on same day with matching MSB/EG/UPS/PTX equipment identifiers in description or equipment description
+- [x] Deconfliction: Consolidate duplicate conflicts — same WO pair should only appear once, not under multiple equipment IDs
+- [x] Deconfliction: Use date span overlap (sched start through sched end) instead of exact date matching for conflict detection
