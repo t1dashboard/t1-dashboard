@@ -151,3 +151,4 @@
 - [x] Incomplete Locked Orders: Ensure In Process status is excluded (re-verified — already in place)
 - [x] Unplanned Schedule Review: Only show WOs where sched start date was changed compared to stored lock data
 - [x] Restore Lock Schedule and Unlock Selected buttons on Schedule Lock tab (PIN protected)
+- [x] Add Deconfliction tab to T1-T3 Dashboard (beside Workload) — group by data center, flag WOs on same day with matching MSB/EG/UPS/PTX equipment identifiers in description or equipment description

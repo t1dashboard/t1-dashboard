@@ -14,6 +14,7 @@ import T1NotInReadyTab from "@/components/T1NotInReadyTab";
 import T2NotInReadyTab from "@/components/T2NotInReadyTab";
 import T3NotInReadyTab from "@/components/T3NotInReadyTab";
 import ComplianceCheckTab from "@/components/ComplianceCheckTab";
+import DeconflictionTab from "@/components/DeconflictionTab";
 import { getTWeekRange, isTWeek } from "@/lib/dateUtils";
 import { getUploadMetadata, getComplianceAlerts, ComplianceAlert } from "@/lib/api";
 import {
@@ -265,11 +266,12 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-7 h-auto p-1">
+        <TabsList className="grid grid-cols-8 h-auto p-1">
           <TabsTrigger value="t3notready" className="py-3">T3 Not in Ready</TabsTrigger>
           <TabsTrigger value="t2notready" className="py-3">T2 Not in Ready</TabsTrigger>
           <TabsTrigger value="t1notready" className="py-3">T1 Not in Ready</TabsTrigger>
           <TabsTrigger value="workload" className="py-3">Workload</TabsTrigger>
+          <TabsTrigger value="deconfliction" className="py-3">Deconfliction</TabsTrigger>
           <TabsTrigger value="risk" className="py-3">Risk Identification</TabsTrigger>
           <TabsTrigger value="loto" className="py-3">LOTO Review</TabsTrigger>
           <TabsTrigger value="compliance" className="py-3">Compliance Check</TabsTrigger>
@@ -289,6 +291,10 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T
 
         <TabsContent value="workload" className="mt-6">
           <WorkLoadTab workOrders={filteredWorkOrders} weekFilter={workloadWeek} onWeekChange={setWorkloadWeek} />
+        </TabsContent>
+
+        <TabsContent value="deconfliction" className="mt-6">
+          <DeconflictionTab workOrders={filteredWorkOrders} />
         </TabsContent>
 
         <TabsContent value="risk" className="mt-6">
