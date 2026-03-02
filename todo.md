@@ -154,3 +154,5 @@
 - [x] Add Deconfliction tab to T1-T3 Dashboard (beside Workload) — group by data center, flag WOs on same day with matching MSB/EG/UPS/PTX equipment identifiers in description or equipment description
 - [x] Deconfliction: Consolidate duplicate conflicts — same WO pair should only appear once, not under multiple equipment IDs
 - [x] Deconfliction: Use date span overlap (sched start through sched end) instead of exact date matching for conflict detection
+- [x] T1/T2/T3 Not in Ready: Exclude work orders with Cancelled or Closed status
+- [x] T4-T8 Not in Approved: Exclude work orders with Cancelled or Closed status

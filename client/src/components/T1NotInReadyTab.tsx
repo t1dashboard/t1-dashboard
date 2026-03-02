@@ -17,10 +17,12 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 export default function T1NotInReadyTab({ workOrders }: T1NotInReadyTabProps) {
   const t1NotReadyOrders = useMemo(() => {
     const filtered = workOrders.filter((wo) => {
-      const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
-      const isReady = wo["Status"]?.toUpperCase() === "READY";
+      const status = wo["Status"]?.toUpperCase() || "";
+      const isCancelled = status === "CANCELLED";
+      const isClosed = status === "CLOSED";
+      const isReady = status === "READY";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
-      return !isCancelled && !isCMCC && !isReady && isNextWeek(wo["Sched. Start Date"]);
+      return !isCancelled && !isClosed && !isCMCC && !isReady && isNextWeek(wo["Sched. Start Date"]);
     });
     
     // Sort alphabetically by data center

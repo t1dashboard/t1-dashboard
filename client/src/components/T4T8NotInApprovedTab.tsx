@@ -17,10 +17,12 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTabProps) {
   const groupedOrders = useMemo(() => {
     const filtered = workOrders.filter((wo) => {
-      const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
-      const isPlanning = wo["Status"]?.toUpperCase() === "PLANNING";
+      const status = wo["Status"]?.toUpperCase() || "";
+      const isCancelled = status === "CANCELLED";
+      const isClosed = status === "CLOSED";
+      const isPlanning = status === "PLANNING";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
-      return !isCancelled && !isCMCC && isPlanning && isT4T8Week(wo["Sched. Start Date"]);
+      return !isCancelled && !isClosed && !isCMCC && isPlanning && isT4T8Week(wo["Sched. Start Date"]);
     });
     
     // Group by data center
