@@ -60,7 +60,8 @@ export default function T2NotInReadyTab({ workOrders }: T2NotInReadyTabProps) {
             <div className="flex flex-wrap gap-4 text-sm">
               <span><span className="font-semibold">COM:</span> {weekLeaders.COM}</span>
               <span><span className="font-semibold">LBE:</span> {weekLeaders.LBE}</span>
-              <span><span className="font-semibold">SME Lead:</span> {weekLeaders.SMELead}</span>
+              <span><span className="font-semibold">SME:</span> {weekLeaders.SME}</span>
+              <span><span className="font-semibold">Lead:</span> {weekLeaders.Lead}</span>
               <span><span className="font-semibold">cSME:</span> {weekLeaders.cSME}</span>
               <span><span className="font-semibold">mSME:</span> {weekLeaders.mSME}</span>
               <span><span className="font-semibold">eSME:</span> {weekLeaders.eSME}</span>

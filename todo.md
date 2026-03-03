@@ -156,3 +156,4 @@
 - [x] Deconfliction: Use date span overlap (sched start through sched end) instead of exact date matching for conflict detection
 - [x] T1/T2/T3 Not in Ready: Exclude work orders with Cancelled or Closed status
 - [x] T4-T8 Not in Approved: Exclude work orders with Cancelled or Closed status
+- [x] Update work week leaders from Work Execution and Planning Guide (new roles: COM, LBE, SME, Lead, cSME, mSME, eSME)

@@ -360,7 +360,8 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                   <div className="flex flex-wrap gap-4 text-sm">
                     <span><span className="font-semibold">COM:</span> {previousWeekLeaders.COM}</span>
                     <span><span className="font-semibold">LBE:</span> {previousWeekLeaders.LBE}</span>
-                    <span><span className="font-semibold">SME Lead:</span> {previousWeekLeaders.SMELead}</span>
+                    <span><span className="font-semibold">SME:</span> {previousWeekLeaders.SME}</span>
+                    <span><span className="font-semibold">Lead:</span> {previousWeekLeaders.Lead}</span>
                     <span><span className="font-semibold">cSME:</span> {previousWeekLeaders.cSME}</span>
                     <span><span className="font-semibold">mSME:</span> {previousWeekLeaders.mSME}</span>
                     <span><span className="font-semibold">eSME:</span> {previousWeekLeaders.eSME}</span>
