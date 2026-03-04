@@ -157,3 +157,4 @@
 - [x] T1/T2/T3 Not in Ready: Exclude work orders with Cancelled or Closed status
 - [x] T4-T8 Not in Approved: Exclude work orders with Cancelled or Closed status
 - [x] Update work week leaders from Work Execution and Planning Guide (new roles: COM, LBE, SME, Lead, cSME, mSME, eSME)
+- [x] Workload calendar view: Display date (MM/DD/YYYY) beside the day of the week in column headers

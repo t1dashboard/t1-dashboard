@@ -320,12 +320,15 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
           <thead>
             <tr>
               <th className="border border-border bg-muted/30 p-1 text-xs font-medium text-muted-foreground w-[60px]"></th>
-              {DAYS_OF_WEEK.map((day) => {
+              {DAYS_OF_WEEK.map((day, idx) => {
                 const dayOrders = workloadByDay[day];
                 const totalOrders = dayOrders.day.length + dayOrders.night.length;
+                const dayDate = getDayDate(idx);
+                const dateStr = `${String(dayDate.getMonth() + 1).padStart(2, '0')}/${String(dayDate.getDate()).padStart(2, '0')}/${dayDate.getFullYear()}`;
                 return (
                   <th key={day} className="border border-border bg-muted/50 p-2 text-center">
                     <div className="font-semibold text-sm">{day}</div>
+                    <div className="text-xs text-muted-foreground font-normal">{dateStr}</div>
                     <div className="text-xs text-muted-foreground font-normal">{totalOrders} WOs</div>
                   </th>
                 );
@@ -701,7 +704,12 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
         return (
           <Card key={day}>
             <CardHeader className="border-b border-border pb-4">
-              <CardTitle className="text-xl font-medium">{day}</CardTitle>
+              <CardTitle className="text-xl font-medium">
+                {day}
+                <span className="text-base font-normal text-muted-foreground ml-2">
+                  {(() => { const idx = DAYS_OF_WEEK.indexOf(day); const d = getDayDate(idx); return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`; })()}
+                </span>
+              </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 {totalOrders} work orders ({dayOrders.day.length} day shift, {dayOrders.night.length} night shift)
               </p>
