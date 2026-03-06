@@ -158,3 +158,4 @@
 - [x] T4-T8 Not in Approved: Exclude work orders with Cancelled or Closed status
 - [x] Update work week leaders from Work Execution and Planning Guide (new roles: COM, LBE, SME, Lead, cSME, mSME, eSME)
 - [x] Workload calendar view: Display date (MM/DD/YYYY) beside the day of the week in column headers
+- [x] Remove deferral work orders from >90 Days database that no longer have deferral selected (per updated spreadsheet)

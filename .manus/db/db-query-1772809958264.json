@@ -1,0 +1,90 @@
+{
+  "query": "SELECT COUNT(*) as total, work_order_number FROM deferral_work_orders GROUP BY work_order_number ORDER BY work_order_number LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT COUNT(*) as total, work_order_number FROM deferral_work_orders GROUP BY work_order_number ORDER BY work_order_number LIMIT 20;",
+  "rows": [
+    {
+      "total": "2",
+      "work_order_number": "2584970"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2584981"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2584982"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2584985"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2584990"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2585005"
+    },
+    {
+      "total": "2",
+      "work_order_number": "2585056"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2585062"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2585063"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2585064"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2585066"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2585068"
+    },
+    {
+      "total": "2",
+      "work_order_number": "2585075"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2585076"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2585081"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2585084"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2585086"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2585106"
+    },
+    {
+      "total": "1",
+      "work_order_number": "2585112"
+    },
+    {
+      "total": "2",
+      "work_order_number": "2585118"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\twork_order_number\n2\t2584970\n1\t2584981\n1\t2584982\n1\t2584985\n1\t2584990\n1\t2585005\n2\t2585056\n1\t2585062\n1\t2585063\n1\t2585064\n1\t2585066\n1\t2585068\n2\t2585075\n1\t2585076\n1\t2585081\n1\t2585084\n1\t2585086\n1\t2585106\n1\t2585112\n2\t2585118\n",
+  "stderr": "",
+  "execution_time_ms": 1604
+}
