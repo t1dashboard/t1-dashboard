@@ -167,3 +167,4 @@
 - [x] Add two new reason categories to dropdown: Vendor Not Prepared, Risk Mitigation
 - [x] Add quarterly pie charts to Schedule Adherence tab
 - [x] Ensure Vendor Not Prepared and Risk Mitigation are in all relevant files (API validation, Schedule Adherence tab, dropdown, tests)
+- [x] Update work week leaders rotation schedule with new data from screenshot

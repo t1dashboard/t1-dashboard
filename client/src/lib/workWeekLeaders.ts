@@ -2,43 +2,44 @@
  * Work Week Leaders data structure
  * Maps week start dates to team leaders for each role
  * Updated from Work Execution and Planning Guide
+ * 
+ * Columns from source: Week, COM, LBE, SME Lead, cSME, mSME, eSME
  */
 
 export interface WeekLeaders {
   COM: string;
   LBE: string;
   SME: string;
-  Lead: string;
   cSME: string;
   mSME: string;
   eSME: string;
 }
 
 export const workWeekLeaders: Record<string, WeekLeaders> = {
-  "2026-01-05": { COM: "Marlon", LBE: "Jeremy", SME: "Danny", Lead: "Tariq", cSME: "DJ", mSME: "Nadir", eSME: "" },
-  "2026-01-12": { COM: "Shane", LBE: "Jeremiah", SME: "Torrel", Lead: "Corey", cSME: "George", mSME: "Mike", eSME: "" },
-  "2026-01-19": { COM: "Ben", LBE: "Nathan", SME: "Tim", Lead: "Kim", cSME: "Bryan", mSME: "Danna", eSME: "" },
-  "2026-01-26": { COM: "Nathan", LBE: "Mark", SME: "Ben", Lead: "Josh", cSME: "Tom", mSME: "Charles", eSME: "" },
-  "2026-02-02": { COM: "Marlon", LBE: "Jeremy", SME: "Danny", Lead: "Tariq", cSME: "DJ", mSME: "Mason", eSME: "" },
-  "2026-02-09": { COM: "Shane", LBE: "Jeremiah", SME: "Torrel", Lead: "Corey", cSME: "George", mSME: "Nadir", eSME: "" },
-  "2026-02-16": { COM: "Ben", LBE: "Nathan", SME: "Tim", Lead: "Kim", cSME: "Bryan", mSME: "Mike", eSME: "" },
-  "2026-02-23": { COM: "Nathan", LBE: "Mark", SME: "Ben", Lead: "Josh", cSME: "Tom", mSME: "Danna", eSME: "" },
-  "2026-03-02": { COM: "Marlon", LBE: "Jeremy", SME: "Danny", Lead: "Tariq", cSME: "DJ", mSME: "Charles", eSME: "" },
-  "2026-03-09": { COM: "Shane", LBE: "Jeremiah", SME: "Torrel", Lead: "Corey", cSME: "George", mSME: "Mason", eSME: "" },
-  "2026-03-16": { COM: "Ben", LBE: "Nathan", SME: "Tim", Lead: "Kim", cSME: "Bryan", mSME: "Nadir", eSME: "" },
-  "2026-03-23": { COM: "Nathan", LBE: "Mark", SME: "Danny", Lead: "Josh", cSME: "Tom", mSME: "Mike", eSME: "" },
-  "2026-03-30": { COM: "Marlon", LBE: "Jeremy", SME: "Torrel", Lead: "Tariq", cSME: "DJ", mSME: "Charles", eSME: "" },
-  "2026-04-06": { COM: "Shane", LBE: "Jeremiah", SME: "Tim", Lead: "Corey", cSME: "George", mSME: "Mason", eSME: "" },
-  "2026-04-13": { COM: "Ben", LBE: "Nathan", SME: "Danny", Lead: "Kim", cSME: "Bryan", mSME: "Nadir", eSME: "" },
-  "2026-04-20": { COM: "Nathan", LBE: "Mark", SME: "Torrel", Lead: "Josh", cSME: "Tom", mSME: "Mike", eSME: "" },
-  "2026-04-27": { COM: "Marlon", LBE: "Jeremy", SME: "Tim", Lead: "Tariq", cSME: "DJ", mSME: "Charles", eSME: "" },
-  "2026-05-04": { COM: "Shane", LBE: "Jeremiah", SME: "Danny", Lead: "Corey", cSME: "George", mSME: "Mason", eSME: "" },
-  "2026-05-11": { COM: "Ben", LBE: "Nathan", SME: "Torrel", Lead: "Kim", cSME: "Bryan", mSME: "Nadir", eSME: "" },
-  "2026-05-18": { COM: "Nathan", LBE: "Mark", SME: "Tim", Lead: "Josh", cSME: "Tom", mSME: "Mike", eSME: "" },
-  "2026-05-25": { COM: "Marlon", LBE: "Jeremy", SME: "Danny", Lead: "Tariq", cSME: "DJ", mSME: "Charles", eSME: "" },
-  "2026-06-01": { COM: "Shane", LBE: "Jeremiah", SME: "Torrel", Lead: "Corey", cSME: "George", mSME: "Mason", eSME: "" },
-  "2026-06-08": { COM: "Ben", LBE: "Nathan", SME: "Tim", Lead: "Kim", cSME: "Bryan", mSME: "Nadir", eSME: "" },
-  "2026-06-15": { COM: "Nathan", LBE: "Mark", SME: "Danny", Lead: "Josh", cSME: "Tom", mSME: "Mike", eSME: "" },
+  "2026-01-05": { COM: "Marlon", LBE: "Jeremy", SME: "Danny", cSME: "Tariq", mSME: "DJ", eSME: "Nadir" },
+  "2026-01-12": { COM: "Shane", LBE: "Jeremiah", SME: "Torrel", cSME: "Corey", mSME: "George", eSME: "Mike" },
+  "2026-01-19": { COM: "Ben", LBE: "Nathan", SME: "Tim", cSME: "Kim", mSME: "Bryan", eSME: "Danna" },
+  "2026-01-26": { COM: "Nathan", LBE: "Mark", SME: "Ben", cSME: "Josh", mSME: "Tom", eSME: "Charles" },
+  "2026-02-02": { COM: "Marlon", LBE: "Jeremy", SME: "Danny", cSME: "Tariq", mSME: "DJ", eSME: "Mason" },
+  "2026-02-09": { COM: "Shane", LBE: "Jeremiah", SME: "Torrel", cSME: "Corey", mSME: "George", eSME: "Nadir" },
+  "2026-02-16": { COM: "Ben", LBE: "Nathan", SME: "Tim", cSME: "Kim", mSME: "Bryan", eSME: "Mike" },
+  "2026-02-23": { COM: "Nathan", LBE: "Mark", SME: "Ben", cSME: "Josh", mSME: "Tom", eSME: "Danna" },
+  "2026-03-02": { COM: "Marlon", LBE: "Jeremy", SME: "Danny", cSME: "Tariq", mSME: "DJ", eSME: "Charles" },
+  "2026-03-09": { COM: "Shane", LBE: "Jeremiah", SME: "Torrel", cSME: "Corey", mSME: "George", eSME: "Mason" },
+  "2026-03-16": { COM: "Ben", LBE: "Nathan", SME: "Tim", cSME: "Kim", mSME: "Bryan", eSME: "Nadir" },
+  "2026-03-23": { COM: "Nathan", LBE: "Mark", SME: "Danny", cSME: "Josh", mSME: "Tom", eSME: "Mike" },
+  "2026-03-30": { COM: "Marlon", LBE: "Jeremy", SME: "Torrel", cSME: "Tariq", mSME: "DJ", eSME: "Charles" },
+  "2026-04-06": { COM: "Shane", LBE: "Jeremiah", SME: "Tim", cSME: "Corey", mSME: "George", eSME: "Mason" },
+  "2026-04-13": { COM: "Ben", LBE: "Nathan", SME: "Danny", cSME: "Kim", mSME: "Bryan", eSME: "Nadir" },
+  "2026-04-20": { COM: "Nathan", LBE: "Mark", SME: "Torrel", cSME: "Josh", mSME: "Tom", eSME: "Mike" },
+  "2026-04-27": { COM: "Marlon", LBE: "Jeremy", SME: "Tim", cSME: "Tariq", mSME: "DJ", eSME: "Charles" },
+  "2026-05-04": { COM: "Shane", LBE: "Jeremiah", SME: "Danny", cSME: "Corey", mSME: "George", eSME: "Mason" },
+  "2026-05-11": { COM: "Ben", LBE: "Nathan", SME: "Torrel", cSME: "Kim", mSME: "Bryan", eSME: "Nadir" },
+  "2026-05-18": { COM: "Nathan", LBE: "Mark", SME: "Tim", cSME: "Josh", mSME: "Tom", eSME: "Mike" },
+  "2026-05-25": { COM: "Marlon", LBE: "Jeremy", SME: "Danny", cSME: "Tariq", mSME: "DJ", eSME: "Charles" },
+  "2026-06-01": { COM: "Shane", LBE: "Jeremiah", SME: "Torrel", cSME: "Corey", mSME: "George", eSME: "Mason" },
+  "2026-06-08": { COM: "Ben", LBE: "Nathan", SME: "Tim", cSME: "Kim", mSME: "Bryan", eSME: "Nadir" },
+  "2026-06-15": { COM: "Nathan", LBE: "Mark", SME: "Danny", cSME: "Josh", mSME: "Tom", eSME: "Mike" },
 };
 
 /**
