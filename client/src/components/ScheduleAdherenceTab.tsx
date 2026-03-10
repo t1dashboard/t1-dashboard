@@ -11,18 +11,22 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recha
 
 const REASON_COLORS: Record<string, string> = {
   "Vendor not Available": "#5b8a72",   // muted teal
+  "Vendor Not Prepared": "#3d7a5f",   // darker teal
   "Missing Parts/Tools": "#c2785c",    // warm terracotta
   "Resource Availability": "#6b8cae",  // steel blue
   "Weather": "#8b7bb5",               // soft purple
   "XFN Partner Request": "#c4a35a",   // muted gold
+  "Risk Mitigation": "#d4726a",       // muted coral
 };
 
 const ALL_REASONS = [
   "Vendor not Available",
+  "Vendor Not Prepared",
   "Missing Parts/Tools",
   "Resource Availability",
   "Weather",
   "XFN Partner Request",
+  "Risk Mitigation",
 ];
 
 function formatMonth(monthStr: string): string {
@@ -36,6 +40,25 @@ interface MonthData {
   month: string;
   reasons: { name: string; value: number; percentage: string }[];
   total: number;
+}
+
+interface QuarterData {
+  quarter: string;
+  label: string;
+  reasons: { name: string; value: number; percentage: string }[];
+  total: number;
+}
+
+function getQuarterLabel(quarterKey: string): string {
+  const [year, q] = quarterKey.split("-Q");
+  return `Q${q} ${year}`;
+}
+
+function getQuarterKey(monthStr: string): string {
+  const [year, month] = monthStr.split("-");
+  const m = parseInt(month, 10);
+  const q = Math.ceil(m / 3);
+  return `${year}-Q${q}`;
 }
 
 export default function ScheduleAdherenceTab() {
@@ -91,6 +114,40 @@ export default function ScheduleAdherenceTab() {
         });
 
       return { month, reasons, total };
+    });
+  }, [summary]);
+
+  // Quarterly data
+  const quarterlyData: QuarterData[] = useMemo(() => {
+    const quarterMap = new Map<string, Map<string, number>>();
+
+    summary.forEach(row => {
+      const qKey = getQuarterKey(row.month);
+      if (!quarterMap.has(qKey)) {
+        quarterMap.set(qKey, new Map());
+      }
+      const reasonMap = quarterMap.get(qKey)!;
+      reasonMap.set(row.reason, (reasonMap.get(row.reason) || 0) + Number(row.count));
+    });
+
+    const quarters = Array.from(quarterMap.keys()).sort((a, b) => b.localeCompare(a));
+
+    return quarters.map(qKey => {
+      const reasonMap = quarterMap.get(qKey)!;
+      const total = Array.from(reasonMap.values()).reduce((sum, v) => sum + v, 0);
+
+      const reasons = ALL_REASONS
+        .filter(reason => reasonMap.has(reason))
+        .map(reason => {
+          const value = reasonMap.get(reason) || 0;
+          return {
+            name: reason,
+            value,
+            percentage: total > 0 ? ((value / total) * 100).toFixed(1) : "0.0",
+          };
+        });
+
+      return { quarter: qKey, label: getQuarterLabel(qKey), reasons, total };
     });
   }, [summary]);
 
@@ -257,7 +314,28 @@ export default function ScheduleAdherenceTab() {
         </Card>
       )}
 
+      {/* Quarterly Pie Charts */}
+      {quarterlyData.length > 0 && (
+        <>
+          <h2 className="text-lg font-semibold text-foreground pt-2">Quarterly Breakdown</h2>
+          {quarterlyData.map(qData => (
+            <Card key={qData.quarter}>
+              <CardHeader className="border-b border-border pb-4">
+                <CardTitle className="text-xl font-medium">{qData.label}</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {qData.total} incomplete work order{qData.total !== 1 ? "s" : ""} tracked
+                </p>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {renderPieChart(qData.reasons, qData.total)}
+              </CardContent>
+            </Card>
+          ))}
+        </>
+      )}
+
       {/* Monthly Pie Charts */}
+      <h2 className="text-lg font-semibold text-foreground pt-2">Monthly Breakdown</h2>
       {monthlyData.map(monthData => (
         <Card key={monthData.month}>
           <CardHeader className="border-b border-border pb-4">

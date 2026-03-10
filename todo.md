@@ -164,3 +164,5 @@
 - [x] Create API endpoints for saving and retrieving schedule adherence data
 - [x] Create Schedule Adherence section with monthly pie charts showing reason breakdowns
 - [x] Wire Schedule Adherence into sidebar navigation
+- [x] Add two new reason categories to dropdown: Vendor Not Prepared, Risk Mitigation
+- [x] Add quarterly pie charts to Schedule Adherence tab

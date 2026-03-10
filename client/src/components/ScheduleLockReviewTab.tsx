@@ -32,10 +32,12 @@ interface LockedWorkOrder {
 
 const ADHERENCE_REASONS = [
   "Vendor not Available",
+  "Vendor Not Prepared",
   "Missing Parts/Tools",
   "Resource Availability",
   "Weather",
   "XFN Partner Request",
+  "Risk Mitigation",
 ] as const;
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";

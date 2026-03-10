@@ -12,10 +12,12 @@ const mockedExecute = vi.mocked(execute);
 
 const VALID_REASONS = [
   "Vendor not Available",
+  "Vendor Not Prepared",
   "Missing Parts/Tools",
   "Resource Availability",
   "Weather",
   "XFN Partner Request",
+  "Risk Mitigation",
 ];
 
 describe("Schedule Adherence - Reason Validation", () => {
@@ -236,6 +238,95 @@ describe("Schedule Adherence - Lock Week Calculation", () => {
     expect(toDateStr(thisMonday)).toBe("2026-03-09");
     expect(toDateStr(lastMonday)).toBe("2026-03-02");
     expect(toDateStr(lockCreatedMonday)).toBe("2026-02-23");
+  });
+});
+
+describe("Schedule Adherence - Quarterly Aggregation", () => {
+  it("should correctly map months to quarters", () => {
+    const getQuarterKey = (monthStr: string): string => {
+      const [year, month] = monthStr.split("-");
+      const m = parseInt(month, 10);
+      const q = Math.ceil(m / 3);
+      return `${year}-Q${q}`;
+    };
+
+    expect(getQuarterKey("2026-01")).toBe("2026-Q1");
+    expect(getQuarterKey("2026-02")).toBe("2026-Q1");
+    expect(getQuarterKey("2026-03")).toBe("2026-Q1");
+    expect(getQuarterKey("2026-04")).toBe("2026-Q2");
+    expect(getQuarterKey("2026-06")).toBe("2026-Q2");
+    expect(getQuarterKey("2026-07")).toBe("2026-Q3");
+    expect(getQuarterKey("2026-09")).toBe("2026-Q3");
+    expect(getQuarterKey("2026-10")).toBe("2026-Q4");
+    expect(getQuarterKey("2026-12")).toBe("2026-Q4");
+  });
+
+  it("should aggregate monthly data into quarterly totals", () => {
+    const summaryRows = [
+      { month: "2026-01", reason: "Weather", count: 3 },
+      { month: "2026-02", reason: "Weather", count: 5 },
+      { month: "2026-02", reason: "Risk Mitigation", count: 2 },
+      { month: "2026-03", reason: "Vendor Not Prepared", count: 4 },
+      { month: "2026-04", reason: "Weather", count: 1 },
+    ];
+
+    const getQuarterKey = (monthStr: string): string => {
+      const [year, month] = monthStr.split("-");
+      const m = parseInt(month, 10);
+      const q = Math.ceil(m / 3);
+      return `${year}-Q${q}`;
+    };
+
+    const quarterMap = new Map<string, Map<string, number>>();
+    summaryRows.forEach(row => {
+      const qKey = getQuarterKey(row.month);
+      if (!quarterMap.has(qKey)) {
+        quarterMap.set(qKey, new Map());
+      }
+      const reasonMap = quarterMap.get(qKey)!;
+      reasonMap.set(row.reason, (reasonMap.get(row.reason) || 0) + Number(row.count));
+    });
+
+    expect(quarterMap.size).toBe(2); // Q1 and Q2
+    expect(quarterMap.get("2026-Q1")!.get("Weather")).toBe(8); // 3 + 5
+    expect(quarterMap.get("2026-Q1")!.get("Risk Mitigation")).toBe(2);
+    expect(quarterMap.get("2026-Q1")!.get("Vendor Not Prepared")).toBe(4);
+    expect(quarterMap.get("2026-Q2")!.get("Weather")).toBe(1);
+  });
+
+  it("should format quarter labels correctly", () => {
+    const getQuarterLabel = (quarterKey: string): string => {
+      const [year, q] = quarterKey.split("-Q");
+      return `Q${q} ${year}`;
+    };
+
+    expect(getQuarterLabel("2026-Q1")).toBe("Q1 2026");
+    expect(getQuarterLabel("2026-Q2")).toBe("Q2 2026");
+    expect(getQuarterLabel("2026-Q3")).toBe("Q3 2026");
+    expect(getQuarterLabel("2026-Q4")).toBe("Q4 2026");
+  });
+
+  it("should sort quarters in descending order", () => {
+    const quarters = ["2026-Q1", "2025-Q4", "2026-Q2"];
+    const sorted = [...quarters].sort((a, b) => b.localeCompare(a));
+
+    expect(sorted[0]).toBe("2026-Q2");
+    expect(sorted[1]).toBe("2026-Q1");
+    expect(sorted[2]).toBe("2025-Q4");
+  });
+});
+
+describe("Schedule Adherence - New Reason Categories", () => {
+  it("should include Vendor Not Prepared as a valid reason", () => {
+    expect(VALID_REASONS.includes("Vendor Not Prepared")).toBe(true);
+  });
+
+  it("should include Risk Mitigation as a valid reason", () => {
+    expect(VALID_REASONS.includes("Risk Mitigation")).toBe(true);
+  });
+
+  it("should have 7 total reason categories", () => {
+    expect(VALID_REASONS).toHaveLength(7);
   });
 });
 
