@@ -169,3 +169,4 @@
 - [x] Ensure Vendor Not Prepared and Risk Mitigation are in all relevant files (API validation, Schedule Adherence tab, dropdown, tests)
 - [x] Update work week leaders rotation schedule with new data from screenshot
 - [x] Fix "Cannot GET /" issue in preview/published site
+- [x] Ensure T1 Not In Ready tab still includes work week leaders display (also fixed T2 and T3)

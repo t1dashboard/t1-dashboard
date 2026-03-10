@@ -33,17 +33,7 @@ export default function T3NotInReadyTab({ workOrders }: T3NotInReadyTabProps) {
     });
   }, [workOrders]);
 
-  if (t3NotReadyOrders.length === 0) {
-    return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <p className="text-muted-foreground">No T3 work orders found that are not in Ready status</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Get Work Week Leaders for T3 week
+  // Get Work Week Leaders for T3 week - always compute, regardless of work order count
   const { start: t3Start } = getT3WeekRange();
   const weekLeaders = getWorkWeekLeaders(t3Start);
 
@@ -68,57 +58,64 @@ export default function T3NotInReadyTab({ workOrders }: T3NotInReadyTabProps) {
           </div>
         )}
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full table-fixed">
-            <colgroup>
-              <col style={{ width: "9%" }} />
-              <col style={{ width: "33%" }} />
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "14%" }} />
-              <col style={{ width: "20%" }} />
-              <col style={{ width: "14%" }} />
-            </colgroup>
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Description</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {t3NotReadyOrders.map((wo) => (
-                <tr 
-                  key={wo["Work Order"]} 
-                  className="border-b border-border/50 hover:bg-muted/20 transition-colors"
-                  style={{ borderBottomWidth: '0.5px' }}
-                >
-                  <td className="py-3 px-4">
-                    <a
-                      href={`${BASE_URL}${wo["Work Order"]}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="work-order-number text-primary hover:underline"
-                    >
-                      {wo["Work Order"]}
-                    </a>
-                  </td>
-                  <td className="py-3 px-4 text-sm truncate">{wo["Description"]}</td>
-                  <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
-                  <td className="py-3 px-4 text-sm">
-                    {formatDate(wo["Sched. Start Date"])}
-                  </td>
-                  <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
-                  <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
+
+      {t3NotReadyOrders.length === 0 ? (
+        <CardContent className="py-12 text-center">
+          <p className="text-muted-foreground">No T3 work orders found that are not in Ready status</p>
+        </CardContent>
+      ) : (
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "33%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "14%" }} />
+                <col style={{ width: "20%" }} />
+                <col style={{ width: "14%" }} />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Description</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
+              </thead>
+              <tbody>
+                {t3NotReadyOrders.map((wo) => (
+                  <tr 
+                    key={wo["Work Order"]} 
+                    className="border-b border-border/50 hover:bg-muted/20 transition-colors"
+                    style={{ borderBottomWidth: '0.5px' }}
+                  >
+                    <td className="py-3 px-4">
+                      <a
+                        href={`${BASE_URL}${wo["Work Order"]}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="work-order-number text-primary hover:underline"
+                      >
+                        {wo["Work Order"]}
+                      </a>
+                    </td>
+                    <td className="py-3 px-4 text-sm truncate">{wo["Description"]}</td>
+                    <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
+                    <td className="py-3 px-4 text-sm">
+                      {formatDate(wo["Sched. Start Date"])}
+                    </td>
+                    <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
+                    <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      )}
     </Card>
   );
 }
