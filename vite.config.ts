@@ -166,9 +166,13 @@ function vitePluginExpressApi(): Plugin {
       import("node:child_process").then(({ spawn }) => {
         const apiProcess = spawn("npx", ["tsx", path.resolve(PROJECT_ROOT, "server/index.ts")], {
           cwd: PROJECT_ROOT,
-          stdio: "inherit",
+          stdio: "pipe",
           env: { ...process.env },
         });
+        
+        // Suppress API server output to avoid confusing port detection
+        apiProcess.stdout?.on("data", () => {});
+        apiProcess.stderr?.on("data", () => {});
         
         apiProcess.on("error", (err) => {
           console.error("[API] Failed to start API server:", err);
@@ -179,7 +183,7 @@ function vitePluginExpressApi(): Plugin {
           apiProcess.kill();
         });
         
-        console.log("[API] Starting Express API server on port 3001...");
+        // API server started silently on port 3001
       });
     },
   };

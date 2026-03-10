@@ -28,9 +28,8 @@ async function startServer() {
     });
   }
 
-  // In dev mode, Vite runs on 3000 and proxies /api to 3001
-  // In production, the server serves everything on one port
-  const port = process.env.NODE_ENV === "production" ? (process.env.PORT || 3000) : 3001;
+  // Use PORT env var, fallback to 3001 for dev (Vite runs on 3000), 3000 for production
+  const port = process.env.PORT || (process.env.NODE_ENV === "production" ? 3000 : 3001);
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
