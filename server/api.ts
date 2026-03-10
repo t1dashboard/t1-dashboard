@@ -557,4 +557,128 @@ router.get("/deferral-work-orders", async (_req: Request, res: Response) => {
   }
 });
 
+// ============================================================
+// Schedule Adherence - Reason tracking for incomplete locked orders
+// ============================================================
+
+const VALID_ADHERENCE_REASONS = [
+  "Vendor not Available",
+  "Missing Parts/Tools",
+  "Resource Availability",
+  "Weather",
+  "XFN Partner Request",
+];
+
+// Submit adherence reasons (batch)
+router.post("/schedule-adherence", async (req: Request, res: Response) => {
+  try {
+    const records = req.body;
+    if (!Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({ error: "Expected an array of adherence records" });
+    }
+
+    // Validate all reasons
+    for (const record of records) {
+      if (!record.reason || !VALID_ADHERENCE_REASONS.includes(record.reason)) {
+        return res.status(400).json({ error: `Invalid reason: ${record.reason}. Must be one of: ${VALID_ADHERENCE_REASONS.join(", ")}` });
+      }
+      if (!record.workOrderNumber || !record.lockWeek) {
+        return res.status(400).json({ error: "Each record must have workOrderNumber and lockWeek" });
+      }
+    }
+
+    // Upsert: delete existing records for these WOs in the same lock_week, then insert
+    for (const record of records) {
+      await execute(
+        "DELETE FROM schedule_adherence WHERE work_order_number = ? AND lock_week = ?",
+        [String(record.workOrderNumber), record.lockWeek]
+      );
+    }
+
+    const sql = `INSERT INTO schedule_adherence (
+      work_order_number, description, data_center, lock_week, reason
+    ) VALUES ${records.map(() => "(?, ?, ?, ?, ?)").join(", ")}`;
+
+    const values = records.flatMap((r: any) => [
+      String(r.workOrderNumber),
+      r.description || null,
+      r.dataCenter || null,
+      r.lockWeek,
+      r.reason,
+    ]);
+
+    await execute(sql, values);
+    res.json({ success: true, count: records.length });
+  } catch (error: any) {
+    console.error("Error saving schedule adherence:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all adherence records
+router.get("/schedule-adherence", async (_req: Request, res: Response) => {
+  try {
+    const rows = await query("SELECT * FROM schedule_adherence ORDER BY submitted_at DESC");
+    const records = rows.map((row: any) => ({
+      id: row.id,
+      workOrderNumber: row.work_order_number,
+      description: row.description,
+      dataCenter: row.data_center,
+      lockWeek: row.lock_week,
+      reason: row.reason,
+      submittedAt: row.submitted_at,
+    }));
+    res.json(records);
+  } catch (error: any) {
+    console.error("Error fetching schedule adherence:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get adherence summary grouped by month and reason (for pie charts)
+router.get("/schedule-adherence/summary", async (_req: Request, res: Response) => {
+  try {
+    const rows = await query(`
+      SELECT 
+        DATE_FORMAT(submitted_at, '%Y-%m') as month,
+        reason,
+        COUNT(*) as count
+      FROM schedule_adherence
+      GROUP BY DATE_FORMAT(submitted_at, '%Y-%m'), reason
+      ORDER BY month DESC, reason
+    `);
+    res.json(rows);
+  } catch (error: any) {
+    console.error("Error fetching adherence summary:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get adherence records for a specific lock week
+router.get("/schedule-adherence/by-week", async (req: Request, res: Response) => {
+  try {
+    const { week } = req.query;
+    if (!week) {
+      return res.status(400).json({ error: "week query parameter required" });
+    }
+    const rows = await query(
+      "SELECT * FROM schedule_adherence WHERE lock_week = ? ORDER BY work_order_number",
+      [String(week)]
+    );
+    const records = rows.map((row: any) => ({
+      id: row.id,
+      workOrderNumber: row.work_order_number,
+      description: row.description,
+      dataCenter: row.data_center,
+      lockWeek: row.lock_week,
+      reason: row.reason,
+      submittedAt: row.submitted_at,
+    }));
+    res.json(records);
+  } catch (error: any) {
+    console.error("Error fetching adherence by week:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

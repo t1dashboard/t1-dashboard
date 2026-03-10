@@ -14,6 +14,7 @@ import ScheduleLockTab from "@/components/ScheduleLockTab";
 import ScheduleLockReviewTab from "@/components/ScheduleLockReviewTab";
 import ScheduledLaborReviewTab from "@/components/ScheduledLaborReviewTab";
 import InboxReview from "./InboxReview";
+import ScheduleAdherenceTab from "@/components/ScheduleAdherenceTab";
 import {
   getWorkOrders, uploadWorkOrdersFile,
   getScheduledLabor, uploadScheduledLaborFile,
@@ -23,7 +24,7 @@ import {
 } from "@/lib/api";
 import { toast } from "sonner";
 
-type ActiveView = "upload" | "schedule-lock" | "schedule-lock-review" | "scheduled-labor-review" | "inbox-review" | "t1t3" | "t4t8";
+type ActiveView = "upload" | "schedule-lock" | "schedule-lock-review" | "schedule-adherence" | "scheduled-labor-review" | "inbox-review" | "t1t3" | "t4t8";
 
 export default function Home() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
@@ -298,6 +299,24 @@ export default function Home() {
             )}
           </button>
           
+          <button
+            onClick={() => { setActiveView("schedule-adherence"); setMobileMenuOpen(false); }}
+            className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
+              activeView === "schedule-adherence"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-foreground"
+            }`}
+            title={sidebarCollapsed ? "Schedule Adherence" : ""}
+          >
+            {!sidebarCollapsed ? (
+              <>
+                <div className="font-medium">Schedule Adherence</div>
+                <div className="text-xs opacity-80 mt-1">Monthly reason tracking</div>
+              </>
+            ) : (
+              <div className="font-medium text-center text-xs">Adhere</div>
+            )}
+          </button>
 
         </nav>
         
@@ -548,8 +567,11 @@ export default function Home() {
             <InboxReview workOrders={workOrders} scheduledLabor={scheduledLabor} />
           )}
 
+          {activeView === "schedule-adherence" && (
+            <ScheduleAdherenceTab />
+          )}
 
-          {activeView !== "upload" && workOrders.length === 0 && (
+          {activeView !== "upload" && activeView !== "schedule-adherence" && workOrders.length === 0 && (
             <Card>
               <CardContent className="py-12 text-center">
                 <FileSpreadsheet className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

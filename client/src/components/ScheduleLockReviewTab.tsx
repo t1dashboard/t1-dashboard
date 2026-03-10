@@ -1,5 +1,6 @@
 /**
  * Swiss Rationalism: Schedule Lock Review tab showing unplanned and incomplete locked work orders
+ * Includes Reason dropdown for incomplete locked orders and Submit button for schedule adherence tracking
  */
 
 import { useMemo, useState, useEffect } from "react";
@@ -7,8 +8,9 @@ import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, parseExcelDate } from "@/lib/dateUtils";
 import { getWorkWeekLeaders } from "@/lib/workWeekLeaders";
-import { getScheduleLocks, ScheduleLock } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { getScheduleLocks, ScheduleLock, submitScheduleAdherence, getScheduleAdherenceByWeek, AdherenceRecord } from "@/lib/api";
+import { Loader2, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface ScheduleLockReviewTabProps {
   workOrders: WorkOrder[];
@@ -28,11 +30,22 @@ interface LockedWorkOrder {
   lockWeek: string;
 }
 
+const ADHERENCE_REASONS = [
+  "Vendor not Available",
+  "Missing Parts/Tools",
+  "Resource Availability",
+  "Weather",
+  "XFN Partner Request",
+] as const;
+
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
 export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReviewTabProps) {
   const [serverLocks, setServerLocks] = useState<ScheduleLock[]>([]);
   const [loadingLocks, setLoadingLocks] = useState(true);
+  const [reasonSelections, setReasonSelections] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     async function loadLocks() {
@@ -48,9 +61,46 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     loadLocks();
   }, []);
 
+  // Calculate the lock week for incomplete orders to check for existing adherence data
+  const lockCreatedWeekStr = useMemo(() => {
+    const today = new Date();
+    const currentDay = today.getDay();
+    const diff = currentDay === 0 ? -6 : 1 - currentDay;
+    const thisMonday = new Date(today);
+    thisMonday.setDate(today.getDate() + diff);
+    thisMonday.setHours(0, 0, 0, 0);
+    const lastMonday = new Date(thisMonday);
+    lastMonday.setDate(thisMonday.getDate() - 7);
+    const lockCreatedMonday = new Date(lastMonday);
+    lockCreatedMonday.setDate(lastMonday.getDate() - 7);
+    const toDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    return toDateStr(lockCreatedMonday);
+  }, []);
+
+  // Load existing adherence data for the lock week
+  useEffect(() => {
+    async function loadAdherence() {
+      if (!lockCreatedWeekStr) return;
+      try {
+        const records = await getScheduleAdherenceByWeek(lockCreatedWeekStr);
+        // Pre-populate reason selections from existing data
+        const selections: Record<string, string> = {};
+        records.forEach(r => {
+          selections[String(r.workOrderNumber)] = r.reason;
+        });
+        if (Object.keys(selections).length > 0) {
+          setReasonSelections(prev => ({ ...selections, ...prev }));
+          setSubmitted(true);
+        }
+      } catch (error) {
+        console.error("Error loading adherence data:", error);
+      }
+    }
+    loadAdherence();
+  }, [lockCreatedWeekStr]);
+
   const { lotoOrders, buildingGroups, unplannedTotal, incompleteLockedOrders } = useMemo(() => {
     // Get previous week's date range
-    // Use date-only comparison (YYYY-MM-DD strings) to avoid timezone issues
     const today = new Date();
     const currentDay = today.getDay();
     const diff = currentDay === 0 ? -6 : 1 - currentDay;
@@ -66,15 +116,10 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     lastSunday.setDate(lastMonday.getDate() + 6);
     lastSunday.setHours(23, 59, 59, 999);
     
-    // Helper to get YYYY-MM-DD string for date-only comparison
     const toDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const lastMondayStr = toDateStr(lastMonday);
     const lastSundayStr = toDateStr(lastSunday);
     
-    // Lock week offset: lock_week is when the lock was CREATED.
-    // Locked WOs are planned for the FOLLOWING week.
-    // So for previous week review (e.g., Feb 16-22), we need the lock list
-    // created the week BEFORE that (e.g., lock_week = Feb 9-15).
     const lockCreatedMonday = new Date(lastMonday);
     lockCreatedMonday.setDate(lastMonday.getDate() - 7);
     const lockCreatedSunday = new Date(lockCreatedMonday);
@@ -82,7 +127,6 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     const lockCreatedMondayStr = toDateStr(lockCreatedMonday);
     const lockCreatedSundayStr = toDateStr(lockCreatedSunday);
 
-    // Use server locks instead of localStorage
     const lockedOrders: LockedWorkOrder[] = serverLocks.map(lock => ({
       workOrderNumber: lock.workOrderNumber,
       description: lock.description || "",
@@ -97,59 +141,38 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       lockWeek: lock.lockWeek
     }));
     
-    // Filter for the lock list that was created for the previous week.
-    // lock_week stores when the lock was created (e.g., Feb 9).
-    // Those WOs are planned for the following week (e.g., Feb 16-22).
-    // So we look for lock_week in the week BEFORE the previous week.
     const previousWeekLocked = lockedOrders.filter(locked => {
-      const lockWeekStr = locked.lockWeek; // Already "YYYY-MM-DD" format
+      const lockWeekStr = locked.lockWeek;
       return lockWeekStr >= lockCreatedMondayStr && lockWeekStr <= lockCreatedSundayStr;
     });
 
-    // Build a map of locked WO numbers to their stored sched start dates
     const lockedWOMap = new Map<string, string | null>();
     previousWeekLocked.forEach(wo => {
       lockedWOMap.set(String(wo.workOrderNumber), wo.schedStartDate || null);
     });
     const lockedWONumbers = new Set(previousWeekLocked.map(wo => String(wo.workOrderNumber)));
 
-    // Shift codes to exclude unless description contains LOTO or PTW
     const EXCLUDED_SHIFT_CODES = new Set(["GNSF", "GNSG", "GNSH", "GNSI", "GNSJ"]);
 
-    // Helper to normalize dates for comparison
     const normalizeDateStr = (dateVal: any): string => {
       const parsed = parseExcelDate(dateVal);
       if (!parsed) return "";
       return toDateStr(parsed);
     };
 
-    // Find unplanned work orders:
-    // Only include WOs that were in the locked schedule but whose sched start date
-    // was CHANGED compared to the stored lock data.
-    // RULES:
-    // 1. Only include Work Complete or Closed status
-    // 2. Exclude descriptions containing "000"
-    // 3. Exclude cancelled, CMCC, weekly
-    // 4. Exclude shift codes GNSF/GNSG/GNSH/GNSI/GNSJ unless description contains LOTO or PTW
-    // 5. WO must have been locked AND its current sched start date differs from the locked sched start date
-    //    OR WO was NOT locked but appeared in previous week (truly unplanned)
     const unplanned = workOrders.filter((wo) => {
       const status = wo["Status"]?.toUpperCase() || "";
       const description = wo["Description"]?.toUpperCase() || "";
       
-      // Only include Work Complete or Closed
       const isWorkCompleteOrClosed = status === "WORK COMPLETE" || status === "CLOSED";
       if (!isWorkCompleteOrClosed) return false;
       
-      // Exclude descriptions containing "000"
       if (description.includes("000")) return false;
       
-      // Existing exclusions
       const isCMCC = description.includes("CMCC");
       const isWeekly = description.includes("WEEKLY");
       if (isCMCC || isWeekly) return false;
       
-      // Exclude shift codes GNSF, GNSG, GNSH, GNSI, GNSJ unless description has LOTO or PTW
       const shift = wo["Shift"]?.toUpperCase()?.trim() || "";
       const hasLotoPtw = description.includes("LOTO") || description.includes("PTW");
       if (EXCLUDED_SHIFT_CODES.has(shift) && !hasLotoPtw) return false;
@@ -163,18 +186,15 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       const woNumber = String(wo["Work Order"]);
       
       if (lockedWONumbers.has(woNumber)) {
-        // WO was locked — only show if sched start date was changed
         const lockedSchedDate = normalizeDateStr(lockedWOMap.get(woNumber));
         const currentSchedDate = normalizeDateStr(wo["Sched. Start Date"]);
         const dateChanged = lockedSchedDate !== currentSchedDate;
         return isInPreviousWeek && dateChanged;
       } else {
-        // WO was NOT locked — truly unplanned work
         return isInPreviousWeek;
       }
     });
 
-    // Separate LOTO/PTW work orders from the rest
     const loto: WorkOrder[] = [];
     const rest: WorkOrder[] = [];
     
@@ -187,14 +207,12 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       }
     });
 
-    // Sort LOTO/PTW by data center
     loto.sort((a, b) => {
       const dcA = a["Data Center"] || "";
       const dcB = b["Data Center"] || "";
       return dcA.localeCompare(dcB);
     });
 
-    // Group remaining by building (Data Center), sorted alphabetically
     const groups: Record<string, WorkOrder[]> = {};
     rest.forEach(wo => {
       const dc = wo["Data Center"] || "Unknown";
@@ -202,7 +220,6 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       groups[dc].push(wo);
     });
 
-    // Sort within each building group by sched start date
     Object.values(groups).forEach(groupWOs => {
       groupWOs.sort((a, b) => {
         const dateA = parseExcelDate(a["Sched. Start Date"]);
@@ -214,18 +231,14 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       });
     });
 
-    // Sort building keys alphabetically
     const sortedGroups = Object.keys(groups).sort().map(key => ({
       building: key,
       orders: groups[key]
     }));
 
-    // Find incomplete locked orders (locked but not Work Complete or Closed)
-    // Also exclude shift codes GNSF/GNSG/GNSH/GNSI/GNSJ unless description contains LOTO or PTW
     const incomplete = previousWeekLocked.filter(locked => {
       const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
       
-      // Exclude shift codes GNSF/GNSG/GNSH/GNSI/GNSJ unless description has LOTO or PTW
       const lockedDesc = locked.description?.toUpperCase() || "";
       const lockedShift = locked.shift?.toUpperCase()?.trim() || "";
       const lockedHasLotoPtw = lockedDesc.includes("LOTO") || lockedDesc.includes("PTW");
@@ -234,7 +247,6 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       if (!currentWO) return true;
       
       const status = currentWO?.["Status"]?.toUpperCase() || "";
-      // Exclude Work Complete, Closed, and In Process
       return status !== "WORK COMPLETE" && status !== "CLOSED" && status !== "IN PROCESS";
     }).sort((a, b) => {
       const dcA = a.dataCenter || "";
@@ -257,12 +269,49 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     const diff = currentDay === 0 ? -6 : 1 - currentDay;
     const thisMonday = new Date(today);
     thisMonday.setDate(today.getDate() + diff);
-    
+    thisMonday.setHours(0, 0, 0, 0);
     const lastMonday = new Date(thisMonday);
     lastMonday.setDate(thisMonday.getDate() - 7);
     
     return getWorkWeekLeaders(lastMonday);
   }, []);
+
+  const handleReasonChange = (woNumber: string, reason: string) => {
+    setReasonSelections(prev => ({
+      ...prev,
+      [woNumber]: reason
+    }));
+    setSubmitted(false);
+  };
+
+  const handleSubmit = async () => {
+    const records = incompleteLockedOrders
+      .filter(locked => reasonSelections[String(locked.workOrderNumber)])
+      .map(locked => ({
+        workOrderNumber: String(locked.workOrderNumber),
+        description: locked.description || null,
+        dataCenter: locked.dataCenter || null,
+        lockWeek: lockCreatedWeekStr,
+        reason: reasonSelections[String(locked.workOrderNumber)],
+      }));
+
+    if (records.length === 0) {
+      toast.error("Please select a reason for at least one work order before submitting.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await submitScheduleAdherence(records);
+      setSubmitted(true);
+      toast.success(`Submitted ${records.length} adherence reason(s) successfully.`);
+    } catch (error: any) {
+      console.error("Error submitting adherence:", error);
+      toast.error("Failed to submit adherence reasons: " + error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const renderTableHeader = () => (
     <thead>
@@ -449,7 +498,18 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full table-fixed">
-                  {renderColgroup()}
+                  <colgroup>
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "17%" }} />
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "13%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "9%" }} />
+                    <col style={{ width: "20%" }} />
+                  </colgroup>
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>
@@ -461,12 +521,15 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Priority</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Reason</th>
                     </tr>
                   </thead>
                   <tbody>
                     {incompleteLockedOrders.map((locked) => {
                       const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
                       const currentStatus = currentWO?.["Status"] || locked.status;
+                      const woNum = String(locked.workOrderNumber);
+                      const selectedReason = reasonSelections[woNum] || "";
                       
                       return (
                         <tr 
@@ -492,11 +555,52 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                           <td className="py-3 px-4 text-sm">{locked.priority}</td>
                           <td className="py-3 px-4 text-sm">{locked.shift}</td>
                           <td className="py-3 px-4 text-sm">{formatDate(locked.schedStartDate)}</td>
+                          <td className="py-3 px-3">
+                            <select
+                              value={selectedReason}
+                              onChange={(e) => handleReasonChange(woNum, e.target.value)}
+                              className="w-full text-sm border border-border rounded-sm px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                            >
+                              <option value="">Select reason...</option>
+                              {ADHERENCE_REASONS.map(reason => (
+                                <option key={reason} value={reason}>{reason}</option>
+                              ))}
+                            </select>
+                          </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Submit Button */}
+              <div className="px-4 py-4 border-t border-border flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  {Object.values(reasonSelections).filter(Boolean).length} of {incompleteLockedOrders.length} reasons selected
+                </div>
+                <div className="flex items-center gap-3">
+                  {submitted && (
+                    <span className="flex items-center gap-1.5 text-sm text-green-600">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Submitted
+                    </span>
+                  )}
+                  <button
+                    onClick={handleSubmit}
+                    disabled={submitting || Object.values(reasonSelections).filter(Boolean).length === 0}
+                    className="px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 disabled:cursor-not-allowed text-white font-medium rounded-sm transition-colors flex items-center gap-2"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      "Submit"
+                    )}
+                  </button>
+                </div>
               </div>
             </CardContent>
           </Card>

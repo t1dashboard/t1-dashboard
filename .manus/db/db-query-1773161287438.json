@@ -1,0 +1,90 @@
+{
+  "query": "SELECT sched_start_date, COUNT(*) as cnt FROM work_orders GROUP BY sched_start_date ORDER BY sched_start_date LIMIT 20",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT sched_start_date, COUNT(*) as cnt FROM work_orders GROUP BY sched_start_date ORDER BY sched_start_date LIMIT 20",
+  "rows": [
+    {
+      "sched_start_date": "NULL",
+      "cnt": "3"
+    },
+    {
+      "sched_start_date": "1/1/26",
+      "cnt": "20"
+    },
+    {
+      "sched_start_date": "1/1/27",
+      "cnt": "23"
+    },
+    {
+      "sched_start_date": "1/10/26",
+      "cnt": "8"
+    },
+    {
+      "sched_start_date": "1/11/26",
+      "cnt": "14"
+    },
+    {
+      "sched_start_date": "1/11/27",
+      "cnt": "1"
+    },
+    {
+      "sched_start_date": "1/12/26",
+      "cnt": "26"
+    },
+    {
+      "sched_start_date": "1/13/26",
+      "cnt": "22"
+    },
+    {
+      "sched_start_date": "1/13/27",
+      "cnt": "1"
+    },
+    {
+      "sched_start_date": "1/14/25",
+      "cnt": "1"
+    },
+    {
+      "sched_start_date": "1/14/26",
+      "cnt": "28"
+    },
+    {
+      "sched_start_date": "1/15/26",
+      "cnt": "32"
+    },
+    {
+      "sched_start_date": "1/15/27",
+      "cnt": "8"
+    },
+    {
+      "sched_start_date": "1/16/26",
+      "cnt": "25"
+    },
+    {
+      "sched_start_date": "1/17/26",
+      "cnt": "8"
+    },
+    {
+      "sched_start_date": "1/17/27",
+      "cnt": "7"
+    },
+    {
+      "sched_start_date": "1/18/26",
+      "cnt": "18"
+    },
+    {
+      "sched_start_date": "1/19/26",
+      "cnt": "16"
+    },
+    {
+      "sched_start_date": "1/2/26",
+      "cnt": "17"
+    },
+    {
+      "sched_start_date": "1/20/26",
+      "cnt": "18"
+    }
+  ],
+  "messages": [],
+  "stdout": "sched_start_date\tcnt\nNULL\t3\n1/1/26\t20\n1/1/27\t23\n1/10/26\t8\n1/11/26\t14\n1/11/27\t1\n1/12/26\t26\n1/13/26\t22\n1/13/27\t1\n1/14/25\t1\n1/14/26\t28\n1/15/26\t32\n1/15/27\t8\n1/16/26\t25\n1/17/26\t8\n1/17/27\t7\n1/18/26\t18\n1/19/26\t16\n1/2/26\t17\n1/20/26\t18\n",
+  "stderr": "",
+  "execution_time_ms": 72
+}

@@ -158,3 +158,9 @@
 - [x] T4-T8 Not in Approved: Exclude work orders with Cancelled or Closed status
 - [x] Update work week leaders from Work Execution and Planning Guide (new roles: COM, LBE, SME, Lead, cSME, mSME, eSME)
 - [x] Workload calendar view: Display date (MM/DD/YYYY) beside the day of the week in column headers
+- [x] Incomplete Locked Orders: Add Reason dropdown column (Vendor not Available, Missing Parts/Tools, Resource Availability, Weather, XFN Partner Request)
+- [x] Incomplete Locked Orders: Add green Submit button to save reason data
+- [x] Create schedule_adherence database table to store submitted reason data
+- [x] Create API endpoints for saving and retrieving schedule adherence data
+- [x] Create Schedule Adherence section with monthly pie charts showing reason breakdowns
+- [x] Wire Schedule Adherence into sidebar navigation

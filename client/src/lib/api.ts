@@ -198,6 +198,54 @@ export async function getDeferralWorkOrders(): Promise<DeferralWorkOrder[]> {
   return res.json();
 }
 
+// ============================================================
+// Schedule Adherence
+// ============================================================
+
+export interface AdherenceRecord {
+  id?: number;
+  workOrderNumber: string;
+  description: string | null;
+  dataCenter: string | null;
+  lockWeek: string;
+  reason: string;
+  submittedAt?: string;
+}
+
+export interface AdherenceSummary {
+  month: string;
+  reason: string;
+  count: number;
+}
+
+export async function submitScheduleAdherence(records: Omit<AdherenceRecord, 'id' | 'submittedAt'>[]): Promise<{ success: boolean; count: number }> {
+  const res = await fetch(`${API_BASE}/schedule-adherence`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(records),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getScheduleAdherence(): Promise<AdherenceRecord[]> {
+  const res = await fetch(`${API_BASE}/schedule-adherence`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getScheduleAdherenceSummary(): Promise<AdherenceSummary[]> {
+  const res = await fetch(`${API_BASE}/schedule-adherence/summary`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getScheduleAdherenceByWeek(week: string): Promise<AdherenceRecord[]> {
+  const res = await fetch(`${API_BASE}/schedule-adherence/by-week?week=${encodeURIComponent(week)}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function unlockWorkOrders(workOrderNumbers: string[]): Promise<{ success: boolean }> {
   const res = await fetch(`${API_BASE}/schedule-locks/unlock`, {
     method: "POST",
