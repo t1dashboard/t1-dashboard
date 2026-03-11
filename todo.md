@@ -170,3 +170,4 @@
 - [x] Update work week leaders rotation schedule with new data from screenshot
 - [x] Fix "Cannot GET /" issue in preview/published site
 - [x] Ensure T1 Not In Ready tab still includes work week leaders display (also fixed T2 and T3)
+- [x] Add "Pull Work Forward" reason category to dropdown, API validation, Schedule Adherence charts, and tests

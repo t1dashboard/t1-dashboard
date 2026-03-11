@@ -38,6 +38,7 @@ const ADHERENCE_REASONS = [
   "Weather",
   "XFN Partner Request",
   "Risk Mitigation",
+  "Pull Work Forward",
 ] as const;
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";

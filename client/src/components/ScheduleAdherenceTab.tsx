@@ -17,6 +17,7 @@ const REASON_COLORS: Record<string, string> = {
   "Weather": "#8b7bb5",               // soft purple
   "XFN Partner Request": "#c4a35a",   // muted gold
   "Risk Mitigation": "#d4726a",       // muted coral
+  "Pull Work Forward": "#7aa3cc",      // sky blue
 };
 
 const ALL_REASONS = [
@@ -27,6 +28,7 @@ const ALL_REASONS = [
   "Weather",
   "XFN Partner Request",
   "Risk Mitigation",
+  "Pull Work Forward",
 ];
 
 function formatMonth(monthStr: string): string {

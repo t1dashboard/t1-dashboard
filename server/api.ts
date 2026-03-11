@@ -569,6 +569,7 @@ const VALID_ADHERENCE_REASONS = [
   "Weather",
   "XFN Partner Request",
   "Risk Mitigation",
+  "Pull Work Forward",
 ];
 
 // Submit adherence reasons (batch)
