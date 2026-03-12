@@ -171,3 +171,7 @@
 - [x] Fix "Cannot GET /" issue in preview/published site
 - [x] Ensure T1 Not In Ready tab still includes work week leaders display (also fixed T2 and T3)
 - [x] Add "Pull Work Forward" reason category to dropdown, API validation, Schedule Adherence charts, and tests
+- [x] Add transformer (T-A through T-E) deconfliction logic for NCG and MWG buildings
+- [x] Map transformer letters to paired buildings (NCG T-A: NCG1/NCG6, T-B: NCG1/NCG2, etc.)
+- [x] Flag conflicts when transformer work and same equipment type (MSB, EG, UPS, PTX) are in paired buildings
+- [x] Ensure transformer deconfliction only matches within same campus (NCG with NCG, MWG with MWG)
