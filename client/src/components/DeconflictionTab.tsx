@@ -24,6 +24,10 @@ import { AlertTriangle, ChevronDown, ChevronRight, Zap } from "lucide-react";
 
 interface DeconflictionTabProps {
   workOrders: WorkOrder[];
+  /** T-week range to filter. Defaults to [1,3] for T1-T3 */
+  tWeekRange?: [number, number];
+  /** Label for the header. Defaults to "T1-T3" */
+  label?: string;
 }
 
 /** Equipment types we track for deconfliction */
@@ -152,18 +156,24 @@ interface ConflictGroup {
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
-export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) {
+export default function DeconflictionTab({ workOrders, tWeekRange = [1, 3], label }: DeconflictionTabProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
+  const rangeLabel = label || `T${tWeekRange[0]}-T${tWeekRange[1]}`;
+
   const { conflictsByDC, transformerConflicts, totalConflicts, totalTransformerConflicts } = useMemo(() => {
-    // Filter to T1-T3 work orders only, exclude closed/cancelled/work complete
-    const t1t3WOs = workOrders.filter((wo: WorkOrder) => {
-      const isT1T3 = isTWeek(wo["Sched. Start Date"], 1) ||
-                     isTWeek(wo["Sched. Start Date"], 2) ||
-                     isTWeek(wo["Sched. Start Date"], 3);
+    // Filter to specified T-week range, exclude closed/cancelled/work complete
+    const filteredWOs = workOrders.filter((wo: WorkOrder) => {
+      let inRange = false;
+      for (let t = tWeekRange[0]; t <= tWeekRange[1]; t++) {
+        if (isTWeek(wo["Sched. Start Date"], t)) {
+          inRange = true;
+          break;
+        }
+      }
       const status = (wo["Status"] || "").toLowerCase();
       const excluded = ["closed", "cancelled", "work complete"].includes(status);
-      return isT1T3 && !excluded;
+      return inRange && !excluded;
     });
 
     // For each WO, extract equipment info and work window
@@ -175,7 +185,7 @@ export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) 
     }
 
     const enriched: WOWithEquip[] = [];
-    for (const wo of t1t3WOs) {
+    for (const wo of filteredWOs) {
       const window = getWorkWindow(wo);
       if (!window) continue;
 
@@ -403,7 +413,7 @@ export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) 
       totalConflicts: allConflicts.length,
       totalTransformerConflicts: xformerConflicts.length,
     };
-  }, [workOrders]);
+  }, [workOrders, tWeekRange]);
 
   const toggleGroup = (key: string) => {
     setExpandedGroups((prev: Set<string>) => {
@@ -441,7 +451,7 @@ export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) 
             <div>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-amber-500" />
-                Deconfliction — T1-T3
+                Deconfliction — {rangeLabel}
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 Work orders with overlapping work windows referencing related critical equipment (MSB, EG, UPS, PTX) — includes transformer cross-building conflicts
@@ -467,7 +477,7 @@ export default function DeconflictionTab({ workOrders }: DeconflictionTabProps) 
           {grandTotal === 0 ? (
             <div className="py-12 text-center text-muted-foreground">
               <AlertTriangle className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p>No equipment conflicts found in T1-T3 work orders.</p>
+              <p>No equipment conflicts found in {rangeLabel} work orders.</p>
               <p className="text-xs mt-1">Checked for overlapping MSB, EG, UPS, and PTX work windows within the same data center and across transformer-paired buildings.</p>
             </div>
           ) : (

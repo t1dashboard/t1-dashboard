@@ -175,3 +175,4 @@
 - [x] Map transformer letters to paired buildings (NCG T-A: NCG1/NCG6, T-B: NCG1/NCG2, etc.)
 - [x] Flag conflicts when transformer work and same equipment type (MSB, EG, UPS, PTX) are in paired buildings
 - [x] Ensure transformer deconfliction only matches within same campus (NCG with NCG, MWG with MWG)
+- [x] Add Deconfliction tab (with transformer cross-building conflicts) to T4-T8 Dashboard
