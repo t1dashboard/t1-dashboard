@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { formatDate, parseExcelDate, getTWeekRange, isTWeek } from "@/lib/dateUtils";
 import { isNightShift } from "@/lib/nightShiftEmployees";
 import { Calendar, List, ChevronLeft, ChevronRight } from "lucide-react";
+import { getTeamsForDate, getTeamsByShift, TEAMS, type TeamCode } from "@/lib/teamSchedule";
 import {
   Select,
   SelectContent,
@@ -330,6 +331,17 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
                     <div className="font-semibold text-sm">{day}</div>
                     <div className="text-xs text-muted-foreground font-normal">{dateStr}</div>
                     <div className="text-xs text-muted-foreground font-normal">{totalOrders} WOs</div>
+                    <div className="flex flex-wrap gap-0.5 justify-center mt-1">
+                      {getTeamsForDate(dayDate).map((team) => (
+                        <span
+                          key={team}
+                          className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${TEAMS[team].color} ${TEAMS[team].textColor}`}
+                          title={TEAMS[team].label}
+                        >
+                          {team}
+                        </span>
+                      ))}
+                    </div>
                   </th>
                 );
               })}
@@ -436,6 +448,17 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
             <div className="text-center">
               <div className="text-lg font-semibold">{selectedDayName}</div>
               <div className="text-sm text-muted-foreground">{dateStr} — {totalOrders} work orders</div>
+              <div className="flex gap-1 justify-center mt-1">
+                {getTeamsForDate(dayDate).map((team) => (
+                  <span
+                    key={team}
+                    className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${TEAMS[team].color} ${TEAMS[team].textColor}`}
+                    title={TEAMS[team].label}
+                  >
+                    {team}
+                  </span>
+                ))}
+              </div>
             </div>
             <Button
               variant="outline"
@@ -465,12 +488,22 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
                         : 'bg-muted/30 hover:bg-muted/50 text-muted-foreground'
                   }`}
                 >
-                  {day.slice(0, 3)}
+                  <div>{day.slice(0, 3)}</div>
                   {count > 0 && (
-                    <span className={`ml-1 ${idx === selectedDayIndex ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                    <span className={`${idx === selectedDayIndex ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
                       ({count})
                     </span>
                   )}
+                  <div className="flex gap-0.5 justify-center mt-0.5">
+                    {getTeamsForDate(getDayDate(idx)).map((team) => (
+                      <span
+                        key={team}
+                        className={`inline-block px-1 py-0 rounded text-[8px] font-bold ${TEAMS[team].color} ${TEAMS[team].textColor}`}
+                      >
+                        {team}
+                      </span>
+                    ))}
+                  </div>
                 </button>
               );
             })}

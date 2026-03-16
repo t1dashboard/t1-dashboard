@@ -176,3 +176,6 @@
 - [x] Flag conflicts when transformer work and same equipment type (MSB, EG, UPS, PTX) are in paired buildings
 - [x] Ensure transformer deconfliction only matches within same campus (NCG with NCG, MWG with MWG)
 - [x] Add Deconfliction tab (with transformer cross-building conflicts) to T4-T8 Dashboard
+- [x] Create team schedule utility (FHD, FHN, BHD, BHN rotation logic with alternating Wed/Sat)
+- [x] Display team indicators under each date in Workload weekly view
+- [x] Display team indicators under each date in Workload daily view
