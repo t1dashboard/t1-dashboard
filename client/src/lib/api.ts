@@ -243,7 +243,8 @@ export async function getScheduleAdherenceSummary(): Promise<AdherenceSummary[]>
 export interface AdherenceStats {
   lockWeek: string;
   totalLocked: number;
-  completed: number;
+  withReason: number;
+  adhered: number;
   adherencePercent: number;
 }
 

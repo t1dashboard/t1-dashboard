@@ -195,3 +195,4 @@
 - [x] Schedule Adherence: Create server API endpoint for adherence stats per lock week
 - [x] Schedule Adherence: Exclude current week from adherence stats (week isn't over yet)
 - [x] Schedule Adherence: Only show adherence for weeks that have reason data submitted
+- [x] Schedule Adherence: Change to reason-based adherence (WOs with reason = not completed, adherence = (total - with_reason) / total)

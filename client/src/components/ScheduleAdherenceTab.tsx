@@ -1,7 +1,7 @@
 /**
  * Swiss Rationalism: Schedule Adherence tab showing monthly pie charts of
  * reasons why locked work orders were not completed on time,
- * plus adherence percentage (completed locked WOs / total locked WOs).
+ * plus adherence percentage based on reason tracking (WOs without a reason = adhered to plan).
  */
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -105,7 +105,8 @@ function getMonthFromLockWeek(lockWeek: string): string {
 interface MonthlyAdherence {
   month: string;
   totalLocked: number;
-  completed: number;
+  withReason: number;
+  adhered: number;
   adherencePercent: number;
   weeks: AdherenceStats[];
 }
@@ -114,7 +115,8 @@ interface QuarterlyAdherence {
   quarter: string;
   label: string;
   totalLocked: number;
-  completed: number;
+  withReason: number;
+  adhered: number;
   adherencePercent: number;
 }
 
@@ -190,16 +192,16 @@ export default function ScheduleAdherenceTab() {
 
   // Compute monthly adherence from stats (per lock week)
   const monthlyAdherence: MonthlyAdherence[] = useMemo(() => {
-    const monthMap = new Map<string, { totalLocked: number; completed: number; weeks: AdherenceStats[] }>();
+    const monthMap = new Map<string, { totalLocked: number; withReason: number; weeks: AdherenceStats[] }>();
 
     adherenceStats.forEach(stat => {
       const month = getMonthFromLockWeek(stat.lockWeek);
       if (!monthMap.has(month)) {
-        monthMap.set(month, { totalLocked: 0, completed: 0, weeks: [] });
+        monthMap.set(month, { totalLocked: 0, withReason: 0, weeks: [] });
       }
       const entry = monthMap.get(month)!;
       entry.totalLocked += stat.totalLocked;
-      entry.completed += stat.completed;
+      entry.withReason += stat.withReason;
       entry.weeks.push(stat);
     });
 
@@ -207,46 +209,49 @@ export default function ScheduleAdherenceTab() {
 
     return months.map(month => {
       const entry = monthMap.get(month)!;
+      const adhered = entry.totalLocked - entry.withReason;
       const adherencePercent = entry.totalLocked > 0
-        ? Math.round((entry.completed / entry.totalLocked) * 100)
+        ? Math.round((adhered / entry.totalLocked) * 100)
         : 0;
       // Sort weeks chronologically
       entry.weeks.sort((a, b) => a.lockWeek.localeCompare(b.lockWeek));
-      return { month, ...entry, adherencePercent };
+      return { month, ...entry, adhered, adherencePercent };
     });
   }, [adherenceStats]);
 
   // Compute quarterly adherence
   const quarterlyAdherence: QuarterlyAdherence[] = useMemo(() => {
-    const quarterMap = new Map<string, { totalLocked: number; completed: number }>();
+    const quarterMap = new Map<string, { totalLocked: number; withReason: number }>();
 
     monthlyAdherence.forEach(ma => {
       const qKey = getQuarterKey(ma.month);
       if (!quarterMap.has(qKey)) {
-        quarterMap.set(qKey, { totalLocked: 0, completed: 0 });
+        quarterMap.set(qKey, { totalLocked: 0, withReason: 0 });
       }
       const entry = quarterMap.get(qKey)!;
       entry.totalLocked += ma.totalLocked;
-      entry.completed += ma.completed;
+      entry.withReason += ma.withReason;
     });
 
     const quarters = Array.from(quarterMap.keys()).sort((a, b) => b.localeCompare(a));
 
     return quarters.map(qKey => {
       const entry = quarterMap.get(qKey)!;
+      const adhered = entry.totalLocked - entry.withReason;
       const adherencePercent = entry.totalLocked > 0
-        ? Math.round((entry.completed / entry.totalLocked) * 100)
+        ? Math.round((adhered / entry.totalLocked) * 100)
         : 0;
-      return { quarter: qKey, label: getQuarterLabel(qKey), ...entry, adherencePercent };
+      return { quarter: qKey, label: getQuarterLabel(qKey), ...entry, adhered, adherencePercent };
     });
   }, [monthlyAdherence]);
 
   // Overall adherence
   const overallAdherence = useMemo(() => {
     const totalLocked = adherenceStats.reduce((sum, s) => sum + s.totalLocked, 0);
-    const completed = adherenceStats.reduce((sum, s) => sum + s.completed, 0);
-    const adherencePercent = totalLocked > 0 ? Math.round((completed / totalLocked) * 100) : 0;
-    return { totalLocked, completed, adherencePercent };
+    const withReason = adherenceStats.reduce((sum, s) => sum + s.withReason, 0);
+    const adhered = totalLocked - withReason;
+    const adherencePercent = totalLocked > 0 ? Math.round((adhered / totalLocked) * 100) : 0;
+    return { totalLocked, withReason, adhered, adherencePercent };
   }, [adherenceStats]);
 
   const monthlyData: MonthData[] = useMemo(() => {
@@ -470,12 +475,12 @@ export default function ScheduleAdherenceTab() {
   };
 
   /** Render the adherence percentage badge */
-  const renderAdherenceBadge = (percent: number, totalLocked: number, completed: number) => {
+  const renderAdherenceBadge = (percent: number, totalLocked: number, adhered: number) => {
     return (
       <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md border ${getAdherenceBg(percent)}`}>
         <span className={`text-lg font-bold ${getAdherenceColor(percent)}`}>{percent}%</span>
         <span className="text-xs text-muted-foreground">
-          {completed}/{totalLocked} completed
+          {adhered}/{totalLocked} adhered
         </span>
       </div>
     );
@@ -492,7 +497,7 @@ export default function ScheduleAdherenceTab() {
             <tr className="border-b border-border">
               <th className="text-left py-2 px-3 text-sm font-medium text-foreground">Week</th>
               <th className="text-right py-2 px-3 text-sm font-medium text-foreground">Locked</th>
-              <th className="text-right py-2 px-3 text-sm font-medium text-foreground">Completed</th>
+              <th className="text-right py-2 px-3 text-sm font-medium text-foreground">With Reason</th>
               <th className="text-right py-2 px-3 text-sm font-medium text-foreground">Adherence</th>
             </tr>
           </thead>
@@ -501,7 +506,7 @@ export default function ScheduleAdherenceTab() {
               <tr key={week.lockWeek} className="border-b border-border/50">
                 <td className="py-2 px-3 text-sm">{formatWeekRange(week.lockWeek)}</td>
                 <td className="py-2 px-3 text-sm text-right">{week.totalLocked}</td>
-                <td className="py-2 px-3 text-sm text-right">{week.completed}</td>
+                <td className="py-2 px-3 text-sm text-right">{week.withReason}</td>
                 <td className="py-2 px-3 text-sm text-right">
                   <span className={`font-semibold ${getAdherenceColor(week.adherencePercent)}`}>
                     {week.adherencePercent}%
@@ -558,7 +563,7 @@ export default function ScheduleAdherenceTab() {
             </div>
             <div className="text-sm text-muted-foreground mt-2">Overall Adherence</div>
             <div className="text-xs text-muted-foreground mt-1">
-              {overallAdherence.completed} of {overallAdherence.totalLocked} locked WOs completed
+              {overallAdherence.adhered} of {overallAdherence.totalLocked} locked WOs adhered
             </div>
           </CardContent>
         </Card>
@@ -597,7 +602,7 @@ export default function ScheduleAdherenceTab() {
           <CardHeader className="border-b border-border pb-4">
             <CardTitle className="text-xl font-medium">Adherence Trend</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Monthly adherence percentage over time (locked WOs completed vs total locked)
+              Monthly adherence percentage over time (locked WOs without a reason vs total locked)
             </p>
           </CardHeader>
           <CardContent className="pt-6">
@@ -606,8 +611,8 @@ export default function ScheduleAdherenceTab() {
                 <BarChart
                   data={[...monthlyAdherence].reverse().map(ma => ({
                     name: formatMonth(ma.month),
-                    "Completed": ma.completed,
-                    "Not Completed": ma.totalLocked - ma.completed,
+                    "Adhered": ma.adhered,
+                    "With Reason": ma.withReason,
                     adherencePercent: ma.adherencePercent,
                   }))}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -617,8 +622,8 @@ export default function ScheduleAdherenceTab() {
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip content={<BarTooltip />} />
                   <Legend />
-                  <Bar dataKey="Completed" stackId="a" fill="#5b8a72" />
-                  <Bar dataKey="Not Completed" stackId="a" fill="#d4726a" />
+                  <Bar dataKey="Adhered" stackId="a" fill="#5b8a72" />
+                  <Bar dataKey="With Reason" stackId="a" fill="#d4726a" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -654,7 +659,7 @@ export default function ScheduleAdherenceTab() {
                     <div>
                       <div className="flex items-center gap-3">
                         <CardTitle className="text-xl font-medium">{qData.label}</CardTitle>
-                        {qAdherence && renderAdherenceBadge(qAdherence.adherencePercent, qAdherence.totalLocked, qAdherence.completed)}
+                        {qAdherence && renderAdherenceBadge(qAdherence.adherencePercent, qAdherence.totalLocked, qAdherence.adhered)}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         {qData.total} incomplete work order{qData.total !== 1 ? "s" : ""} tracked
@@ -691,7 +696,7 @@ export default function ScheduleAdherenceTab() {
                 <div>
                   <div className="flex items-center gap-3">
                     <CardTitle className="text-xl font-medium">{formatMonth(monthData.month)}</CardTitle>
-                    {mAdherence && renderAdherenceBadge(mAdherence.adherencePercent, mAdherence.totalLocked, mAdherence.completed)}
+                    {mAdherence && renderAdherenceBadge(mAdherence.adherencePercent, mAdherence.totalLocked, mAdherence.adhered)}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     {monthData.total} incomplete work order{monthData.total !== 1 ? "s" : ""} tracked
@@ -724,7 +729,7 @@ export default function ScheduleAdherenceTab() {
             <CardHeader className="border-b border-border pb-4">
               <div className="flex items-center gap-3">
                 <CardTitle className="text-xl font-medium">{formatMonth(ma.month)}</CardTitle>
-                {renderAdherenceBadge(ma.adherencePercent, ma.totalLocked, ma.completed)}
+                {renderAdherenceBadge(ma.adherencePercent, ma.totalLocked, ma.adhered)}
               </div>
               <p className="text-sm text-muted-foreground mt-1">
                 No incomplete reason data submitted for this month

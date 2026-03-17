@@ -658,8 +658,9 @@ router.get("/schedule-adherence/summary", async (_req: Request, res: Response) =
   }
 });
 
-// Get adherence stats: locked WO count vs completed (closed/work complete) per lock week
-// Excludes unplanned break-ins (only counts from schedule_locks table)
+// Get adherence stats per lock week: reason-based adherence
+// Adherence = (total locked - WOs with a reason) / total locked
+// WOs with a reason = not completed as planned
 // Excludes current week (still in progress) and only includes weeks that have reason data submitted
 router.get("/schedule-adherence/stats", async (_req: Request, res: Response) => {
   try {
@@ -672,16 +673,12 @@ router.get("/schedule-adherence/stats", async (_req: Request, res: Response) => 
     thisMonday.setHours(0, 0, 0, 0);
     const thisMondayStr = thisMonday.toISOString().split("T")[0];
 
-    const rows = await query(`
+    // Get total locked WOs per week (only weeks with reason data, excluding current week)
+    const lockedRows = await query(`
       SELECT 
         sl.lock_week,
-        COUNT(DISTINCT sl.work_order_number) as total_locked,
-        COUNT(DISTINCT CASE 
-          WHEN UPPER(wo.status) IN ('CLOSED', 'WORK COMPLETE') 
-          THEN sl.work_order_number 
-        END) as completed
+        COUNT(DISTINCT sl.work_order_number) as total_locked
       FROM schedule_locks sl
-      LEFT JOIN work_orders wo ON sl.work_order_number = wo.work_order_number
       WHERE sl.lock_week < ?
         AND sl.lock_week IN (
           SELECT DISTINCT lock_week FROM schedule_adherence
@@ -689,14 +686,36 @@ router.get("/schedule-adherence/stats", async (_req: Request, res: Response) => 
       GROUP BY sl.lock_week
       ORDER BY sl.lock_week DESC
     `, [thisMondayStr]);
-    const stats = rows.map((row: any) => ({
-      lockWeek: row.lock_week,
-      totalLocked: Number(row.total_locked),
-      completed: Number(row.completed),
-      adherencePercent: Number(row.total_locked) > 0
-        ? Math.round((Number(row.completed) / Number(row.total_locked)) * 100)
-        : 0,
-    }));
+
+    // Get count of WOs with a reason per week (these are the ones NOT completed as planned)
+    const reasonRows = await query(`
+      SELECT 
+        lock_week,
+        COUNT(DISTINCT work_order_number) as with_reason
+      FROM schedule_adherence
+      WHERE lock_week < ?
+      GROUP BY lock_week
+    `, [thisMondayStr]);
+
+    const reasonMap = new Map<string, number>();
+    for (const row of reasonRows as any[]) {
+      reasonMap.set(row.lock_week, Number(row.with_reason));
+    }
+
+    const stats = (lockedRows as any[]).map((row: any) => {
+      const totalLocked = Number(row.total_locked);
+      const withReason = reasonMap.get(row.lock_week) || 0;
+      const adhered = totalLocked - withReason;
+      return {
+        lockWeek: row.lock_week,
+        totalLocked,
+        withReason,
+        adhered,
+        adherencePercent: totalLocked > 0
+          ? Math.round((adhered / totalLocked) * 100)
+          : 0,
+      };
+    });
     res.json(stats);
   } catch (error: any) {
     console.error("Error fetching adherence stats:", error);
