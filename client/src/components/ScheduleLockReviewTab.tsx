@@ -166,11 +166,15 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     const unplanned = workOrders.filter((wo) => {
       const status = wo["Status"]?.toUpperCase() || "";
       const description = wo["Description"]?.toUpperCase() || "";
+      const woType = wo["Type"]?.toUpperCase()?.trim() || "";
       
       const isWorkCompleteOrClosed = status === "WORK COMPLETE" || status === "CLOSED";
       if (!isWorkCompleteOrClosed) return false;
       
       if (description.includes("000")) return false;
+      
+      // Exclude CBM type work orders
+      if (woType === "CBM") return false;
       
       const isCMCC = description.includes("CMCC");
       const isWeekly = description.includes("WEEKLY");
@@ -241,6 +245,10 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
 
     const incomplete = previousWeekLocked.filter(locked => {
       const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
+      
+      // Exclude CBM type work orders
+      const lockedType = locked.type?.toUpperCase()?.trim() || "";
+      if (lockedType === "CBM") return false;
       
       const lockedDesc = locked.description?.toUpperCase() || "";
       const lockedShift = locked.shift?.toUpperCase()?.trim() || "";

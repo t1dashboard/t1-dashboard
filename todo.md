@@ -179,3 +179,5 @@
 - [x] Create team schedule utility (FHD, FHN, BHD, BHN rotation logic with alternating Wed/Sat)
 - [x] Display team indicators under each date in Workload weekly view
 - [x] Display team indicators under each date in Workload daily view
+- [x] LOTO Review: Exclude work orders with description "DOCK LEVELER QUARTERLY"
+- [x] Schedule Lock Review: Exclude work orders with type "CBM"
