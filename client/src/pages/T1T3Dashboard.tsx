@@ -294,7 +294,7 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T
         </TabsContent>
 
         <TabsContent value="deconfliction" className="mt-6">
-          <DeconflictionTab workOrders={filteredWorkOrders} />
+          <DeconflictionTab workOrders={filteredWorkOrders} tWeekRange={[1, 8]} />
         </TabsContent>
 
         <TabsContent value="risk" className="mt-6">
