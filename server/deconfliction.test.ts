@@ -179,6 +179,130 @@ describe("Campus Matching - NCG with NCG, MWG with MWG", () => {
   });
 });
 
+// Route column parsing (mirrors the component)
+const EQUIPMENT_PATTERNS = ["MSB", "EG", "UPS", "PTX"];
+
+function extractEquipmentFromRoute(route: string): Array<{ type: string; chain: string; fullId: string; building: string }> {
+  if (!route) return [];
+  const results: Array<{ type: string; chain: string; fullId: string; building: string }> = [];
+  const routeRegex = /(?:GNS|[A-Z]+)-([A-Z]+\d+)\s+([A-Z]+)-([A-Za-z0-9]+)/gi;
+  let match;
+  while ((match = routeRegex.exec(route)) !== null) {
+    const building = match[1].toUpperCase();
+    const eqType = match[2].toUpperCase();
+    const chainId = match[3].toUpperCase();
+    if (EQUIPMENT_PATTERNS.includes(eqType)) {
+      results.push({ type: eqType, chain: chainId, fullId: `${eqType}-${chainId}`, building });
+    }
+  }
+  return results;
+}
+
+function extractTransformerFromRoute(route: string): string | null {
+  if (!route) return null;
+  const match = route.match(/\bT-([A-E])\b/i);
+  return match ? match[1].toUpperCase() : null;
+}
+
+describe("Route Column Equipment Extraction", () => {
+  it("should extract EG-01 from GNS-NCG1 EG-01", () => {
+    const result = extractEquipmentFromRoute("GNS-NCG1 EG-01");
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({ type: "EG", chain: "01", fullId: "EG-01", building: "NCG1" });
+  });
+
+  it("should extract MSB-N1 from GNS-NCG1 MSB-N1 6A (ignore PM frequency suffix)", () => {
+    const result = extractEquipmentFromRoute("GNS-NCG1 MSB-N1 6A");
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({ type: "MSB", chain: "N1", fullId: "MSB-N1", building: "NCG1" });
+  });
+
+  it("should extract UPS-1R from GNS-MWG2 UPS-1R", () => {
+    const result = extractEquipmentFromRoute("GNS-MWG2 UPS-1R");
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({ type: "UPS", chain: "1R", fullId: "UPS-1R", building: "MWG2" });
+  });
+
+  it("should extract PTX-N3 from GNS-NCG3 PTX-N3 2A", () => {
+    const result = extractEquipmentFromRoute("GNS-NCG3 PTX-N3 2A");
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({ type: "PTX", chain: "N3", fullId: "PTX-N3", building: "NCG3" });
+  });
+
+  it("should return empty for non-equipment route", () => {
+    const result = extractEquipmentFromRoute("GNS-NCG1 HVAC-01");
+    expect(result).toHaveLength(0);
+  });
+
+  it("should return empty for empty string", () => {
+    const result = extractEquipmentFromRoute("");
+    expect(result).toHaveLength(0);
+  });
+
+  it("should return empty for null/undefined", () => {
+    const result = extractEquipmentFromRoute(null as any);
+    expect(result).toHaveLength(0);
+  });
+});
+
+describe("Route Column Transformer Extraction", () => {
+  it("should extract T-A from route", () => {
+    expect(extractTransformerFromRoute("GNS-NCG1 T-A")).toBe("A");
+  });
+
+  it("should extract T-B from route", () => {
+    expect(extractTransformerFromRoute("GNS-MWG1 T-B")).toBe("B");
+  });
+
+  it("should return null for non-transformer route", () => {
+    expect(extractTransformerFromRoute("GNS-NCG1 EG-01")).toBeNull();
+  });
+
+  it("should return null for empty string", () => {
+    expect(extractTransformerFromRoute("")).toBeNull();
+  });
+});
+
+describe("Route-Based Conflict Detection", () => {
+  it("GNS-NCG1 MSB-N1 6A should conflict with GNS-NCG1 EG-N1 (same building, same chain N1)", () => {
+    const route1 = extractEquipmentFromRoute("GNS-NCG1 MSB-N1 6A");
+    const route2 = extractEquipmentFromRoute("GNS-NCG1 EG-N1");
+
+    expect(route1).toHaveLength(1);
+    expect(route2).toHaveLength(1);
+
+    // Same building
+    expect(route1[0].building).toBe("NCG1");
+    expect(route2[0].building).toBe("NCG1");
+
+    // Same chain
+    expect(route1[0].chain).toBe("N1");
+    expect(route2[0].chain).toBe("N1");
+
+    // Different equipment types
+    expect(route1[0].type).toBe("MSB");
+    expect(route2[0].type).toBe("EG");
+  });
+
+  it("GNS-NCG1 EG-01 should NOT conflict with GNS-NCG1 EG-N1 (different chains)", () => {
+    const route1 = extractEquipmentFromRoute("GNS-NCG1 EG-01");
+    const route2 = extractEquipmentFromRoute("GNS-NCG1 EG-N1");
+
+    expect(route1[0].chain).toBe("01");
+    expect(route2[0].chain).toBe("N1");
+    expect(route1[0].chain).not.toBe(route2[0].chain);
+  });
+
+  it("GNS-NCG1 MSB-N1 should NOT conflict with GNS-NCG2 EG-N1 (different buildings, different DC)", () => {
+    const route1 = extractEquipmentFromRoute("GNS-NCG1 MSB-N1");
+    const route2 = extractEquipmentFromRoute("GNS-NCG2 EG-N1");
+
+    expect(route1[0].building).toBe("NCG1");
+    expect(route2[0].building).toBe("NCG2");
+    expect(route1[0].building).not.toBe(route2[0].building);
+  });
+});
+
 describe("Transformer Conflict Scenario", () => {
   it("T-A in NCG1 with 1EG-01 in NCG6 should be flagged (NCG T-A powers NCG1 and NCG6)", () => {
     const xformerDC = "NCG1";

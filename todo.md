@@ -187,3 +187,6 @@
 - [x] LOTO Review: Exclude work orders with description "NFPA110 EMERGENCY GENERATOR THREE YEAR PM"
 - [x] Rename "Pull Work Forward" to "Completed Early" across all files (dropdown, API, charts, tests)
 - [x] Expand T1-T3 deconfliction tab to cover full T1-T8 range
+- [x] Deconfliction: Also check Route column for equipment type and building detection (e.g., GNS-NCG1 EG-01)
+- [x] Add data center toggle filters (with "All" default) to T1/T2/T3 Not in Ready tabs
+- [x] Add data center toggle filters (with "All" default) to T4-T8 Not in Approved tab

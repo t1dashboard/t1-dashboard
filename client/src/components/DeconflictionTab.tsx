@@ -86,6 +86,52 @@ function extractEquipmentInfo(text: string): Array<{ type: string; chain: string
 }
 
 /**
+ * Extract equipment info from the Route column.
+ * Route format: "GNS-NCG1 EG-01" → building is "NCG1", equipment type is "EG", chain is "01"
+ * Route can also have a trailing PM frequency suffix: "GNS-NCG1 MSB-N1 6A" → chain is "N1" (ignore "6A")
+ * The chain from Route maps to the building number + equipment ID.
+ * For example, GNS-NCG1 EG-01 = 1EG-01 in NCG1.
+ * We extract the equipment type and construct the chain as the equipment number.
+ */
+function extractEquipmentFromRoute(route: string): Array<{ type: string; chain: string; fullId: string; building: string }> {
+  if (!route) return [];
+  const results: Array<{ type: string; chain: string; fullId: string; building: string }> = [];
+
+  // Match patterns like "GNS-NCG1 EG-01", "GNS-MWG2 MSB-N3", "GNS-NCG1 UPS-1R"
+  // Also handles trailing PM frequency suffix: "GNS-NCG1 MSB-N1 6A" → chain is "N1"
+  // Format: PREFIX-BUILDING EQUIPMENT_TYPE-CHAIN_ID [optional PM frequency]
+  const routeRegex = /(?:GNS|[A-Z]+)-([A-Z]+\d+)\s+([A-Z]+)-([A-Za-z0-9]+)/gi;
+  let match;
+  while ((match = routeRegex.exec(route)) !== null) {
+    const building = match[1].toUpperCase();
+    const eqType = match[2].toUpperCase();
+    const chainId = match[3].toUpperCase();
+
+    // Only track our known equipment types
+    if (EQUIPMENT_PATTERNS.includes(eqType)) {
+      results.push({
+        type: eqType,
+        chain: chainId,
+        fullId: `${eqType}-${chainId}`,
+        building,
+      });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Extract transformer info from the Route column.
+ * Looks for patterns like "GNS-NCG1 T-A" in the route.
+ */
+function extractTransformerFromRoute(route: string): string | null {
+  if (!route) return null;
+  const match = route.match(/\bT-([A-E])\b/i);
+  return match ? match[1].toUpperCase() : null;
+}
+
+/**
  * Extract transformer info from text.
  * Looks for patterns like "T-A", "T-B", "T-C", "T-D", "T-E" in the description.
  * Returns the transformer letter (A, B, C, D, E) or null.
@@ -191,10 +237,11 @@ export default function DeconflictionTab({ workOrders, tWeekRange = [1, 3], labe
 
       const descInfo = extractEquipmentInfo(wo["Description"] || "");
       const equipDescInfo = extractEquipmentInfo(wo["Equipment Description"] || "");
+      const routeInfo = extractEquipmentFromRoute(wo["Route"] || "");
       // Deduplicate by fullId
       const seen = new Set<string>();
       const allInfo: Array<{ type: string; chain: string; fullId: string }> = [];
-      for (const info of [...descInfo, ...equipDescInfo]) {
+      for (const info of [...descInfo, ...equipDescInfo, ...routeInfo]) {
         if (!seen.has(info.fullId)) {
           seen.add(info.fullId);
           allInfo.push(info);
@@ -202,7 +249,8 @@ export default function DeconflictionTab({ workOrders, tWeekRange = [1, 3], labe
       }
 
       const transformerLetter = extractTransformerLetter(wo["Description"] || "") ||
-                                 extractTransformerLetter(wo["Equipment Description"] || "");
+                                 extractTransformerLetter(wo["Equipment Description"] || "") ||
+                                 extractTransformerFromRoute(wo["Route"] || "");
 
       if (allInfo.length > 0 || transformerLetter) {
         enriched.push({ wo, window, equipInfo: allInfo, transformerLetter });
@@ -739,12 +787,13 @@ export default function DeconflictionTab({ workOrders, tWeekRange = [1, 3], labe
             <div className="text-sm text-muted-foreground space-y-2">
               <p className="font-medium text-foreground mb-1">Equipment Matching</p>
               <p>
-                Scans Description and Equipment Description for critical infrastructure identifiers:
+                Scans Description, Equipment Description, and Route for critical infrastructure identifiers:
                 <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded mx-1">MSB</span>
                 <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded mx-1">EG</span>
                 <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded mx-1">UPS</span>
                 <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded mx-1">PTX</span>
                 followed by their chain identifier (e.g., 3EG-N3 and 3MSB-N3 both reference the N3 chain).
+                Route column is also parsed (e.g., GNS-NCG1 EG-01 identifies EG equipment with chain 01 in NCG1).
                 Conflicts are flagged when 2+ work orders on the same infrastructure chain have overlapping work windows (start date through end date) in the same data center.
               </p>
               <p className="font-medium text-foreground mt-2 mb-1 flex items-center gap-1">

@@ -2,11 +2,12 @@
  * Swiss Rationalism: Clean data presentation for T4-T8 week work orders not in Approved status
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/dateUtils";
 import { isT4T8Week } from "@/lib/t4t8DateUtils";
+import DataCenterFilter from "@/components/DataCenterFilter";
 
 interface T4T8NotInApprovedTabProps {
   workOrders: WorkOrder[];
@@ -15,6 +16,8 @@ interface T4T8NotInApprovedTabProps {
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
 export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTabProps) {
+  const [selectedDCs, setSelectedDCs] = useState<Set<string>>(new Set());
+
   const groupedOrders = useMemo(() => {
     const filtered = workOrders.filter((wo) => {
       const status = wo["Status"]?.toUpperCase() || "";
@@ -50,15 +53,22 @@ export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTa
 
   const totalCount = Object.values(groupedOrders).reduce((sum, orders) => sum + orders.length, 0);
 
-  if (totalCount === 0) {
-    return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <p className="text-muted-foreground">No T4-T8 work orders found that are not in Approved status</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Get all unique data centers
+  const allDataCenters = useMemo(() => Object.keys(groupedOrders), [groupedOrders]);
+
+  // Apply data center filter
+  const filteredGroupedOrders = useMemo(() => {
+    if (selectedDCs.size === 0) return groupedOrders;
+    const filtered: Record<string, WorkOrder[]> = {};
+    for (const [dc, orders] of Object.entries(groupedOrders)) {
+      if (selectedDCs.has(dc)) {
+        filtered[dc] = orders;
+      }
+    }
+    return filtered;
+  }, [groupedOrders, selectedDCs]);
+
+  const filteredTotalCount = Object.values(filteredGroupedOrders).reduce((sum, orders) => sum + orders.length, 0);
 
   return (
     <div className="space-y-6">
@@ -66,13 +76,40 @@ export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTa
       <Card className="bg-primary/5 border-primary/20">
         <CardContent className="py-6">
           <div className="text-center">
-            <div className="text-4xl font-bold text-primary">{totalCount}</div>
-            <div className="text-sm text-muted-foreground mt-2">Total Work Orders Not in Approved Status</div>
-            <div className="text-xs text-muted-foreground mt-1">{Object.keys(groupedOrders).length} Data Centers</div>
+            <div className="text-4xl font-bold text-primary">{filteredTotalCount}</div>
+            <div className="text-sm text-muted-foreground mt-2">
+              Total Work Orders Not in Approved Status
+              {selectedDCs.size > 0 && (
+                <span className="text-xs ml-1">(filtered from {totalCount} total)</span>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">{Object.keys(filteredGroupedOrders).length} Data Centers</div>
           </div>
+          {allDataCenters.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-border/50">
+              <DataCenterFilter
+                dataCenters={allDataCenters}
+                selected={selectedDCs}
+                onChange={setSelectedDCs}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
-      {Object.entries(groupedOrders).map(([dataCenter, orders]) => (
+
+      {filteredTotalCount === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground">
+              {selectedDCs.size > 0
+                ? "No work orders match the selected data center filter"
+                : "No T4-T8 work orders found that are not in Approved status"}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+      {Object.entries(filteredGroupedOrders).map(([dataCenter, orders]) => (
         <Card key={dataCenter}>
           <CardHeader className="border-b border-border pb-4">
             <CardTitle className="text-xl font-medium">{dataCenter}</CardTitle>
@@ -130,6 +167,8 @@ export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTa
           </CardContent>
         </Card>
       ))}
+        </>
+      )}
     </div>
   );
 }

@@ -2,11 +2,12 @@
  * Swiss Rationalism: Clean data presentation for T1 week work orders not in Ready status
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, isNextWeek, getNextWeekRange } from "@/lib/dateUtils";
 import { getWorkWeekLeaders } from "@/lib/workWeekLeaders";
+import DataCenterFilter from "@/components/DataCenterFilter";
 
 interface T1NotInReadyTabProps {
   workOrders: WorkOrder[];
@@ -15,6 +16,8 @@ interface T1NotInReadyTabProps {
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
 export default function T1NotInReadyTab({ workOrders }: T1NotInReadyTabProps) {
+  const [selectedDCs, setSelectedDCs] = useState<Set<string>>(new Set());
+
   const t1NotReadyOrders = useMemo(() => {
     const filtered = workOrders.filter((wo) => {
       const status = wo["Status"]?.toUpperCase() || "";
@@ -33,6 +36,21 @@ export default function T1NotInReadyTab({ workOrders }: T1NotInReadyTabProps) {
     });
   }, [workOrders]);
 
+  // Get all unique data centers from the filtered orders
+  const allDataCenters = useMemo(() => {
+    const dcs = new Set<string>();
+    t1NotReadyOrders.forEach((wo) => {
+      if (wo["Data Center"]) dcs.add(wo["Data Center"]);
+    });
+    return Array.from(dcs);
+  }, [t1NotReadyOrders]);
+
+  // Apply data center filter
+  const filteredOrders = useMemo(() => {
+    if (selectedDCs.size === 0) return t1NotReadyOrders;
+    return t1NotReadyOrders.filter((wo) => selectedDCs.has(wo["Data Center"]));
+  }, [t1NotReadyOrders, selectedDCs]);
+
   // Get Work Week Leaders for T1 week - always compute, regardless of work order count
   const { start: t1Start } = getNextWeekRange();
   const weekLeaders = getWorkWeekLeaders(t1Start);
@@ -42,7 +60,10 @@ export default function T1NotInReadyTab({ workOrders }: T1NotInReadyTabProps) {
       <CardHeader className="border-b border-border pb-4">
         <CardTitle className="text-xl font-medium">T1 Not in Ready</CardTitle>
         <p className="text-sm text-muted-foreground mt-1">
-          {t1NotReadyOrders.length} work orders not in Ready status
+          {filteredOrders.length} work order{filteredOrders.length !== 1 ? "s" : ""} not in Ready status
+          {selectedDCs.size > 0 && (
+            <span className="text-xs ml-1">(filtered from {t1NotReadyOrders.length} total)</span>
+          )}
         </p>
         {weekLeaders && (
           <div className="mt-3 pt-3 border-t border-border/50">
@@ -57,11 +78,24 @@ export default function T1NotInReadyTab({ workOrders }: T1NotInReadyTabProps) {
             </div>
           </div>
         )}
+        {allDataCenters.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-border/50">
+            <DataCenterFilter
+              dataCenters={allDataCenters}
+              selected={selectedDCs}
+              onChange={setSelectedDCs}
+            />
+          </div>
+        )}
       </CardHeader>
 
-      {t1NotReadyOrders.length === 0 ? (
+      {filteredOrders.length === 0 ? (
         <CardContent className="py-12 text-center">
-          <p className="text-muted-foreground">No T1 work orders found that are not in Ready status</p>
+          <p className="text-muted-foreground">
+            {selectedDCs.size > 0
+              ? "No work orders match the selected data center filter"
+              : "No T1 work orders found that are not in Ready status"}
+          </p>
         </CardContent>
       ) : (
         <CardContent className="p-0">
@@ -86,7 +120,7 @@ export default function T1NotInReadyTab({ workOrders }: T1NotInReadyTabProps) {
                 </tr>
               </thead>
               <tbody>
-                {t1NotReadyOrders.map((wo) => (
+                {filteredOrders.map((wo) => (
                   <tr 
                     key={wo["Work Order"]} 
                     className="border-b border-border/50 hover:bg-muted/20 transition-colors"
