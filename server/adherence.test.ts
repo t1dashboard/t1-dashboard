@@ -18,7 +18,7 @@ const VALID_REASONS = [
   "Weather",
   "XFN Partner Request",
   "Risk Mitigation",
-  "Pull Work Forward",
+  "Completed Early",
   "SOW Changed",
 ];
 
@@ -327,8 +327,8 @@ describe("Schedule Adherence - New Reason Categories", () => {
     expect(VALID_REASONS.includes("Risk Mitigation")).toBe(true);
   });
 
-  it("should include Pull Work Forward as a valid reason", () => {
-    expect(VALID_REASONS.includes("Pull Work Forward")).toBe(true);
+  it("should include Completed Early as a valid reason", () => {
+    expect(VALID_REASONS.includes("Completed Early")).toBe(true);
   });
 
   it("should include SOW Changed as a valid reason", () => {

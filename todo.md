@@ -185,3 +185,4 @@
 - [x] Add "SOW Changed" reason category to dropdown, API validation, Schedule Adherence charts, and tests
 - [x] Add export buttons to Schedule Adherence for each month and quarter (Excel with work orders and reasons)
 - [x] LOTO Review: Exclude work orders with description "NFPA110 EMERGENCY GENERATOR THREE YEAR PM"
+- [x] Rename "Pull Work Forward" to "Completed Early" across all files (dropdown, API, charts, tests)

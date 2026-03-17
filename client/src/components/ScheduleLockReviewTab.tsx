@@ -38,7 +38,7 @@ const ADHERENCE_REASONS = [
   "Weather",
   "XFN Partner Request",
   "Risk Mitigation",
-  "Pull Work Forward",
+  "Completed Early",
   "SOW Changed",
 ] as const;
 
