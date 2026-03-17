@@ -11,8 +11,7 @@ const mockedQuery = vi.mocked(query);
 const mockedExecute = vi.mocked(execute);
 
 const VALID_REASONS = [
-  "Vendor not Available",
-  "Vendor Not Prepared",
+  "Vendor Not Available/Prepared",
   "Missing Parts/Tools",
   "Resource Availability",
   "Weather",
@@ -118,7 +117,7 @@ describe("Schedule Adherence - Summary Aggregation", () => {
     const summaryRows = [
       { month: "2026-02", reason: "Weather", count: 3 },
       { month: "2026-02", reason: "Missing Parts/Tools", count: 5 },
-      { month: "2026-02", reason: "Vendor not Available", count: 2 },
+      { month: "2026-02", reason: "Vendor Not Available/Prepared", count: 2 },
       { month: "2026-01", reason: "Weather", count: 1 },
       { month: "2026-01", reason: "Resource Availability", count: 4 },
     ];
@@ -143,7 +142,7 @@ describe("Schedule Adherence - Summary Aggregation", () => {
     const reasons = [
       { name: "Weather", value: 3 },
       { name: "Missing Parts/Tools", value: 5 },
-      { name: "Vendor not Available", value: 2 },
+      { name: "Vendor Not Available/Prepared", value: 2 },
     ];
     const total = reasons.reduce((sum, r) => sum + r.value, 0);
 
@@ -194,7 +193,7 @@ describe("Schedule Adherence - Batch Submission Validation", () => {
     const records = [
       { workOrderNumber: "11111", description: "WO A", dataCenter: "DC1", lockWeek: "2026-02-10", reason: "Weather" },
       { workOrderNumber: "22222", description: "WO B", dataCenter: "DC2", lockWeek: "2026-02-10", reason: "Missing Parts/Tools" },
-      { workOrderNumber: "33333", description: "WO C", dataCenter: "DC1", lockWeek: "2026-02-10", reason: "Vendor not Available" },
+      { workOrderNumber: "33333", description: "WO C", dataCenter: "DC1", lockWeek: "2026-02-10", reason: "Vendor Not Available/Prepared" },
     ];
 
     // Build SQL values like the API does
@@ -268,7 +267,7 @@ describe("Schedule Adherence - Quarterly Aggregation", () => {
       { month: "2026-01", reason: "Weather", count: 3 },
       { month: "2026-02", reason: "Weather", count: 5 },
       { month: "2026-02", reason: "Risk Mitigation", count: 2 },
-      { month: "2026-03", reason: "Vendor Not Prepared", count: 4 },
+      { month: "2026-03", reason: "Vendor Not Available/Prepared", count: 4 },
       { month: "2026-04", reason: "Weather", count: 1 },
     ];
 
@@ -292,7 +291,7 @@ describe("Schedule Adherence - Quarterly Aggregation", () => {
     expect(quarterMap.size).toBe(2); // Q1 and Q2
     expect(quarterMap.get("2026-Q1")!.get("Weather")).toBe(8); // 3 + 5
     expect(quarterMap.get("2026-Q1")!.get("Risk Mitigation")).toBe(2);
-    expect(quarterMap.get("2026-Q1")!.get("Vendor Not Prepared")).toBe(4);
+    expect(quarterMap.get("2026-Q1")!.get("Vendor Not Available/Prepared")).toBe(4);
     expect(quarterMap.get("2026-Q2")!.get("Weather")).toBe(1);
   });
 
@@ -318,9 +317,9 @@ describe("Schedule Adherence - Quarterly Aggregation", () => {
   });
 });
 
-describe("Schedule Adherence - New Reason Categories", () => {
-  it("should include Vendor Not Prepared as a valid reason", () => {
-    expect(VALID_REASONS.includes("Vendor Not Prepared")).toBe(true);
+describe("Schedule Adherence - Reason Categories", () => {
+  it("should include Vendor Not Available/Prepared as a combined reason", () => {
+    expect(VALID_REASONS.includes("Vendor Not Available/Prepared")).toBe(true);
   });
 
   it("should include Risk Mitigation as a valid reason", () => {
@@ -335,8 +334,13 @@ describe("Schedule Adherence - New Reason Categories", () => {
     expect(VALID_REASONS.includes("SOW Changed")).toBe(true);
   });
 
-  it("should have 9 total reason categories", () => {
-    expect(VALID_REASONS).toHaveLength(9);
+  it("should have 8 total reason categories (vendor reasons combined)", () => {
+    expect(VALID_REASONS).toHaveLength(8);
+  });
+
+  it("should NOT have separate Vendor not Available or Vendor Not Prepared", () => {
+    expect(VALID_REASONS.includes("Vendor not Available")).toBe(false);
+    expect(VALID_REASONS.includes("Vendor Not Prepared")).toBe(false);
   });
 });
 
@@ -366,52 +370,58 @@ describe("Schedule Adherence - Adherence Percentage Calculation", () => {
     return `${year}-${month}`;
   }
 
-  it("should calculate adherence percentage correctly", () => {
-    const stats = { totalLocked: 20, completed: 10 };
-    const percent = Math.round((stats.completed / stats.totalLocked) * 100);
-    expect(percent).toBe(50);
+  it("should calculate reason-based adherence percentage correctly", () => {
+    // 20 locked, 4 with reasons = 16 adhered = 80%
+    const stats = { totalLocked: 20, withReason: 4 };
+    const adhered = stats.totalLocked - stats.withReason;
+    const percent = Math.round((adhered / stats.totalLocked) * 100);
+    expect(percent).toBe(80);
   });
 
-  it("should handle 100% adherence", () => {
-    const stats = { totalLocked: 15, completed: 15 };
-    const percent = Math.round((stats.completed / stats.totalLocked) * 100);
+  it("should handle 100% adherence (no reasons submitted)", () => {
+    const stats = { totalLocked: 15, withReason: 0 };
+    const adhered = stats.totalLocked - stats.withReason;
+    const percent = Math.round((adhered / stats.totalLocked) * 100);
     expect(percent).toBe(100);
   });
 
-  it("should handle 0% adherence", () => {
-    const stats = { totalLocked: 10, completed: 0 };
-    const percent = Math.round((stats.completed / stats.totalLocked) * 100);
+  it("should handle 0% adherence (all have reasons)", () => {
+    const stats = { totalLocked: 10, withReason: 10 };
+    const adhered = stats.totalLocked - stats.withReason;
+    const percent = Math.round((adhered / stats.totalLocked) * 100);
     expect(percent).toBe(0);
   });
 
   it("should handle zero locked WOs gracefully", () => {
-    const stats = { totalLocked: 0, completed: 0 };
-    const percent = stats.totalLocked > 0 ? Math.round((stats.completed / stats.totalLocked) * 100) : 0;
+    const stats = { totalLocked: 0, withReason: 0 };
+    const percent = stats.totalLocked > 0 ? Math.round(((stats.totalLocked - stats.withReason) / stats.totalLocked) * 100) : 0;
     expect(percent).toBe(0);
   });
 
   it("should round adherence percentage to nearest integer", () => {
-    const stats = { totalLocked: 3, completed: 1 };
-    const percent = Math.round((stats.completed / stats.totalLocked) * 100);
-    expect(percent).toBe(33); // 33.33... rounds to 33
+    // 3 locked, 1 with reason = 2 adhered = 66.67% → 67
+    const stats = { totalLocked: 3, withReason: 1 };
+    const adhered = stats.totalLocked - stats.withReason;
+    const percent = Math.round((adhered / stats.totalLocked) * 100);
+    expect(percent).toBe(67);
   });
 
   it("should aggregate weekly stats into monthly adherence", () => {
     const weeklyStats = [
-      { lockWeek: "2026-02-09", totalLocked: 20, completed: 15, adherencePercent: 75 },
-      { lockWeek: "2026-02-16", totalLocked: 25, completed: 20, adherencePercent: 80 },
-      { lockWeek: "2026-02-23", totalLocked: 30, completed: 22, adherencePercent: 73 },
+      { lockWeek: "2026-02-09", totalLocked: 20, withReason: 5, adhered: 15, adherencePercent: 75 },
+      { lockWeek: "2026-02-16", totalLocked: 25, withReason: 5, adhered: 20, adherencePercent: 80 },
+      { lockWeek: "2026-02-23", totalLocked: 30, withReason: 8, adhered: 22, adherencePercent: 73 },
     ];
 
-    const monthMap = new Map<string, { totalLocked: number; completed: number }>();
+    const monthMap = new Map<string, { totalLocked: number; withReason: number }>();
     weeklyStats.forEach(stat => {
       const month = getMonthFromLockWeek(stat.lockWeek);
       if (!monthMap.has(month)) {
-        monthMap.set(month, { totalLocked: 0, completed: 0 });
+        monthMap.set(month, { totalLocked: 0, withReason: 0 });
       }
       const entry = monthMap.get(month)!;
       entry.totalLocked += stat.totalLocked;
-      entry.completed += stat.completed;
+      entry.withReason += stat.withReason;
     });
 
     // All three lock weeks (Feb 9, 16, 23) map to T1 weeks starting Feb 16, 23, Mar 2
@@ -424,14 +434,16 @@ describe("Schedule Adherence - Adherence Percentage Calculation", () => {
     expect(feb).toBeDefined();
     expect(mar).toBeDefined();
     expect(feb!.totalLocked).toBe(45); // 20 + 25
-    expect(feb!.completed).toBe(35); // 15 + 20
+    expect(feb!.withReason).toBe(10); // 5 + 5
     expect(mar!.totalLocked).toBe(30);
-    expect(mar!.completed).toBe(22);
+    expect(mar!.withReason).toBe(8);
 
-    const febPercent = Math.round((feb!.completed / feb!.totalLocked) * 100);
+    const febAdhered = feb!.totalLocked - feb!.withReason;
+    const febPercent = Math.round((febAdhered / feb!.totalLocked) * 100);
     expect(febPercent).toBe(78); // 35/45 = 77.78 → 78
 
-    const marPercent = Math.round((mar!.completed / mar!.totalLocked) * 100);
+    const marAdhered = mar!.totalLocked - mar!.withReason;
+    const marPercent = Math.round((marAdhered / mar!.totalLocked) * 100);
     expect(marPercent).toBe(73); // 22/30
   });
 
@@ -446,9 +458,9 @@ describe("Schedule Adherence - Adherence Percentage Calculation", () => {
 
   it("should aggregate monthly adherence into quarterly adherence", () => {
     const monthlyAdherence = [
-      { month: "2026-01", totalLocked: 50, completed: 40 },
-      { month: "2026-02", totalLocked: 60, completed: 45 },
-      { month: "2026-03", totalLocked: 55, completed: 50 },
+      { month: "2026-01", totalLocked: 50, withReason: 10 },
+      { month: "2026-02", totalLocked: 60, withReason: 15 },
+      { month: "2026-03", totalLocked: 55, withReason: 5 },
     ];
 
     const getQuarterKey = (monthStr: string): string => {
@@ -458,22 +470,23 @@ describe("Schedule Adherence - Adherence Percentage Calculation", () => {
       return `${year}-Q${q}`;
     };
 
-    const quarterMap = new Map<string, { totalLocked: number; completed: number }>();
+    const quarterMap = new Map<string, { totalLocked: number; withReason: number }>();
     monthlyAdherence.forEach(ma => {
       const qKey = getQuarterKey(ma.month);
       if (!quarterMap.has(qKey)) {
-        quarterMap.set(qKey, { totalLocked: 0, completed: 0 });
+        quarterMap.set(qKey, { totalLocked: 0, withReason: 0 });
       }
       const entry = quarterMap.get(qKey)!;
       entry.totalLocked += ma.totalLocked;
-      entry.completed += ma.completed;
+      entry.withReason += ma.withReason;
     });
 
     const q1 = quarterMap.get("2026-Q1")!;
     expect(q1.totalLocked).toBe(165); // 50 + 60 + 55
-    expect(q1.completed).toBe(135); // 40 + 45 + 50
+    expect(q1.withReason).toBe(30); // 10 + 15 + 5
 
-    const q1Percent = Math.round((q1.completed / q1.totalLocked) * 100);
+    const q1Adhered = q1.totalLocked - q1.withReason;
+    const q1Percent = Math.round((q1Adhered / q1.totalLocked) * 100);
     expect(q1Percent).toBe(82); // 135/165 = 81.8 → 82
   });
 

@@ -196,3 +196,4 @@
 - [x] Schedule Adherence: Exclude current week from adherence stats (week isn't over yet)
 - [x] Schedule Adherence: Only show adherence for weeks that have reason data submitted
 - [x] Schedule Adherence: Change to reason-based adherence (WOs with reason = not completed, adherence = (total - with_reason) / total)
+- [x] Combine "Vendor not Available" and "Vendor Not Prepared" into "Vendor Not Available/Prepared"

@@ -562,8 +562,7 @@ router.get("/deferral-work-orders", async (_req: Request, res: Response) => {
 // ============================================================
 
 const VALID_ADHERENCE_REASONS = [
-  "Vendor not Available",
-  "Vendor Not Prepared",
+  "Vendor Not Available/Prepared",
   "Missing Parts/Tools",
   "Resource Availability",
   "Weather",

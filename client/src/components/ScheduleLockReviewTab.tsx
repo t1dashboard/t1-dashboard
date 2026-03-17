@@ -31,8 +31,7 @@ interface LockedWorkOrder {
 }
 
 const ADHERENCE_REASONS = [
-  "Vendor not Available",
-  "Vendor Not Prepared",
+  "Vendor Not Available/Prepared",
   "Missing Parts/Tools",
   "Resource Availability",
   "Weather",

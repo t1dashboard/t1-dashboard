@@ -13,8 +13,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Ba
 import * as XLSX from "xlsx";
 
 const REASON_COLORS: Record<string, string> = {
-  "Vendor not Available": "#5b8a72",   // muted teal
-  "Vendor Not Prepared": "#3d7a5f",   // darker teal
+  "Vendor Not Available/Prepared": "#5b8a72",   // muted teal
   "Missing Parts/Tools": "#c2785c",    // warm terracotta
   "Resource Availability": "#6b8cae",  // steel blue
   "Weather": "#8b7bb5",               // soft purple
@@ -25,8 +24,7 @@ const REASON_COLORS: Record<string, string> = {
 };
 
 const ALL_REASONS = [
-  "Vendor not Available",
-  "Vendor Not Prepared",
+  "Vendor Not Available/Prepared",
   "Missing Parts/Tools",
   "Resource Availability",
   "Weather",
