@@ -19,6 +19,7 @@ const VALID_REASONS = [
   "XFN Partner Request",
   "Risk Mitigation",
   "Pull Work Forward",
+  "SOW Changed",
 ];
 
 describe("Schedule Adherence - Reason Validation", () => {
@@ -330,8 +331,12 @@ describe("Schedule Adherence - New Reason Categories", () => {
     expect(VALID_REASONS.includes("Pull Work Forward")).toBe(true);
   });
 
-  it("should have 8 total reason categories", () => {
-    expect(VALID_REASONS).toHaveLength(8);
+  it("should include SOW Changed as a valid reason", () => {
+    expect(VALID_REASONS.includes("SOW Changed")).toBe(true);
+  });
+
+  it("should have 9 total reason categories", () => {
+    expect(VALID_REASONS).toHaveLength(9);
   });
 });
 

@@ -181,3 +181,5 @@
 - [x] Display team indicators under each date in Workload daily view
 - [x] LOTO Review: Exclude work orders with description "DOCK LEVELER QUARTERLY"
 - [x] Schedule Lock Review: Exclude work orders with type "CBM"
+- [x] One-time exclusion of WOs 3335323, 3316827, 3336866, 3335916, 3335907, 3336865 from Schedule Lock Review
+- [x] Add "SOW Changed" reason category to dropdown, API validation, Schedule Adherence charts, and tests

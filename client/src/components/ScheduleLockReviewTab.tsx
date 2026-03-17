@@ -39,7 +39,11 @@ const ADHERENCE_REASONS = [
   "XFN Partner Request",
   "Risk Mitigation",
   "Pull Work Forward",
+  "SOW Changed",
 ] as const;
+
+// One-time exclusion of specific work orders from Schedule Lock Review
+const EXCLUDED_WORK_ORDERS = new Set(["3335323", "3316827", "3336866", "3335916", "3335907", "3336865"]);
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
@@ -164,6 +168,9 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     };
 
     const unplanned = workOrders.filter((wo) => {
+      // One-time exclusion of specific work orders
+      if (EXCLUDED_WORK_ORDERS.has(String(wo["Work Order"]))) return false;
+      
       const status = wo["Status"]?.toUpperCase() || "";
       const description = wo["Description"]?.toUpperCase() || "";
       const woType = wo["Type"]?.toUpperCase()?.trim() || "";
@@ -244,6 +251,9 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     }));
 
     const incomplete = previousWeekLocked.filter(locked => {
+      // One-time exclusion of specific work orders
+      if (EXCLUDED_WORK_ORDERS.has(String(locked.workOrderNumber))) return false;
+      
       const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
       
       // Exclude CBM type work orders
