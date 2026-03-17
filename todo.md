@@ -184,3 +184,4 @@
 - [x] One-time exclusion of WOs 3335323, 3316827, 3336866, 3335916, 3335907, 3336865 from Schedule Lock Review
 - [x] Add "SOW Changed" reason category to dropdown, API validation, Schedule Adherence charts, and tests
 - [x] Add export buttons to Schedule Adherence for each month and quarter (Excel with work orders and reasons)
+- [x] LOTO Review: Exclude work orders with description "NFPA110 EMERGENCY GENERATOR THREE YEAR PM"

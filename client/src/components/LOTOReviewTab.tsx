@@ -37,11 +37,12 @@ export default function LOTOReviewTab({ workOrders, scheduledLabor, pmCodes }: L
       const isCMCC = desc.includes("CMCC");
       const isWeekly = desc.includes("WEEKLY");
       const isDockLevelerQuarterly = desc.includes("DOCK LEVELER QUARTERLY");
+      const isNFPA110ThreeYearPM = desc.includes("NFPA110 EMERGENCY GENERATOR THREE YEAR PM");
       const hasLOTOorPTW = desc.includes("LOTO") || desc.includes("PTW");
       const pmCode = wo["PM Code"] || "";
       const hasPMCodeMatch = lotoPTWCodes.has(pmCode);
       
-      return !isCancelled && !isCMCC && !isWeekly && !isDockLevelerQuarterly && (hasLOTOorPTW || hasPMCodeMatch) && isNextWeek(wo["Sched. Start Date"]);
+      return !isCancelled && !isCMCC && !isWeekly && !isDockLevelerQuarterly && !isNFPA110ThreeYearPM && (hasLOTOorPTW || hasPMCodeMatch) && isNextWeek(wo["Sched. Start Date"]);
     });
 
     // Sort alphabetically by data center
