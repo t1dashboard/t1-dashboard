@@ -3,11 +3,13 @@
  * reasons why locked work orders were not completed on time.
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { getScheduleAdherence, getScheduleAdherenceSummary, AdherenceRecord, AdherenceSummary } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { Loader2, Download } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import * as XLSX from "xlsx";
 
 const REASON_COLORS: Record<string, string> = {
   "Vendor not Available": "#5b8a72",   // muted teal
@@ -65,6 +67,50 @@ function getQuarterKey(monthStr: string): string {
   return `${year}-Q${q}`;
 }
 
+/** Get the months that belong to a quarter key like "2026-Q1" */
+function getQuarterMonths(quarterKey: string): string[] {
+  const [year, qStr] = quarterKey.split("-Q");
+  const q = parseInt(qStr, 10);
+  const startMonth = (q - 1) * 3 + 1;
+  return [
+    `${year}-${String(startMonth).padStart(2, "0")}`,
+    `${year}-${String(startMonth + 1).padStart(2, "0")}`,
+    `${year}-${String(startMonth + 2).padStart(2, "0")}`,
+  ];
+}
+
+function exportToExcel(records: AdherenceRecord[], filename: string) {
+  // Sort by data center alphabetically
+  const sorted = [...records].sort((a, b) => {
+    const dcA = (a.dataCenter || "").toLowerCase();
+    const dcB = (b.dataCenter || "").toLowerCase();
+    return dcA.localeCompare(dcB);
+  });
+
+  const data = sorted.map(r => ({
+    "Work Order": r.workOrderNumber,
+    "Description": r.description || "",
+    "Data Center": r.dataCenter || "",
+    "Lock Week": r.lockWeek,
+    "Reason": r.reason,
+    "Submitted At": r.submittedAt || "",
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  // Set column widths
+  ws["!cols"] = [
+    { wch: 14 }, // Work Order
+    { wch: 40 }, // Description
+    { wch: 14 }, // Data Center
+    { wch: 14 }, // Lock Week
+    { wch: 24 }, // Reason
+    { wch: 22 }, // Submitted At
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Schedule Adherence");
+  XLSX.writeFile(wb, `${filename}.xlsx`);
+}
+
 export default function ScheduleAdherenceTab() {
   const [summary, setSummary] = useState<AdherenceSummary[]>([]);
   const [allRecords, setAllRecords] = useState<AdherenceRecord[]>([]);
@@ -89,7 +135,6 @@ export default function ScheduleAdherenceTab() {
   }, []);
 
   const monthlyData: MonthData[] = useMemo(() => {
-    // Group summary by month
     const monthMap = new Map<string, Map<string, number>>();
     
     summary.forEach(row => {
@@ -99,7 +144,6 @@ export default function ScheduleAdherenceTab() {
       monthMap.get(row.month)!.set(row.reason, Number(row.count));
     });
 
-    // Sort months descending (newest first)
     const months = Array.from(monthMap.keys()).sort((a, b) => b.localeCompare(a));
 
     return months.map(month => {
@@ -121,7 +165,6 @@ export default function ScheduleAdherenceTab() {
     });
   }, [summary]);
 
-  // Quarterly data
   const quarterlyData: QuarterData[] = useMemo(() => {
     const quarterMap = new Map<string, Map<string, number>>();
 
@@ -155,7 +198,6 @@ export default function ScheduleAdherenceTab() {
     });
   }, [summary]);
 
-  // Overall totals across all months
   const overallTotals = useMemo(() => {
     const totals = new Map<string, number>();
     let grandTotal = 0;
@@ -177,6 +219,45 @@ export default function ScheduleAdherenceTab() {
       total: grandTotal,
     };
   }, [summary]);
+
+  /** Filter records for a specific month (YYYY-MM) */
+  const getRecordsForMonth = useCallback((month: string): AdherenceRecord[] => {
+    return allRecords.filter(r => {
+      // lockWeek is a date string like "2026-02-10"
+      // submittedAt is a datetime string
+      // Match by lockWeek month
+      if (r.lockWeek && r.lockWeek.startsWith(month)) return true;
+      // Also try submittedAt month
+      if (r.submittedAt && r.submittedAt.startsWith(month)) return true;
+      return false;
+    });
+  }, [allRecords]);
+
+  /** Filter records for a specific quarter */
+  const getRecordsForQuarter = useCallback((quarterKey: string): AdherenceRecord[] => {
+    const months = getQuarterMonths(quarterKey);
+    return allRecords.filter(r => {
+      const lockMonth = r.lockWeek ? r.lockWeek.substring(0, 7) : "";
+      const submitMonth = r.submittedAt ? r.submittedAt.substring(0, 7) : "";
+      return months.includes(lockMonth) || months.includes(submitMonth);
+    });
+  }, [allRecords]);
+
+  const handleExportMonth = useCallback((month: string) => {
+    const records = getRecordsForMonth(month);
+    const label = formatMonth(month).replace(" ", "_");
+    exportToExcel(records, `Schedule_Adherence_${label}`);
+  }, [getRecordsForMonth]);
+
+  const handleExportQuarter = useCallback((quarterKey: string) => {
+    const records = getRecordsForQuarter(quarterKey);
+    const label = getQuarterLabel(quarterKey).replace(" ", "_");
+    exportToExcel(records, `Schedule_Adherence_${label}`);
+  }, [getRecordsForQuarter]);
+
+  const handleExportAll = useCallback(() => {
+    exportToExcel(allRecords, "Schedule_Adherence_All");
+  }, [allRecords]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -295,10 +376,21 @@ export default function ScheduleAdherenceTab() {
       {/* Summary KPI */}
       <Card className="bg-primary/5 border-primary/20">
         <CardContent className="py-6">
-          <div className="text-center">
-            <div className="text-4xl font-bold text-primary">{overallTotals.total}</div>
-            <div className="text-sm text-muted-foreground mt-2">Total Incomplete Work Orders Tracked</div>
-            <div className="text-xs text-muted-foreground mt-1">Across {monthlyData.length} month{monthlyData.length !== 1 ? "s" : ""}</div>
+          <div className="flex items-center justify-between">
+            <div className="text-center flex-1">
+              <div className="text-4xl font-bold text-primary">{overallTotals.total}</div>
+              <div className="text-sm text-muted-foreground mt-2">Total Incomplete Work Orders Tracked</div>
+              <div className="text-xs text-muted-foreground mt-1">Across {monthlyData.length} month{monthlyData.length !== 1 ? "s" : ""}</div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportAll}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Export All
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -325,10 +417,23 @@ export default function ScheduleAdherenceTab() {
           {quarterlyData.map(qData => (
             <Card key={qData.quarter}>
               <CardHeader className="border-b border-border pb-4">
-                <CardTitle className="text-xl font-medium">{qData.label}</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {qData.total} incomplete work order{qData.total !== 1 ? "s" : ""} tracked
-                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl font-medium">{qData.label}</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {qData.total} incomplete work order{qData.total !== 1 ? "s" : ""} tracked
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExportQuarter(qData.quarter)}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="pt-6">
                 {renderPieChart(qData.reasons, qData.total)}
@@ -343,10 +448,23 @@ export default function ScheduleAdherenceTab() {
       {monthlyData.map(monthData => (
         <Card key={monthData.month}>
           <CardHeader className="border-b border-border pb-4">
-            <CardTitle className="text-xl font-medium">{formatMonth(monthData.month)}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {monthData.total} incomplete work order{monthData.total !== 1 ? "s" : ""} tracked
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-medium">{formatMonth(monthData.month)}</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {monthData.total} incomplete work order{monthData.total !== 1 ? "s" : ""} tracked
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleExportMonth(monthData.month)}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="pt-6">
             {renderPieChart(monthData.reasons, monthData.total)}
