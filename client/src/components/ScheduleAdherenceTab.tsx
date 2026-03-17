@@ -1,14 +1,15 @@
 /**
  * Swiss Rationalism: Schedule Adherence tab showing monthly pie charts of
- * reasons why locked work orders were not completed on time.
+ * reasons why locked work orders were not completed on time,
+ * plus adherence percentage (completed locked WOs / total locked WOs).
  */
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getScheduleAdherence, getScheduleAdherenceSummary, AdherenceRecord, AdherenceSummary } from "@/lib/api";
-import { Loader2, Download } from "lucide-react";
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { getScheduleAdherence, getScheduleAdherenceSummary, getScheduleAdherenceStats, AdherenceRecord, AdherenceSummary, AdherenceStats } from "@/lib/api";
+import { Loader2, Download, TrendingUp, TrendingDown } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import * as XLSX from "xlsx";
 
 const REASON_COLORS: Record<string, string> = {
@@ -40,6 +41,17 @@ function formatMonth(monthStr: string): string {
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const monthIndex = parseInt(month, 10) - 1;
   return `${monthNames[monthIndex]} ${year}`;
+}
+
+function formatWeekRange(lockWeek: string): string {
+  // lockWeek is a Monday date. The actual T1 week is the NEXT week (lockWeek + 7 days)
+  const weekDate = new Date(lockWeek + "T00:00:00");
+  const t1Monday = new Date(weekDate);
+  t1Monday.setDate(weekDate.getDate() + 7);
+  const t1Sunday = new Date(t1Monday);
+  t1Sunday.setDate(t1Monday.getDate() + 6);
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  return `${t1Monday.toLocaleDateString("en-US", opts)} – ${t1Sunday.toLocaleDateString("en-US", opts)}`;
 }
 
 interface MonthData {
@@ -79,6 +91,33 @@ function getQuarterMonths(quarterKey: string): string[] {
   ];
 }
 
+/** Get month string (YYYY-MM) from a lock_week date string (YYYY-MM-DD) */
+function getMonthFromLockWeek(lockWeek: string): string {
+  // The T1 week is lockWeek + 7 days. Use that week's Monday to determine the month.
+  const weekDate = new Date(lockWeek + "T00:00:00");
+  const t1Monday = new Date(weekDate);
+  t1Monday.setDate(weekDate.getDate() + 7);
+  const year = t1Monday.getFullYear();
+  const month = String(t1Monday.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
+interface MonthlyAdherence {
+  month: string;
+  totalLocked: number;
+  completed: number;
+  adherencePercent: number;
+  weeks: AdherenceStats[];
+}
+
+interface QuarterlyAdherence {
+  quarter: string;
+  label: string;
+  totalLocked: number;
+  completed: number;
+  adherencePercent: number;
+}
+
 function exportToExcel(records: AdherenceRecord[], filename: string) {
   // Sort by data center alphabetically
   const sorted = [...records].sort((a, b) => {
@@ -111,20 +150,35 @@ function exportToExcel(records: AdherenceRecord[], filename: string) {
   XLSX.writeFile(wb, `${filename}.xlsx`);
 }
 
+function getAdherenceColor(percent: number): string {
+  if (percent >= 80) return "text-green-600";
+  if (percent >= 60) return "text-yellow-600";
+  return "text-red-600";
+}
+
+function getAdherenceBg(percent: number): string {
+  if (percent >= 80) return "bg-green-50 border-green-200";
+  if (percent >= 60) return "bg-yellow-50 border-yellow-200";
+  return "bg-red-50 border-red-200";
+}
+
 export default function ScheduleAdherenceTab() {
   const [summary, setSummary] = useState<AdherenceSummary[]>([]);
   const [allRecords, setAllRecords] = useState<AdherenceRecord[]>([]);
+  const [adherenceStats, setAdherenceStats] = useState<AdherenceStats[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [summaryData, records] = await Promise.all([
+        const [summaryData, records, stats] = await Promise.all([
           getScheduleAdherenceSummary(),
           getScheduleAdherence(),
+          getScheduleAdherenceStats(),
         ]);
         setSummary(summaryData);
         setAllRecords(records);
+        setAdherenceStats(stats);
       } catch (error) {
         console.error("Error loading adherence data:", error);
       } finally {
@@ -133,6 +187,67 @@ export default function ScheduleAdherenceTab() {
     }
     loadData();
   }, []);
+
+  // Compute monthly adherence from stats (per lock week)
+  const monthlyAdherence: MonthlyAdherence[] = useMemo(() => {
+    const monthMap = new Map<string, { totalLocked: number; completed: number; weeks: AdherenceStats[] }>();
+
+    adherenceStats.forEach(stat => {
+      const month = getMonthFromLockWeek(stat.lockWeek);
+      if (!monthMap.has(month)) {
+        monthMap.set(month, { totalLocked: 0, completed: 0, weeks: [] });
+      }
+      const entry = monthMap.get(month)!;
+      entry.totalLocked += stat.totalLocked;
+      entry.completed += stat.completed;
+      entry.weeks.push(stat);
+    });
+
+    const months = Array.from(monthMap.keys()).sort((a, b) => b.localeCompare(a));
+
+    return months.map(month => {
+      const entry = monthMap.get(month)!;
+      const adherencePercent = entry.totalLocked > 0
+        ? Math.round((entry.completed / entry.totalLocked) * 100)
+        : 0;
+      // Sort weeks chronologically
+      entry.weeks.sort((a, b) => a.lockWeek.localeCompare(b.lockWeek));
+      return { month, ...entry, adherencePercent };
+    });
+  }, [adherenceStats]);
+
+  // Compute quarterly adherence
+  const quarterlyAdherence: QuarterlyAdherence[] = useMemo(() => {
+    const quarterMap = new Map<string, { totalLocked: number; completed: number }>();
+
+    monthlyAdherence.forEach(ma => {
+      const qKey = getQuarterKey(ma.month);
+      if (!quarterMap.has(qKey)) {
+        quarterMap.set(qKey, { totalLocked: 0, completed: 0 });
+      }
+      const entry = quarterMap.get(qKey)!;
+      entry.totalLocked += ma.totalLocked;
+      entry.completed += ma.completed;
+    });
+
+    const quarters = Array.from(quarterMap.keys()).sort((a, b) => b.localeCompare(a));
+
+    return quarters.map(qKey => {
+      const entry = quarterMap.get(qKey)!;
+      const adherencePercent = entry.totalLocked > 0
+        ? Math.round((entry.completed / entry.totalLocked) * 100)
+        : 0;
+      return { quarter: qKey, label: getQuarterLabel(qKey), ...entry, adherencePercent };
+    });
+  }, [monthlyAdherence]);
+
+  // Overall adherence
+  const overallAdherence = useMemo(() => {
+    const totalLocked = adherenceStats.reduce((sum, s) => sum + s.totalLocked, 0);
+    const completed = adherenceStats.reduce((sum, s) => sum + s.completed, 0);
+    const adherencePercent = totalLocked > 0 ? Math.round((completed / totalLocked) * 100) : 0;
+    return { totalLocked, completed, adherencePercent };
+  }, [adherenceStats]);
 
   const monthlyData: MonthData[] = useMemo(() => {
     const monthMap = new Map<string, Map<string, number>>();
@@ -223,11 +338,7 @@ export default function ScheduleAdherenceTab() {
   /** Filter records for a specific month (YYYY-MM) */
   const getRecordsForMonth = useCallback((month: string): AdherenceRecord[] => {
     return allRecords.filter(r => {
-      // lockWeek is a date string like "2026-02-10"
-      // submittedAt is a datetime string
-      // Match by lockWeek month
       if (r.lockWeek && r.lockWeek.startsWith(month)) return true;
-      // Also try submittedAt month
       if (r.submittedAt && r.submittedAt.startsWith(month)) return true;
       return false;
     });
@@ -268,6 +379,22 @@ export default function ScheduleAdherenceTab() {
           <p className="text-sm text-muted-foreground">
             {data.value} work order{data.value !== 1 ? "s" : ""} ({data.percentage}%)
           </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const BarTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-card border border-border rounded-sm px-3 py-2 shadow-sm">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          {payload.map((entry: any) => (
+            <p key={entry.name} className="text-sm" style={{ color: entry.color }}>
+              {entry.name}: {entry.value}
+            </p>
+          ))}
         </div>
       );
     }
@@ -342,6 +469,52 @@ export default function ScheduleAdherenceTab() {
     );
   };
 
+  /** Render the adherence percentage badge */
+  const renderAdherenceBadge = (percent: number, totalLocked: number, completed: number) => {
+    return (
+      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md border ${getAdherenceBg(percent)}`}>
+        <span className={`text-lg font-bold ${getAdherenceColor(percent)}`}>{percent}%</span>
+        <span className="text-xs text-muted-foreground">
+          {completed}/{totalLocked} completed
+        </span>
+      </div>
+    );
+  };
+
+  /** Render weekly breakdown table for a month */
+  const renderWeeklyBreakdown = (weeks: AdherenceStats[]) => {
+    if (weeks.length === 0) return null;
+    return (
+      <div className="mt-4">
+        <h4 className="text-sm font-medium text-muted-foreground mb-2">Weekly Breakdown</h4>
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="text-left py-2 px-3 text-sm font-medium text-foreground">Week</th>
+              <th className="text-right py-2 px-3 text-sm font-medium text-foreground">Locked</th>
+              <th className="text-right py-2 px-3 text-sm font-medium text-foreground">Completed</th>
+              <th className="text-right py-2 px-3 text-sm font-medium text-foreground">Adherence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {weeks.map(week => (
+              <tr key={week.lockWeek} className="border-b border-border/50">
+                <td className="py-2 px-3 text-sm">{formatWeekRange(week.lockWeek)}</td>
+                <td className="py-2 px-3 text-sm text-right">{week.totalLocked}</td>
+                <td className="py-2 px-3 text-sm text-right">{week.completed}</td>
+                <td className="py-2 px-3 text-sm text-right">
+                  <span className={`font-semibold ${getAdherenceColor(week.adherencePercent)}`}>
+                    {week.adherencePercent}%
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <Card>
@@ -353,7 +526,9 @@ export default function ScheduleAdherenceTab() {
     );
   }
 
-  if (monthlyData.length === 0) {
+  const hasAnyData = monthlyData.length > 0 || adherenceStats.length > 0;
+
+  if (!hasAnyData) {
     return (
       <Card>
         <CardHeader>
@@ -373,15 +548,36 @@ export default function ScheduleAdherenceTab() {
 
   return (
     <div className="space-y-6">
-      {/* Summary KPI */}
-      <Card className="bg-primary/5 border-primary/20">
-        <CardContent className="py-6">
-          <div className="flex items-center justify-between">
-            <div className="text-center flex-1">
-              <div className="text-4xl font-bold text-primary">{overallTotals.total}</div>
-              <div className="text-sm text-muted-foreground mt-2">Total Incomplete Work Orders Tracked</div>
-              <div className="text-xs text-muted-foreground mt-1">Across {monthlyData.length} month{monthlyData.length !== 1 ? "s" : ""}</div>
+      {/* Summary KPI Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Overall Adherence */}
+        <Card className={`border ${getAdherenceBg(overallAdherence.adherencePercent)}`}>
+          <CardContent className="py-6 text-center">
+            <div className={`text-4xl font-bold ${getAdherenceColor(overallAdherence.adherencePercent)}`}>
+              {overallAdherence.adherencePercent}%
             </div>
+            <div className="text-sm text-muted-foreground mt-2">Overall Adherence</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {overallAdherence.completed} of {overallAdherence.totalLocked} locked WOs completed
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Incomplete Tracked */}
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="py-6 text-center">
+            <div className="text-4xl font-bold text-primary">{overallTotals.total}</div>
+            <div className="text-sm text-muted-foreground mt-2">Incomplete WOs Tracked</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              With reasons across {monthlyData.length} month{monthlyData.length !== 1 ? "s" : ""}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Export */}
+        <Card>
+          <CardContent className="py-6 flex flex-col items-center justify-center gap-3">
+            <div className="text-sm text-muted-foreground">Export adherence data</div>
             <Button
               variant="outline"
               size="sm"
@@ -389,19 +585,54 @@ export default function ScheduleAdherenceTab() {
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
-              Export All
+              Export All Records
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Overall Breakdown */}
+      {/* Adherence Trend Bar Chart */}
+      {monthlyAdherence.length > 1 && (
+        <Card>
+          <CardHeader className="border-b border-border pb-4">
+            <CardTitle className="text-xl font-medium">Adherence Trend</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Monthly adherence percentage over time (locked WOs completed vs total locked)
+            </p>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div style={{ height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={[...monthlyAdherence].reverse().map(ma => ({
+                    name: formatMonth(ma.month),
+                    "Completed": ma.completed,
+                    "Not Completed": ma.totalLocked - ma.completed,
+                    adherencePercent: ma.adherencePercent,
+                  }))}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip content={<BarTooltip />} />
+                  <Legend />
+                  <Bar dataKey="Completed" stackId="a" fill="#5b8a72" />
+                  <Bar dataKey="Not Completed" stackId="a" fill="#d4726a" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Overall Breakdown (reasons pie chart) */}
       {monthlyData.length > 1 && (
         <Card>
           <CardHeader className="border-b border-border pb-4">
-            <CardTitle className="text-xl font-medium">Overall Breakdown</CardTitle>
+            <CardTitle className="text-xl font-medium">Overall Reason Breakdown</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Aggregated reasons across all months
+              Aggregated reasons for incomplete locked work orders across all months
             </p>
           </CardHeader>
           <CardContent className="pt-6">
@@ -410,67 +641,100 @@ export default function ScheduleAdherenceTab() {
         </Card>
       )}
 
-      {/* Quarterly Pie Charts */}
+      {/* Quarterly Breakdown */}
       {quarterlyData.length > 0 && (
         <>
           <h2 className="text-lg font-semibold text-foreground pt-2">Quarterly Breakdown</h2>
-          {quarterlyData.map(qData => (
-            <Card key={qData.quarter}>
-              <CardHeader className="border-b border-border pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-xl font-medium">{qData.label}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {qData.total} incomplete work order{qData.total !== 1 ? "s" : ""} tracked
-                    </p>
+          {quarterlyData.map(qData => {
+            const qAdherence = quarterlyAdherence.find(qa => qa.quarter === qData.quarter);
+            return (
+              <Card key={qData.quarter}>
+                <CardHeader className="border-b border-border pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <CardTitle className="text-xl font-medium">{qData.label}</CardTitle>
+                        {qAdherence && renderAdherenceBadge(qAdherence.adherencePercent, qAdherence.totalLocked, qAdherence.completed)}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {qData.total} incomplete work order{qData.total !== 1 ? "s" : ""} tracked
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleExportQuarter(qData.quarter)}
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Export
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleExportQuarter(qData.quarter)}
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    Export
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6">
-                {renderPieChart(qData.reasons, qData.total)}
-              </CardContent>
-            </Card>
-          ))}
+                </CardHeader>
+                <CardContent className="pt-6">
+                  {renderPieChart(qData.reasons, qData.total)}
+                </CardContent>
+              </Card>
+            );
+          })}
         </>
       )}
 
-      {/* Monthly Pie Charts */}
+      {/* Monthly Breakdown */}
       <h2 className="text-lg font-semibold text-foreground pt-2">Monthly Breakdown</h2>
-      {monthlyData.map(monthData => (
-        <Card key={monthData.month}>
-          <CardHeader className="border-b border-border pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-xl font-medium">{formatMonth(monthData.month)}</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {monthData.total} incomplete work order{monthData.total !== 1 ? "s" : ""} tracked
-                </p>
+      {monthlyData.map(monthData => {
+        const mAdherence = monthlyAdherence.find(ma => ma.month === monthData.month);
+        return (
+          <Card key={monthData.month}>
+            <CardHeader className="border-b border-border pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <CardTitle className="text-xl font-medium">{formatMonth(monthData.month)}</CardTitle>
+                    {mAdherence && renderAdherenceBadge(mAdherence.adherencePercent, mAdherence.totalLocked, mAdherence.completed)}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {monthData.total} incomplete work order{monthData.total !== 1 ? "s" : ""} tracked
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExportMonth(monthData.month)}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Export
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleExportMonth(monthData.month)}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {renderPieChart(monthData.reasons, monthData.total)}
-          </CardContent>
-        </Card>
-      ))}
+            </CardHeader>
+            <CardContent className="pt-6">
+              {renderPieChart(monthData.reasons, monthData.total)}
+              {mAdherence && renderWeeklyBreakdown(mAdherence.weeks)}
+            </CardContent>
+          </Card>
+        );
+      })}
+
+      {/* Show months with adherence data but no reason data */}
+      {monthlyAdherence
+        .filter(ma => !monthlyData.find(md => md.month === ma.month))
+        .map(ma => (
+          <Card key={`adherence-only-${ma.month}`}>
+            <CardHeader className="border-b border-border pb-4">
+              <div className="flex items-center gap-3">
+                <CardTitle className="text-xl font-medium">{formatMonth(ma.month)}</CardTitle>
+                {renderAdherenceBadge(ma.adherencePercent, ma.totalLocked, ma.completed)}
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                No incomplete reason data submitted for this month
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {renderWeeklyBreakdown(ma.weeks)}
+            </CardContent>
+          </Card>
+        ))}
     </div>
   );
 }

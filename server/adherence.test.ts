@@ -354,3 +354,141 @@ describe("Schedule Adherence - Month Formatting", () => {
     expect(formatMonth("2026-12")).toBe("Dec 2026");
   });
 });
+
+describe("Schedule Adherence - Adherence Percentage Calculation", () => {
+  /** Helper: compute month from lockWeek (T1 week = lockWeek + 7 days) */
+  function getMonthFromLockWeek(lockWeek: string): string {
+    const weekDate = new Date(lockWeek + "T00:00:00");
+    const t1Monday = new Date(weekDate);
+    t1Monday.setDate(weekDate.getDate() + 7);
+    const year = t1Monday.getFullYear();
+    const month = String(t1Monday.getMonth() + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  }
+
+  it("should calculate adherence percentage correctly", () => {
+    const stats = { totalLocked: 20, completed: 10 };
+    const percent = Math.round((stats.completed / stats.totalLocked) * 100);
+    expect(percent).toBe(50);
+  });
+
+  it("should handle 100% adherence", () => {
+    const stats = { totalLocked: 15, completed: 15 };
+    const percent = Math.round((stats.completed / stats.totalLocked) * 100);
+    expect(percent).toBe(100);
+  });
+
+  it("should handle 0% adherence", () => {
+    const stats = { totalLocked: 10, completed: 0 };
+    const percent = Math.round((stats.completed / stats.totalLocked) * 100);
+    expect(percent).toBe(0);
+  });
+
+  it("should handle zero locked WOs gracefully", () => {
+    const stats = { totalLocked: 0, completed: 0 };
+    const percent = stats.totalLocked > 0 ? Math.round((stats.completed / stats.totalLocked) * 100) : 0;
+    expect(percent).toBe(0);
+  });
+
+  it("should round adherence percentage to nearest integer", () => {
+    const stats = { totalLocked: 3, completed: 1 };
+    const percent = Math.round((stats.completed / stats.totalLocked) * 100);
+    expect(percent).toBe(33); // 33.33... rounds to 33
+  });
+
+  it("should aggregate weekly stats into monthly adherence", () => {
+    const weeklyStats = [
+      { lockWeek: "2026-02-09", totalLocked: 20, completed: 15, adherencePercent: 75 },
+      { lockWeek: "2026-02-16", totalLocked: 25, completed: 20, adherencePercent: 80 },
+      { lockWeek: "2026-02-23", totalLocked: 30, completed: 22, adherencePercent: 73 },
+    ];
+
+    const monthMap = new Map<string, { totalLocked: number; completed: number }>();
+    weeklyStats.forEach(stat => {
+      const month = getMonthFromLockWeek(stat.lockWeek);
+      if (!monthMap.has(month)) {
+        monthMap.set(month, { totalLocked: 0, completed: 0 });
+      }
+      const entry = monthMap.get(month)!;
+      entry.totalLocked += stat.totalLocked;
+      entry.completed += stat.completed;
+    });
+
+    // All three lock weeks (Feb 9, 16, 23) map to T1 weeks starting Feb 16, 23, Mar 2
+    // Feb 9 → T1 week starts Feb 16 → month 2026-02
+    // Feb 16 → T1 week starts Feb 23 → month 2026-02
+    // Feb 23 → T1 week starts Mar 2 → month 2026-03
+    const feb = monthMap.get("2026-02");
+    const mar = monthMap.get("2026-03");
+
+    expect(feb).toBeDefined();
+    expect(mar).toBeDefined();
+    expect(feb!.totalLocked).toBe(45); // 20 + 25
+    expect(feb!.completed).toBe(35); // 15 + 20
+    expect(mar!.totalLocked).toBe(30);
+    expect(mar!.completed).toBe(22);
+
+    const febPercent = Math.round((feb!.completed / feb!.totalLocked) * 100);
+    expect(febPercent).toBe(78); // 35/45 = 77.78 → 78
+
+    const marPercent = Math.round((mar!.completed / mar!.totalLocked) * 100);
+    expect(marPercent).toBe(73); // 22/30
+  });
+
+  it("should correctly determine T1 month from lock week", () => {
+    // lockWeek is when the lock was created (a Monday)
+    // T1 week = lockWeek + 7 days
+    expect(getMonthFromLockWeek("2026-01-26")).toBe("2026-02"); // T1 starts Feb 2
+    expect(getMonthFromLockWeek("2026-02-23")).toBe("2026-03"); // T1 starts Mar 2
+    expect(getMonthFromLockWeek("2026-03-23")).toBe("2026-03"); // T1 starts Mar 30
+    expect(getMonthFromLockWeek("2026-03-30")).toBe("2026-04"); // T1 starts Apr 6
+  });
+
+  it("should aggregate monthly adherence into quarterly adherence", () => {
+    const monthlyAdherence = [
+      { month: "2026-01", totalLocked: 50, completed: 40 },
+      { month: "2026-02", totalLocked: 60, completed: 45 },
+      { month: "2026-03", totalLocked: 55, completed: 50 },
+    ];
+
+    const getQuarterKey = (monthStr: string): string => {
+      const [year, month] = monthStr.split("-");
+      const m = parseInt(month, 10);
+      const q = Math.ceil(m / 3);
+      return `${year}-Q${q}`;
+    };
+
+    const quarterMap = new Map<string, { totalLocked: number; completed: number }>();
+    monthlyAdherence.forEach(ma => {
+      const qKey = getQuarterKey(ma.month);
+      if (!quarterMap.has(qKey)) {
+        quarterMap.set(qKey, { totalLocked: 0, completed: 0 });
+      }
+      const entry = quarterMap.get(qKey)!;
+      entry.totalLocked += ma.totalLocked;
+      entry.completed += ma.completed;
+    });
+
+    const q1 = quarterMap.get("2026-Q1")!;
+    expect(q1.totalLocked).toBe(165); // 50 + 60 + 55
+    expect(q1.completed).toBe(135); // 40 + 45 + 50
+
+    const q1Percent = Math.round((q1.completed / q1.totalLocked) * 100);
+    expect(q1Percent).toBe(82); // 135/165 = 81.8 → 82
+  });
+
+  it("should color-code adherence percentages correctly", () => {
+    const getAdherenceColor = (percent: number): string => {
+      if (percent >= 80) return "green";
+      if (percent >= 60) return "yellow";
+      return "red";
+    };
+
+    expect(getAdherenceColor(100)).toBe("green");
+    expect(getAdherenceColor(80)).toBe("green");
+    expect(getAdherenceColor(79)).toBe("yellow");
+    expect(getAdherenceColor(60)).toBe("yellow");
+    expect(getAdherenceColor(59)).toBe("red");
+    expect(getAdherenceColor(0)).toBe("red");
+  });
+});

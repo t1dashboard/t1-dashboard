@@ -1,0 +1,30 @@
+{
+  "query": "SELECT lock_week, COUNT(*) as cnt FROM schedule_locks GROUP BY lock_week ORDER BY lock_week DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT lock_week, COUNT(*) as cnt FROM schedule_locks GROUP BY lock_week ORDER BY lock_week DESC LIMIT 10;",
+  "rows": [
+    {
+      "lock_week": "2026-03-09",
+      "cnt": "60"
+    },
+    {
+      "lock_week": "2026-03-02",
+      "cnt": "166"
+    },
+    {
+      "lock_week": "2026-02-23",
+      "cnt": "137"
+    },
+    {
+      "lock_week": "2026-02-16",
+      "cnt": "105"
+    },
+    {
+      "lock_week": "2026-02-09",
+      "cnt": "67"
+    }
+  ],
+  "messages": [],
+  "stdout": "lock_week\tcnt\n2026-03-09\t60\n2026-03-02\t166\n2026-02-23\t137\n2026-02-16\t105\n2026-02-09\t67\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}

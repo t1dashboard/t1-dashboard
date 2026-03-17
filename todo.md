@@ -190,3 +190,6 @@
 - [x] Deconfliction: Also check Route column for equipment type and building detection (e.g., GNS-NCG1 EG-01)
 - [x] Add data center toggle filters (with "All" default) to T1/T2/T3 Not in Ready tabs
 - [x] Add data center toggle filters (with "All" default) to T4-T8 Not in Approved tab
+- [x] Schedule Adherence: Show adherence percentage per month and quarter (completed locked WOs / total locked WOs)
+- [x] Schedule Adherence: Exclude unplanned break-in work orders from the adherence percentage
+- [x] Schedule Adherence: Create server API endpoint for adherence stats per lock week

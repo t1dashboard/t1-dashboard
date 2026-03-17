@@ -240,6 +240,19 @@ export async function getScheduleAdherenceSummary(): Promise<AdherenceSummary[]>
   return res.json();
 }
 
+export interface AdherenceStats {
+  lockWeek: string;
+  totalLocked: number;
+  completed: number;
+  adherencePercent: number;
+}
+
+export async function getScheduleAdherenceStats(): Promise<AdherenceStats[]> {
+  const res = await fetch(`${API_BASE}/schedule-adherence/stats`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function getScheduleAdherenceByWeek(week: string): Promise<AdherenceRecord[]> {
   const res = await fetch(`${API_BASE}/schedule-adherence/by-week?week=${encodeURIComponent(week)}`);
   if (!res.ok) throw new Error(await res.text());

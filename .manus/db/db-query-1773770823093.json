@@ -1,0 +1,35 @@
+{
+  "query": "SELECT sl.lock_week, wo.status, COUNT(*) as cnt FROM schedule_locks sl LEFT JOIN work_orders wo ON sl.work_order_number = wo.work_order_number WHERE sl.lock_week = '2026-02-23' GROUP BY sl.lock_week, wo.status ORDER BY cnt DESC LIMIT 15;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT sl.lock_week, wo.status, COUNT(*) as cnt FROM schedule_locks sl LEFT JOIN work_orders wo ON sl.work_order_number = wo.work_order_number WHERE sl.lock_week = '2026-02-23' GROUP BY sl.lock_week, wo.status ORDER BY cnt DESC LIMIT 15;",
+  "rows": [
+    {
+      "lock_week": "2026-02-23",
+      "status": "Closed",
+      "cnt": "99"
+    },
+    {
+      "lock_week": "2026-02-23",
+      "status": "Work Complete",
+      "cnt": "22"
+    },
+    {
+      "lock_week": "2026-02-23",
+      "status": "In Process",
+      "cnt": "10"
+    },
+    {
+      "lock_week": "2026-02-23",
+      "status": "Ready",
+      "cnt": "5"
+    },
+    {
+      "lock_week": "2026-02-23",
+      "status": "Planning",
+      "cnt": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "lock_week\tstatus\tcnt\n2026-02-23\tClosed\t99\n2026-02-23\tWork Complete\t22\n2026-02-23\tIn Process\t10\n2026-02-23\tReady\t5\n2026-02-23\tPlanning\t1\n",
+  "stderr": "",
+  "execution_time_ms": 75
+}

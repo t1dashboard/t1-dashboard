@@ -658,6 +658,38 @@ router.get("/schedule-adherence/summary", async (_req: Request, res: Response) =
   }
 });
 
+// Get adherence stats: locked WO count vs completed (closed/work complete) per lock week
+// This excludes unplanned break-ins since it only counts from schedule_locks table
+router.get("/schedule-adherence/stats", async (_req: Request, res: Response) => {
+  try {
+    const rows = await query(`
+      SELECT 
+        sl.lock_week,
+        COUNT(DISTINCT sl.work_order_number) as total_locked,
+        COUNT(DISTINCT CASE 
+          WHEN UPPER(wo.status) IN ('CLOSED', 'WORK COMPLETE') 
+          THEN sl.work_order_number 
+        END) as completed
+      FROM schedule_locks sl
+      LEFT JOIN work_orders wo ON sl.work_order_number = wo.work_order_number
+      GROUP BY sl.lock_week
+      ORDER BY sl.lock_week DESC
+    `);
+    const stats = rows.map((row: any) => ({
+      lockWeek: row.lock_week,
+      totalLocked: Number(row.total_locked),
+      completed: Number(row.completed),
+      adherencePercent: Number(row.total_locked) > 0
+        ? Math.round((Number(row.completed) / Number(row.total_locked)) * 100)
+        : 0,
+    }));
+    res.json(stats);
+  } catch (error: any) {
+    console.error("Error fetching adherence stats:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get adherence records for a specific lock week
 router.get("/schedule-adherence/by-week", async (req: Request, res: Response) => {
   try {
