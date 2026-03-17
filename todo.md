@@ -193,3 +193,5 @@
 - [x] Schedule Adherence: Show adherence percentage per month and quarter (completed locked WOs / total locked WOs)
 - [x] Schedule Adherence: Exclude unplanned break-in work orders from the adherence percentage
 - [x] Schedule Adherence: Create server API endpoint for adherence stats per lock week
+- [x] Schedule Adherence: Exclude current week from adherence stats (week isn't over yet)
+- [x] Schedule Adherence: Only show adherence for weeks that have reason data submitted

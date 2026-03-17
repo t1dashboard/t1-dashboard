@@ -1,0 +1,16 @@
+{
+  "query": "SELECT DISTINCT lock_week FROM schedule_adherence ORDER BY lock_week DESC",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT DISTINCT lock_week FROM schedule_adherence ORDER BY lock_week DESC",
+  "rows": [
+    {
+      "lock_week": "2026-03-02"
+    },
+    {
+      "lock_week": "2026-02-23"
+    }
+  ],
+  "messages": [],
+  "stdout": "lock_week\n2026-03-02\n2026-02-23\n",
+  "stderr": "",
+  "execution_time_ms": 50
+}

@@ -659,9 +659,19 @@ router.get("/schedule-adherence/summary", async (_req: Request, res: Response) =
 });
 
 // Get adherence stats: locked WO count vs completed (closed/work complete) per lock week
-// This excludes unplanned break-ins since it only counts from schedule_locks table
+// Excludes unplanned break-ins (only counts from schedule_locks table)
+// Excludes current week (still in progress) and only includes weeks that have reason data submitted
 router.get("/schedule-adherence/stats", async (_req: Request, res: Response) => {
   try {
+    // Calculate current lock week Monday (the Monday of this week)
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun, 1=Mon, ...
+    const diff = day === 0 ? -6 : 1 - day;
+    const thisMonday = new Date(now);
+    thisMonday.setDate(now.getDate() + diff);
+    thisMonday.setHours(0, 0, 0, 0);
+    const thisMondayStr = thisMonday.toISOString().split("T")[0];
+
     const rows = await query(`
       SELECT 
         sl.lock_week,
@@ -672,9 +682,13 @@ router.get("/schedule-adherence/stats", async (_req: Request, res: Response) => 
         END) as completed
       FROM schedule_locks sl
       LEFT JOIN work_orders wo ON sl.work_order_number = wo.work_order_number
+      WHERE sl.lock_week < ?
+        AND sl.lock_week IN (
+          SELECT DISTINCT lock_week FROM schedule_adherence
+        )
       GROUP BY sl.lock_week
       ORDER BY sl.lock_week DESC
-    `);
+    `, [thisMondayStr]);
     const stats = rows.map((row: any) => ({
       lockWeek: row.lock_week,
       totalLocked: Number(row.total_locked),
