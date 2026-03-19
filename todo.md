@@ -199,3 +199,4 @@
 - [x] Combine "Vendor not Available" and "Vendor Not Prepared" into "Vendor Not Available/Prepared"
 - [x] Schedule Lock Review: Add 'Sched Start Date Moved' section for completed locked WOs whose date changed
 - [x] Schedule Lock Review: Include date-moved WOs in adherence pie charts
+- [x] Sched Start Date Moved: Exclude daily/monthly/quarterly maintenance unless description also contains kitchen

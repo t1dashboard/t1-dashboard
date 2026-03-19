@@ -597,3 +597,48 @@ describe("Schedule Adherence - Sched Start Date Moved Detection", () => {
     expect(allRecords.map(r => r.workOrderNumber)).toEqual(["111", "222", "333"]);
   });
 });
+
+describe("Schedule Adherence - Date Moved Routine Maintenance Exclusion", () => {
+  function shouldIncludeInDateMoved(description: string): boolean {
+    const desc = description.toUpperCase();
+    const isRoutine = desc.includes("DAILY") || desc.includes("MONTHLY") || desc.includes("QUARTERLY");
+    const hasKitchen = desc.includes("KITCHEN");
+    if (isRoutine && !hasKitchen) return false;
+    return true;
+  }
+
+  it("should exclude DAILY maintenance from date-moved", () => {
+    expect(shouldIncludeInDateMoved("GNS-NCG1 Daily AHU Inspection")).toBe(false);
+  });
+
+  it("should exclude MONTHLY maintenance from date-moved", () => {
+    expect(shouldIncludeInDateMoved("GNS-MWG2 Monthly Generator Check")).toBe(false);
+  });
+
+  it("should exclude QUARTERLY maintenance from date-moved", () => {
+    expect(shouldIncludeInDateMoved("GNS-NCG Quarterly UPS PM")).toBe(false);
+  });
+
+  it("should include DAILY kitchen maintenance in date-moved", () => {
+    expect(shouldIncludeInDateMoved("GNS-NCG1 Daily Kitchen Cleaning")).toBe(true);
+  });
+
+  it("should include MONTHLY kitchen maintenance in date-moved", () => {
+    expect(shouldIncludeInDateMoved("GNS-MWG1 Monthly Kitchen Equipment PM")).toBe(true);
+  });
+
+  it("should include QUARTERLY kitchen maintenance in date-moved", () => {
+    expect(shouldIncludeInDateMoved("Quarterly Kitchen Hood Inspection")).toBe(true);
+  });
+
+  it("should include non-routine work orders in date-moved", () => {
+    expect(shouldIncludeInDateMoved("GNS-NCG1 EG-N1 6A")).toBe(true);
+    expect(shouldIncludeInDateMoved("GNS-MWG2 MSB-S1 Replace Breaker")).toBe(true);
+  });
+
+  it("should be case-insensitive", () => {
+    expect(shouldIncludeInDateMoved("daily inspection")).toBe(false);
+    expect(shouldIncludeInDateMoved("DAILY KITCHEN cleanup")).toBe(true);
+    expect(shouldIncludeInDateMoved("Monthly check")).toBe(false);
+  });
+});

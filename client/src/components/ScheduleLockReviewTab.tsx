@@ -291,6 +291,11 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       const lockedHasLotoPtw = lockedDesc.includes("LOTO") || lockedDesc.includes("PTW");
       if (EXCLUDED_SHIFT_CODES.has(lockedShift) && !lockedHasLotoPtw) return false;
       
+      // Exclude daily/monthly/quarterly maintenance unless description also contains kitchen
+      const isRoutineMaintenance = lockedDesc.includes("DAILY") || lockedDesc.includes("MONTHLY") || lockedDesc.includes("QUARTERLY");
+      const hasKitchen = lockedDesc.includes("KITCHEN");
+      if (isRoutineMaintenance && !hasKitchen) return false;
+      
       const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
       if (!currentWO) return false;
       
