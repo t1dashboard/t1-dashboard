@@ -1,6 +1,7 @@
 /**
  * Swiss Rationalism: Schedule Lock Review tab showing unplanned and incomplete locked work orders
  * Includes Reason dropdown for incomplete locked orders and Submit button for schedule adherence tracking
+ * Also tracks completed locked WOs whose sched start date was moved from the originally locked date
  */
 
 import { useMemo, useState, useEffect } from "react";
@@ -28,6 +29,11 @@ interface LockedWorkOrder {
   priority: string;
   shift: string;
   lockWeek: string;
+}
+
+interface DateMovedOrder extends LockedWorkOrder {
+  currentSchedStartDate: any;
+  currentStatus: string;
 }
 
 const ADHERENCE_REASONS = [
@@ -105,7 +111,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     loadAdherence();
   }, [lockCreatedWeekStr]);
 
-  const { lotoOrders, buildingGroups, unplannedTotal, incompleteLockedOrders } = useMemo(() => {
+  const { lotoOrders, buildingGroups, unplannedTotal, incompleteLockedOrders, dateMovedOrders } = useMemo(() => {
     // Get previous week's date range
     const today = new Date();
     const currentDay = today.getDay();
@@ -249,13 +255,12 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       orders: groups[key]
     }));
 
+    // Incomplete locked orders: not completed/closed/in process
     const incomplete = previousWeekLocked.filter(locked => {
-      // One-time exclusion of specific work orders
       if (EXCLUDED_WORK_ORDERS.has(String(locked.workOrderNumber))) return false;
       
       const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
       
-      // Exclude CBM type work orders
       const lockedType = locked.type?.toUpperCase()?.trim() || "";
       if (lockedType === "CBM") return false;
       
@@ -274,11 +279,48 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       return dcA.localeCompare(dcB);
     });
 
+    // Date moved orders: completed/closed BUT sched start date changed from locked date
+    const dateMoved: DateMovedOrder[] = previousWeekLocked.filter(locked => {
+      if (EXCLUDED_WORK_ORDERS.has(String(locked.workOrderNumber))) return false;
+      
+      const lockedType = locked.type?.toUpperCase()?.trim() || "";
+      if (lockedType === "CBM") return false;
+      
+      const lockedDesc = locked.description?.toUpperCase() || "";
+      const lockedShift = locked.shift?.toUpperCase()?.trim() || "";
+      const lockedHasLotoPtw = lockedDesc.includes("LOTO") || lockedDesc.includes("PTW");
+      if (EXCLUDED_SHIFT_CODES.has(lockedShift) && !lockedHasLotoPtw) return false;
+      
+      const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
+      if (!currentWO) return false;
+      
+      const status = currentWO["Status"]?.toUpperCase() || "";
+      const isCompleted = status === "WORK COMPLETE" || status === "CLOSED";
+      if (!isCompleted) return false;
+      
+      // Check if sched start date changed
+      const lockedSchedDate = normalizeDateStr(locked.schedStartDate);
+      const currentSchedDate = normalizeDateStr(currentWO["Sched. Start Date"]);
+      return lockedSchedDate !== currentSchedDate && lockedSchedDate !== "" && currentSchedDate !== "";
+    }).map(locked => {
+      const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
+      return {
+        ...locked,
+        currentSchedStartDate: currentWO?.["Sched. Start Date"] || null,
+        currentStatus: currentWO?.["Status"] || locked.status,
+      };
+    }).sort((a, b) => {
+      const dcA = a.dataCenter || "";
+      const dcB = b.dataCenter || "";
+      return dcA.localeCompare(dcB);
+    });
+
     return {
       lotoOrders: loto,
       buildingGroups: sortedGroups,
       unplannedTotal: unplanned.length,
-      incompleteLockedOrders: incomplete
+      incompleteLockedOrders: incomplete,
+      dateMovedOrders: dateMoved
     };
   }, [workOrders, serverLocks]);
 
@@ -304,15 +346,41 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     setSubmitted(false);
   };
 
+  // Combine incomplete + date-moved for submission
+  const allReasonableOrders = useMemo(() => {
+    const incompleteNums = new Set(incompleteLockedOrders.map(o => String(o.workOrderNumber)));
+    const dateMovedNums = new Set(dateMovedOrders.map(o => String(o.workOrderNumber)));
+    // Build combined list with source info
+    return {
+      incompleteNums,
+      dateMovedNums,
+      totalCount: incompleteNums.size + dateMovedNums.size,
+    };
+  }, [incompleteLockedOrders, dateMovedOrders]);
+
   const handleSubmit = async () => {
-    const records = incompleteLockedOrders
-      .filter(locked => reasonSelections[String(locked.workOrderNumber)])
-      .map(locked => ({
-        workOrderNumber: String(locked.workOrderNumber),
-        description: locked.description || null,
-        dataCenter: locked.dataCenter || null,
+    // Collect reasons from both incomplete and date-moved orders
+    const allOrders = [
+      ...incompleteLockedOrders.map(o => ({
+        workOrderNumber: String(o.workOrderNumber),
+        description: o.description || null,
+        dataCenter: o.dataCenter || null,
+      })),
+      ...dateMovedOrders.map(o => ({
+        workOrderNumber: String(o.workOrderNumber),
+        description: o.description || null,
+        dataCenter: o.dataCenter || null,
+      })),
+    ];
+
+    const records = allOrders
+      .filter(o => reasonSelections[o.workOrderNumber])
+      .map(o => ({
+        workOrderNumber: o.workOrderNumber,
+        description: o.description,
+        dataCenter: o.dataCenter,
         lockWeek: lockCreatedWeekStr,
-        reason: reasonSelections[String(locked.workOrderNumber)],
+        reason: reasonSelections[o.workOrderNumber],
       }));
 
     if (records.length === 0) {
@@ -332,6 +400,15 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       setSubmitting(false);
     }
   };
+
+  // Count total reasons selected across both sections
+  const totalReasonsSelected = useMemo(() => {
+    const allWONumbers = new Set([
+      ...incompleteLockedOrders.map(o => String(o.workOrderNumber)),
+      ...dateMovedOrders.map(o => String(o.workOrderNumber)),
+    ]);
+    return Array.from(allWONumbers).filter(num => reasonSelections[num]).length;
+  }, [incompleteLockedOrders, dateMovedOrders, reasonSelections]);
 
   const renderTableHeader = () => (
     <thead>
@@ -390,6 +467,50 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
     </tr>
   );
+
+  const renderReasonRow = (locked: LockedWorkOrder, currentStatus: string, extraColumns?: React.ReactNode) => {
+    const woNum = String(locked.workOrderNumber);
+    const selectedReason = reasonSelections[woNum] || "";
+    
+    return (
+      <tr 
+        key={locked.workOrderNumber} 
+        className="border-b border-border/50 hover:bg-muted/20 transition-colors"
+        style={{ borderBottomWidth: '0.5px' }}
+      >
+        <td className="py-3 px-4">
+          <a
+            href={`${BASE_URL}${locked.workOrderNumber}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline font-medium"
+          >
+            {locked.workOrderNumber}
+          </a>
+        </td>
+        <td className="py-3 px-4 text-sm truncate" title={locked.description}>{locked.description}</td>
+        <td className="py-3 px-4 text-sm">{locked.type}</td>
+        <td className="py-3 px-4 text-sm truncate" title={locked.equipmentDescription}>{locked.equipmentDescription}</td>
+        <td className="py-3 px-4 text-sm">{currentStatus}</td>
+        <td className="py-3 px-4 text-sm font-medium">{locked.dataCenter}</td>
+        <td className="py-3 px-4 text-sm">{locked.priority}</td>
+        <td className="py-3 px-4 text-sm">{locked.shift}</td>
+        {extraColumns}
+        <td className="py-3 px-3">
+          <select
+            value={selectedReason}
+            onChange={(e) => handleReasonChange(woNum, e.target.value)}
+            className="w-full text-sm border border-border rounded-sm px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="">Select reason...</option>
+            {ADHERENCE_REASONS.map(reason => (
+              <option key={reason} value={reason}>{reason}</option>
+            ))}
+          </select>
+        </td>
+      </tr>
+    );
+  };
 
   if (loadingLocks) {
     return (
@@ -547,33 +668,105 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                     {incompleteLockedOrders.map((locked) => {
                       const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
                       const currentStatus = currentWO?.["Status"] || locked.status;
-                      const woNum = String(locked.workOrderNumber);
+                      return renderReasonRow(locked, currentStatus, 
+                        <td className="py-3 px-4 text-sm">{formatDate(locked.schedStartDate)}</td>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">All locked work orders from previous week are complete or closed</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Sched Start Date Moved Section */}
+      <div>
+        <Card className="bg-amber-500/5 border-amber-500/20 mb-4">
+          <CardContent className="py-6">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-amber-600">{dateMovedOrders.length}</div>
+              <div className="text-sm text-muted-foreground mt-2">Sched Start Date Moved</div>
+              <div className="text-xs text-muted-foreground mt-1">Completed but scheduled start date changed from locked date</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {dateMovedOrders.length > 0 ? (
+          <Card>
+            <CardHeader className="border-b border-border pb-4">
+              <CardTitle className="text-xl font-medium">Sched Start Date Moved</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Locked work orders that were completed but had their scheduled start date changed from the originally locked date
+              </p>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full table-fixed">
+                  <colgroup>
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "15%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "11%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "5%" }} />
+                    <col style={{ width: "5%" }} />
+                    <col style={{ width: "9%" }} />
+                    <col style={{ width: "9%" }} />
+                    <col style={{ width: "20%" }} />
+                  </colgroup>
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Work Order</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Description</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Type</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Equip. Desc.</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Priority</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Locked Date</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Current Date</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dateMovedOrders.map((order) => {
+                      const woNum = String(order.workOrderNumber);
                       const selectedReason = reasonSelections[woNum] || "";
                       
                       return (
                         <tr 
-                          key={locked.workOrderNumber} 
+                          key={order.workOrderNumber} 
                           className="border-b border-border/50 hover:bg-muted/20 transition-colors"
                           style={{ borderBottomWidth: '0.5px' }}
                         >
                           <td className="py-3 px-4">
                             <a
-                              href={`${BASE_URL}${locked.workOrderNumber}`}
+                              href={`${BASE_URL}${order.workOrderNumber}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-primary hover:underline font-medium"
+                              className="text-amber-600 hover:underline font-medium"
                             >
-                              {locked.workOrderNumber}
+                              {order.workOrderNumber}
                             </a>
                           </td>
-                          <td className="py-3 px-4 text-sm truncate" title={locked.description}>{locked.description}</td>
-                          <td className="py-3 px-4 text-sm">{locked.type}</td>
-                          <td className="py-3 px-4 text-sm truncate" title={locked.equipmentDescription}>{locked.equipmentDescription}</td>
-                          <td className="py-3 px-4 text-sm">{currentStatus}</td>
-                          <td className="py-3 px-4 text-sm font-medium">{locked.dataCenter}</td>
-                          <td className="py-3 px-4 text-sm">{locked.priority}</td>
-                          <td className="py-3 px-4 text-sm">{locked.shift}</td>
-                          <td className="py-3 px-4 text-sm">{formatDate(locked.schedStartDate)}</td>
+                          <td className="py-3 px-4 text-sm truncate" title={order.description}>{order.description}</td>
+                          <td className="py-3 px-4 text-sm">{order.type}</td>
+                          <td className="py-3 px-4 text-sm truncate" title={order.equipmentDescription}>{order.equipmentDescription}</td>
+                          <td className="py-3 px-4 text-sm">{order.currentStatus}</td>
+                          <td className="py-3 px-4 text-sm font-medium">{order.dataCenter}</td>
+                          <td className="py-3 px-4 text-sm">{order.priority}</td>
+                          <td className="py-3 px-4 text-sm">{order.shift}</td>
+                          <td className="py-3 px-4 text-sm text-muted-foreground line-through">{formatDate(order.schedStartDate)}</td>
+                          <td className="py-3 px-4 text-sm font-medium text-amber-600">{formatDate(order.currentSchedStartDate)}</td>
                           <td className="py-3 px-3">
                             <select
                               value={selectedReason}
@@ -592,45 +785,54 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                   </tbody>
                 </table>
               </div>
-
-              {/* Submit Button */}
-              <div className="px-4 py-4 border-t border-border flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  {Object.values(reasonSelections).filter(Boolean).length} of {incompleteLockedOrders.length} reasons selected
-                </div>
-                <div className="flex items-center gap-3">
-                  {submitted && (
-                    <span className="flex items-center gap-1.5 text-sm text-green-600">
-                      <CheckCircle2 className="h-4 w-4" />
-                      Submitted
-                    </span>
-                  )}
-                  <button
-                    onClick={handleSubmit}
-                    disabled={submitting || Object.values(reasonSelections).filter(Boolean).length === 0}
-                    className="px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 disabled:cursor-not-allowed text-white font-medium rounded-sm transition-colors flex items-center gap-2"
-                  >
-                    {submitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      "Submit"
-                    )}
-                  </button>
-                </div>
-              </div>
             </CardContent>
           </Card>
         ) : (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">All locked work orders from previous week are complete or closed</p>
+              <p className="text-muted-foreground">No locked work orders had their scheduled start date changed</p>
             </CardContent>
           </Card>
         )}
       </div>
+
+      {/* Submit Button - covers both incomplete and date-moved orders */}
+      {(incompleteLockedOrders.length > 0 || dateMovedOrders.length > 0) && (
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                {totalReasonsSelected} of {allReasonableOrders.totalCount} reasons selected
+                <span className="text-xs ml-2 text-muted-foreground/70">
+                  ({incompleteLockedOrders.length} incomplete + {dateMovedOrders.length} date moved)
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                {submitted && (
+                  <span className="flex items-center gap-1.5 text-sm text-green-600">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Submitted
+                  </span>
+                )}
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting || totalReasonsSelected === 0}
+                  className="px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 disabled:cursor-not-allowed text-white font-medium rounded-sm transition-colors flex items-center gap-2"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    "Submit"
+                  )}
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

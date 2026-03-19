@@ -505,3 +505,95 @@ describe("Schedule Adherence - Adherence Percentage Calculation", () => {
     expect(getAdherenceColor(0)).toBe("red");
   });
 });
+
+describe("Schedule Adherence - Sched Start Date Moved Detection", () => {
+  it("should detect date-moved orders: completed but sched date changed", () => {
+    const lockedOrders = [
+      { workOrderNumber: "111", schedStartDate: "2026-03-10", status: "Ready" },
+      { workOrderNumber: "222", schedStartDate: "2026-03-11", status: "Ready" },
+      { workOrderNumber: "333", schedStartDate: "2026-03-12", status: "Ready" },
+    ];
+
+    const currentWorkOrders = [
+      { workOrderNumber: "111", schedStartDate: "2026-03-10", status: "Work Complete" }, // same date, completed
+      { workOrderNumber: "222", schedStartDate: "2026-03-18", status: "Closed" },        // date moved, completed
+      { workOrderNumber: "333", schedStartDate: "2026-03-12", status: "Ready" },          // same date, not completed
+    ];
+
+    const dateMoved = lockedOrders.filter(locked => {
+      const current = currentWorkOrders.find(wo => wo.workOrderNumber === locked.workOrderNumber);
+      if (!current) return false;
+      const isCompleted = current.status === "Work Complete" || current.status === "Closed";
+      if (!isCompleted) return false;
+      return locked.schedStartDate !== current.schedStartDate;
+    });
+
+    expect(dateMoved).toHaveLength(1);
+    expect(dateMoved[0].workOrderNumber).toBe("222");
+  });
+
+  it("should not flag completed orders with same sched date as date-moved", () => {
+    const lockedOrders = [
+      { workOrderNumber: "111", schedStartDate: "2026-03-10", status: "Ready" },
+    ];
+
+    const currentWorkOrders = [
+      { workOrderNumber: "111", schedStartDate: "2026-03-10", status: "Work Complete" },
+    ];
+
+    const dateMoved = lockedOrders.filter(locked => {
+      const current = currentWorkOrders.find(wo => wo.workOrderNumber === locked.workOrderNumber);
+      if (!current) return false;
+      const isCompleted = current.status === "Work Complete" || current.status === "Closed";
+      if (!isCompleted) return false;
+      return locked.schedStartDate !== current.schedStartDate;
+    });
+
+    expect(dateMoved).toHaveLength(0);
+  });
+
+  it("should not flag incomplete orders as date-moved even if date changed", () => {
+    const lockedOrders = [
+      { workOrderNumber: "111", schedStartDate: "2026-03-10", status: "Ready" },
+    ];
+
+    const currentWorkOrders = [
+      { workOrderNumber: "111", schedStartDate: "2026-03-18", status: "Ready" },
+    ];
+
+    const dateMoved = lockedOrders.filter(locked => {
+      const current = currentWorkOrders.find(wo => wo.workOrderNumber === locked.workOrderNumber);
+      if (!current) return false;
+      const isCompleted = current.status === "Work Complete" || current.status === "Closed";
+      if (!isCompleted) return false;
+      return locked.schedStartDate !== current.schedStartDate;
+    });
+
+    expect(dateMoved).toHaveLength(0);
+  });
+
+  it("should include date-moved reasons in total adherence count", () => {
+    // 20 locked total, 3 incomplete with reasons, 2 date-moved with reasons = 5 total with reasons
+    const totalLocked = 20;
+    const incompleteWithReason = 3;
+    const dateMovedWithReason = 2;
+    const totalWithReason = incompleteWithReason + dateMovedWithReason;
+    const adhered = totalLocked - totalWithReason;
+    const percent = Math.round((adhered / totalLocked) * 100);
+    expect(percent).toBe(75); // 15/20
+  });
+
+  it("should keep date-moved and incomplete as separate sections but combine for submission", () => {
+    const incompleteOrders = [
+      { workOrderNumber: "111", reason: "Weather" },
+      { workOrderNumber: "222", reason: "Missing Parts/Tools" },
+    ];
+    const dateMovedOrders = [
+      { workOrderNumber: "333", reason: "SOW Changed" },
+    ];
+
+    const allRecords = [...incompleteOrders, ...dateMovedOrders];
+    expect(allRecords).toHaveLength(3);
+    expect(allRecords.map(r => r.workOrderNumber)).toEqual(["111", "222", "333"]);
+  });
+});

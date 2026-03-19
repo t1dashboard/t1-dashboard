@@ -197,3 +197,5 @@
 - [x] Schedule Adherence: Only show adherence for weeks that have reason data submitted
 - [x] Schedule Adherence: Change to reason-based adherence (WOs with reason = not completed, adherence = (total - with_reason) / total)
 - [x] Combine "Vendor not Available" and "Vendor Not Prepared" into "Vendor Not Available/Prepared"
+- [x] Schedule Lock Review: Add 'Sched Start Date Moved' section for completed locked WOs whose date changed
+- [x] Schedule Lock Review: Include date-moved WOs in adherence pie charts
