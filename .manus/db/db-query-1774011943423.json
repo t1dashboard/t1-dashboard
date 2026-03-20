@@ -1,0 +1,20 @@
+{
+  "query": "SELECT sa.lock_week, COUNT(*) as count, GROUP_CONCAT(sa.reason) as reasons FROM schedule_adherence sa GROUP BY sa.lock_week ORDER BY sa.lock_week;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT sa.lock_week, COUNT(*) as count, GROUP_CONCAT(sa.reason) as reasons FROM schedule_adherence sa GROUP BY sa.lock_week ORDER BY sa.lock_week;",
+  "rows": [
+    {
+      "lock_week": "2026-02-23",
+      "count": "9",
+      "reasons": "XFN Partner Request,Weather,Vendor Not Available/Prepared,Pull Work Forward,Vendor Not Available/Prepared,Vendor Not Available/Prepared,Risk Mitigation,Risk Mitigation,Risk Mitigation"
+    },
+    {
+      "lock_week": "2026-03-02",
+      "count": "7",
+      "reasons": "Risk Mitigation,Vendor Not Available/Prepared,SOW Changed,Missing Parts/Tools,SOW Changed,Missing Parts/Tools,Missing Parts/Tools"
+    }
+  ],
+  "messages": [],
+  "stdout": "lock_week\tcount\treasons\n2026-02-23\t9\tXFN Partner Request,Weather,Vendor Not Available/Prepared,Pull Work Forward,Vendor Not Available/Prepared,Vendor Not Available/Prepared,Risk Mitigation,Risk Mitigation,Risk Mitigation\n2026-03-02\t7\tRisk Mitigation,Vendor Not Available/Prepared,SOW Changed,Missing Parts/Tools,SOW Changed,Missing Parts/Tools,Missing Parts/Tools\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}

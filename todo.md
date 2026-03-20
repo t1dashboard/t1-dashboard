@@ -201,3 +201,4 @@
 - [x] Schedule Lock Review: Include date-moved WOs in adherence pie charts
 - [x] Sched Start Date Moved: Exclude daily/monthly/quarterly maintenance unless description also contains kitchen
 - [x] Sched Start Date Moved: Exclude WOs completed early (before locked date) same week; only include later or out-of-week
+- [x] Schedule Adherence: Remove date-moved WOs that were completed early or are routine maintenance from adherence stats

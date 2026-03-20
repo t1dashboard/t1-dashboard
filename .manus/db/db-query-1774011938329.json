@@ -1,0 +1,9 @@
+{
+  "query": "SELECT sa.id, sa.work_order_number, sa.lock_week, sa.reason, sl.description FROM schedule_adherence sa LEFT JOIN schedule_locks sl ON sa.work_order_number = sl.work_order_number AND sa.lock_week = sl.lock_week WHERE (UPPER(sl.description) LIKE '%DAILY%' OR UPPER(sl.description) LIKE '%MONTHLY%' OR UPPER(sl.description) LIKE '%QUARTERLY%') AND UPPER(sl.description) NOT LIKE '%KITCHEN%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT sa.id, sa.work_order_number, sa.lock_week, sa.reason, sl.description FROM schedule_adherence sa LEFT JOIN schedule_locks sl ON sa.work_order_number = sl.work_order_number AND sa.lock_week = sl.lock_week WHERE (UPPER(sl.description) LIKE '%DAILY%' OR UPPER(sl.description) LIKE '%MONTHLY%' OR UPPER(sl.description) LIKE '%QUARTERLY%') AND UPPER(sl.description) NOT LIKE '%KITCHEN%';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 55
+}

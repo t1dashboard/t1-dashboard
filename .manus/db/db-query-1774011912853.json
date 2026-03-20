@@ -1,0 +1,101 @@
+{
+  "query": "SELECT sa.id, sa.work_order_number, sa.lock_week, sa.reason, sl.description FROM schedule_adherence sa LEFT JOIN schedule_locks sl ON sa.work_order_number = sl.work_order_number AND sa.lock_week = sl.lock_week WHERE sa.id > '150019' ORDER BY sa.lock_week, sa.id LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT sa.id, sa.work_order_number, sa.lock_week, sa.reason, sl.description FROM schedule_adherence sa LEFT JOIN schedule_locks sl ON sa.work_order_number = sl.work_order_number AND sa.lock_week = sl.lock_week WHERE sa.id > '150019' ORDER BY sa.lock_week, sa.id LIMIT 20;",
+  "rows": [
+    {
+      "id": "150020",
+      "work_order_number": "3234080",
+      "lock_week": "2026-03-02",
+      "reason": "Completed Early",
+      "description": "NCG6 6EG-N2 Radiator Fan Bolt Inspection/Torque Check (LOTO)"
+    },
+    {
+      "id": "150021",
+      "work_order_number": "3234076",
+      "lock_week": "2026-03-02",
+      "reason": "Completed Early",
+      "description": "NCG6 6EG-N4 Radiator Fan Bolt Inspection/Torque Check (LOTO)"
+    },
+    {
+      "id": "150022",
+      "work_order_number": "2601400",
+      "lock_week": "2026-03-02",
+      "reason": "Completed Early",
+      "description": "MSG BATTERY SYSTEM ANNUAL PM"
+    },
+    {
+      "id": "150023",
+      "work_order_number": "2601399",
+      "lock_week": "2026-03-02",
+      "reason": "Completed Early",
+      "description": "MEDIUM VOLTAGE SWITCH GEAR TWO YEAR PM"
+    },
+    {
+      "id": "150024",
+      "work_order_number": "2601339",
+      "lock_week": "2026-03-02",
+      "reason": "Completed Early",
+      "description": "MSG BATTERY SYSTEM ANNUAL PM"
+    },
+    {
+      "id": "150025",
+      "work_order_number": "2601337",
+      "lock_week": "2026-03-02",
+      "reason": "Completed Early",
+      "description": "MEDIUM VOLTAGE SWITCH GEAR TWO YEAR PM"
+    },
+    {
+      "id": "180001",
+      "work_order_number": "3215267",
+      "lock_week": "2026-03-02",
+      "reason": "Risk Mitigation",
+      "description": "MWG Fire Main BFP Repairs [PTW]"
+    },
+    {
+      "id": "180002",
+      "work_order_number": "3285749",
+      "lock_week": "2026-03-02",
+      "reason": "Vendor Not Available/Prepared",
+      "description": "CULINARY MWG Flat top [CFE/CFT] [LOTO] [VENDOR]"
+    },
+    {
+      "id": "180003",
+      "work_order_number": "2585272",
+      "lock_week": "2026-03-02",
+      "reason": "SOW Changed",
+      "description": "MWG2 PTX-2R Rapid Rise alert"
+    },
+    {
+      "id": "180004",
+      "work_order_number": "3267632",
+      "lock_week": "2026-03-02",
+      "reason": "Missing Parts/Tools",
+      "description": "NCG1 DHB RPP AIP Remove input [PTW]"
+    },
+    {
+      "id": "180005",
+      "work_order_number": "3336850",
+      "lock_week": "2026-03-02",
+      "reason": "SOW Changed",
+      "description": "NCG5 water leaks under concrete"
+    },
+    {
+      "id": "180006",
+      "work_order_number": "2903926",
+      "lock_week": "2026-03-02",
+      "reason": "Missing Parts/Tools",
+      "description": "NCG1 DLV-04 Retrofit [PTW]"
+    },
+    {
+      "id": "180007",
+      "work_order_number": "2903921",
+      "lock_week": "2026-03-02",
+      "reason": "Missing Parts/Tools",
+      "description": "NCG3 DLV-01 Retrofit [PTW]"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\twork_order_number\tlock_week\treason\tdescription\n150020\t3234080\t2026-03-02\tCompleted Early\tNCG6 6EG-N2 Radiator Fan Bolt Inspection/Torque Check (LOTO)\n150021\t3234076\t2026-03-02\tCompleted Early\tNCG6 6EG-N4 Radiator Fan Bolt Inspection/Torque Check (LOTO)\n150022\t2601400\t2026-03-02\tCompleted Early\tMSG BATTERY SYSTEM ANNUAL PM\n150023\t2601399\t2026-03-02\tCompleted Early\tMEDIUM VOLTAGE SWITCH GEAR TWO YEAR PM\n150024\t2601339\t2026-03-02\tCompleted Early\tMSG BATTERY SYSTEM ANNUAL PM\n150025\t2601337\t2026-03-02\tCompleted Early\tMEDIUM VOLTAGE SWITCH GEAR TWO YEAR PM\n180001\t3215267\t2026-03-02\tRisk Mitigation\tMWG Fire Main BFP Repairs [PTW]\n180002\t3285749\t2026-03-02\tVendor Not Available/Prepared\tCULINARY MWG Flat top [CFE/CFT] [LOTO] [VENDOR]\n180003\t2585272\t2026-03-02\tSOW Changed\tMWG2 PTX-2R Rapid Rise alert\n180004\t3267632\t2026-03-02\tMissing Parts/Tools\tNCG1 DHB RPP AIP Remove input [PTW]\n180005\t3336850\t2026-03-02\tSOW Changed\tNCG5 water leaks under concrete\n180006\t2903926\t2026-03-02\tMissing Parts/Tools\tNCG1 DLV-04 Retrofit [PTW]\n180007\t2903921\t2026-03-02\tMissing Parts/Tools\tNCG3 DLV-01 Retrofit [PTW]\n",
+  "stderr": "",
+  "execution_time_ms": 54
+}

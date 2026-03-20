@@ -19,7 +19,6 @@ const REASON_COLORS: Record<string, string> = {
   "Weather": "#8b7bb5",               // soft purple
   "XFN Partner Request": "#c4a35a",   // muted gold
   "Risk Mitigation": "#d4726a",       // muted coral
-  "Completed Early": "#7aa3cc",      // sky blue
   "SOW Changed": "#b07cc6",              // soft purple
 };
 
@@ -30,7 +29,6 @@ const ALL_REASONS = [
   "Weather",
   "XFN Partner Request",
   "Risk Mitigation",
-  "Completed Early",
   "SOW Changed",
 ];
 

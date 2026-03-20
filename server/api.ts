@@ -568,7 +568,6 @@ const VALID_ADHERENCE_REASONS = [
   "Weather",
   "XFN Partner Request",
   "Risk Mitigation",
-  "Completed Early",
   "SOW Changed",
 ];
 
