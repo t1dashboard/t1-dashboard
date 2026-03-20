@@ -642,3 +642,41 @@ describe("Schedule Adherence - Date Moved Routine Maintenance Exclusion", () => 
     expect(shouldIncludeInDateMoved("Monthly check")).toBe(false);
   });
 });
+
+describe("Schedule Adherence - Date Moved Direction Filter", () => {
+  function shouldIncludeInDateMoved(lockedDate: string, currentDate: string): boolean {
+    if (lockedDate === currentDate || lockedDate === "" || currentDate === "") return false;
+    // Only include if date moved later (pushed back), not earlier (completed early)
+    return currentDate > lockedDate;
+  }
+
+  it("should include WO whose date moved later in the week", () => {
+    // Locked for Monday, moved to Wednesday
+    expect(shouldIncludeInDateMoved("2026-03-16", "2026-03-18")).toBe(true);
+  });
+
+  it("should include WO whose date moved to next week", () => {
+    // Locked for Friday, moved to next Monday
+    expect(shouldIncludeInDateMoved("2026-03-20", "2026-03-23")).toBe(true);
+  });
+
+  it("should exclude WO completed early (date moved earlier in the week)", () => {
+    // Locked for Wednesday, completed on Monday
+    expect(shouldIncludeInDateMoved("2026-03-18", "2026-03-16")).toBe(false);
+  });
+
+  it("should exclude WO completed early (date moved to previous week)", () => {
+    // Locked for Monday, completed previous Friday
+    expect(shouldIncludeInDateMoved("2026-03-16", "2026-03-13")).toBe(false);
+  });
+
+  it("should exclude WO with same date (no change)", () => {
+    expect(shouldIncludeInDateMoved("2026-03-16", "2026-03-16")).toBe(false);
+  });
+
+  it("should exclude WO with empty dates", () => {
+    expect(shouldIncludeInDateMoved("", "2026-03-16")).toBe(false);
+    expect(shouldIncludeInDateMoved("2026-03-16", "")).toBe(false);
+    expect(shouldIncludeInDateMoved("", "")).toBe(false);
+  });
+});

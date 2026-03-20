@@ -306,7 +306,11 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
       // Check if sched start date changed
       const lockedSchedDate = normalizeDateStr(locked.schedStartDate);
       const currentSchedDate = normalizeDateStr(currentWO["Sched. Start Date"]);
-      return lockedSchedDate !== currentSchedDate && lockedSchedDate !== "" && currentSchedDate !== "";
+      if (lockedSchedDate === currentSchedDate || lockedSchedDate === "" || currentSchedDate === "") return false;
+      
+      // Exclude WOs completed early (current date is before locked date) — completing early is good
+      // Only include WOs where the date moved later or out of the week entirely
+      return currentSchedDate > lockedSchedDate;
     }).map(locked => {
       const currentWO = workOrders.find(wo => String(wo["Work Order"]) === String(locked.workOrderNumber));
       return {
