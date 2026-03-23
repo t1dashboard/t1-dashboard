@@ -68,6 +68,8 @@ export default function RiskIdentificationTab({ workOrders }: RiskIdentification
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Data Center</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Supervisor</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">EHS LOR</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Operational LOR</th>
@@ -96,6 +98,8 @@ export default function RiskIdentificationTab({ workOrders }: RiskIdentification
                     {formatDate(wo["Sched. Start Date"])}
                   </td>
                   <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
+                  <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
+                  <td className="py-3 px-4 text-sm">{wo["Supervisor"]}</td>
                   <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
                   <td className="py-3 px-4">
                     <Badge variant={getLORBadgeVariant(wo["EHS LOR"])} className="text-xs">

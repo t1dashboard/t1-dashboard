@@ -1,0 +1,202 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'work_orders' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'work_orders' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id"
+    },
+    {
+      "COLUMN_NAME": "id"
+    },
+    {
+      "COLUMN_NAME": "work_order_number"
+    },
+    {
+      "COLUMN_NAME": "work_order_number"
+    },
+    {
+      "COLUMN_NAME": "description"
+    },
+    {
+      "COLUMN_NAME": "description"
+    },
+    {
+      "COLUMN_NAME": "data_center"
+    },
+    {
+      "COLUMN_NAME": "data_center"
+    },
+    {
+      "COLUMN_NAME": "sched_start_date"
+    },
+    {
+      "COLUMN_NAME": "sched_start_date"
+    },
+    {
+      "COLUMN_NAME": "assigned_to_name"
+    },
+    {
+      "COLUMN_NAME": "assigned_to_name"
+    },
+    {
+      "COLUMN_NAME": "status"
+    },
+    {
+      "COLUMN_NAME": "status"
+    },
+    {
+      "COLUMN_NAME": "type"
+    },
+    {
+      "COLUMN_NAME": "type"
+    },
+    {
+      "COLUMN_NAME": "equipment_description"
+    },
+    {
+      "COLUMN_NAME": "equipment_description"
+    },
+    {
+      "COLUMN_NAME": "priority"
+    },
+    {
+      "COLUMN_NAME": "priority"
+    },
+    {
+      "COLUMN_NAME": "shift"
+    },
+    {
+      "COLUMN_NAME": "shift"
+    },
+    {
+      "COLUMN_NAME": "ehs_lor"
+    },
+    {
+      "COLUMN_NAME": "ehs_lor"
+    },
+    {
+      "COLUMN_NAME": "operational_lor"
+    },
+    {
+      "COLUMN_NAME": "operational_lor"
+    },
+    {
+      "COLUMN_NAME": "deferral_reason_selected"
+    },
+    {
+      "COLUMN_NAME": "deferral_reason_selected"
+    },
+    {
+      "COLUMN_NAME": "trade"
+    },
+    {
+      "COLUMN_NAME": "trade"
+    },
+    {
+      "COLUMN_NAME": "uploaded_at"
+    },
+    {
+      "COLUMN_NAME": "route"
+    },
+    {
+      "COLUMN_NAME": "uploaded_by"
+    },
+    {
+      "COLUMN_NAME": "sched_end_date"
+    },
+    {
+      "COLUMN_NAME": "production_impact"
+    },
+    {
+      "COLUMN_NAME": "route"
+    },
+    {
+      "COLUMN_NAME": "compliance_window_start_date"
+    },
+    {
+      "COLUMN_NAME": "sched_end_date"
+    },
+    {
+      "COLUMN_NAME": "compliance_window_end_date"
+    },
+    {
+      "COLUMN_NAME": "production_impact"
+    },
+    {
+      "COLUMN_NAME": "compliance_window_start_date"
+    },
+    {
+      "COLUMN_NAME": "discipline"
+    },
+    {
+      "COLUMN_NAME": "organization"
+    },
+    {
+      "COLUMN_NAME": "compliance_window_end_date"
+    },
+    {
+      "COLUMN_NAME": "department"
+    },
+    {
+      "COLUMN_NAME": "discipline"
+    },
+    {
+      "COLUMN_NAME": "equipment"
+    },
+    {
+      "COLUMN_NAME": "organization"
+    },
+    {
+      "COLUMN_NAME": "department"
+    },
+    {
+      "COLUMN_NAME": "class"
+    },
+    {
+      "COLUMN_NAME": "equipment"
+    },
+    {
+      "COLUMN_NAME": "reported_by"
+    },
+    {
+      "COLUMN_NAME": "class"
+    },
+    {
+      "COLUMN_NAME": "pm_code"
+    },
+    {
+      "COLUMN_NAME": "reported_by"
+    },
+    {
+      "COLUMN_NAME": "assigned_to"
+    },
+    {
+      "COLUMN_NAME": "pm_code"
+    },
+    {
+      "COLUMN_NAME": "date_created"
+    },
+    {
+      "COLUMN_NAME": "assigned_to"
+    },
+    {
+      "COLUMN_NAME": "supervisor"
+    },
+    {
+      "COLUMN_NAME": "date_created"
+    },
+    {
+      "COLUMN_NAME": "uploaded_by"
+    },
+    {
+      "COLUMN_NAME": "supervisor"
+    },
+    {
+      "COLUMN_NAME": "uploaded_at"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nid\nid\nwork_order_number\nwork_order_number\ndescription\ndescription\ndata_center\ndata_center\nsched_start_date\nsched_start_date\nassigned_to_name\nassigned_to_name\nstatus\nstatus\ntype\ntype\nequipment_description\nequipment_description\npriority\npriority\nshift\nshift\nehs_lor\nehs_lor\noperational_lor\noperational_lor\ndeferral_reason_selected\ndeferral_reason_selected\ntrade\ntrade\nuploaded_at\nroute\nuploaded_by\nsched_end_date\nproduction_impact\nroute\ncompliance_window_start_date\nsched_end_date\ncompliance_window_end_date\nproduction_impact\ncompliance_window_start_date\ndiscipline\norganization\ncompliance_window_end_date\ndepartment\ndiscipline\nequipment\norganization\ndepartment\nclass\nequipment\nreported_by\nclass\npm_code\nreported_by\nassigned_to\npm_code\ndate_created\nassigned_to\nsupervisor\ndate_created\nuploaded_by\nsupervisor\nuploaded_at\n",
+  "stderr": "",
+  "execution_time_ms": 52
+}

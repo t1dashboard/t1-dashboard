@@ -600,6 +600,8 @@ export default function DeconflictionTab({ workOrders, tWeekRange = [1, 3], labe
                                             <th className="py-2 pr-3 w-24">Start Date</th>
                                             <th className="py-2 pr-3 w-24">End Date</th>
                                             <th className="py-2 pr-3 w-20">Shift</th>
+                                            <th className="py-2 pr-3 w-24">Assigned To</th>
+                                            <th className="py-2 pr-3 w-24">Supervisor</th>
                                             <th className="py-2 pr-3 w-24">Status</th>
                                             <th className="py-2 w-20">Priority</th>
                                           </tr>
@@ -624,6 +626,8 @@ export default function DeconflictionTab({ workOrders, tWeekRange = [1, 3], labe
                                                 <td className="py-2 pr-3 text-xs">{formatDate(wo["Sched. Start Date"])}</td>
                                                 <td className="py-2 pr-3 text-xs">{formatDate(wo["Sched. End Date"])}</td>
                                                 <td className="py-2 pr-3 text-xs">{wo["Shift"]}</td>
+                                                <td className="py-2 pr-3 text-xs">{wo["Assigned To Name"]}</td>
+                                                <td className="py-2 pr-3 text-xs">{wo["Supervisor"]}</td>
                                                 <td className="py-2 pr-3">
                                                   <span className={`text-xs px-1.5 py-0.5 rounded ${
                                                     (wo["Status"] || "").toLowerCase() === "ready"
@@ -746,6 +750,8 @@ export default function DeconflictionTab({ workOrders, tWeekRange = [1, 3], labe
                                             <td className="py-2 pr-3 text-xs">{formatDate(wo["Sched. Start Date"])}</td>
                                             <td className="py-2 pr-3 text-xs">{formatDate(wo["Sched. End Date"])}</td>
                                             <td className="py-2 pr-3 text-xs">{wo["Shift"]}</td>
+                                            <td className="py-2 pr-3 text-xs">{wo["Assigned To Name"]}</td>
+                                            <td className="py-2 pr-3 text-xs">{wo["Supervisor"]}</td>
                                             <td className="py-2 pr-3">
                                               <span className={`text-xs px-1.5 py-0.5 rounded ${
                                                 (wo["Status"] || "").toLowerCase() === "ready"

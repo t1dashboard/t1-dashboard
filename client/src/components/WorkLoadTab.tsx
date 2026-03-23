@@ -197,6 +197,8 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched End Date</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Supervisor</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
             <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Risk</th>
           </tr>
@@ -225,6 +227,8 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
                 <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
                 <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. End Date"])}</td>
                 <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
+                <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
+                <td className="py-3 px-4 text-sm">{wo["Supervisor"]}</td>
                 <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
                 <td className="py-3 px-4 text-sm font-medium">
                   {risk === 'high' && <span className="text-red-600 dark:text-red-400">High</span>}

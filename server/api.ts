@@ -63,6 +63,13 @@ router.post("/work-orders/upload", upload.single("file"), async (req: Request, r
         wo["Assigned To"] || null,
         wo["Date Created"] || null,
         wo["Supervisor"] || null,
+        wo["Date Completed"] || null,
+        wo["FacOps Suite"] || null,
+        wo["Type Code"] || null,
+        wo["Estimated Hours"] != null ? String(wo["Estimated Hours"]) : null,
+        wo["Hours Remaining"] != null ? String(wo["Hours Remaining"]) : null,
+        wo["Asset ID"] != null ? String(wo["Asset ID"]) : null,
+        wo["Last Saved"] || null,
       ]);
 
       const sql = `INSERT INTO work_orders (
@@ -72,8 +79,10 @@ router.post("/work-orders/upload", upload.single("file"), async (req: Request, r
         route, sched_end_date, production_impact,
         compliance_window_start_date, compliance_window_end_date,
         discipline, organization, department, equipment, class,
-        reported_by, pm_code, assigned_to, date_created, supervisor, uploaded_by
-      ) VALUES ${batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)").join(", ")}`;
+        reported_by, pm_code, assigned_to, date_created, supervisor,
+        date_completed, facops_suite, type_code, estimated_hours, hours_remaining, asset_id, last_saved,
+        uploaded_by
+      ) VALUES ${batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)").join(", ")}`;
 
       await execute(sql, values);
     }
@@ -119,6 +128,13 @@ router.get("/work-orders", async (_req: Request, res: Response) => {
       "Deferral Reason Selected": row.deferral_reason_selected,
       "Trade": row.trade,
       "Supervisor": row.supervisor,
+      "Date Completed": row.date_completed,
+      "FacOps Suite": row.facops_suite,
+      "Type Code": row.type_code,
+      "Estimated Hours": row.estimated_hours,
+      "Hours Remaining": row.hours_remaining,
+      "Asset ID": row.asset_id,
+      "Last Saved": row.last_saved,
     }));
     res.json(workOrders);
   } catch (error: any) {

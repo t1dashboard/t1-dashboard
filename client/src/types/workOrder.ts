@@ -29,6 +29,13 @@ export interface WorkOrder {
   "Deferral Reason Selected": string;
   "Trade"?: string;
   "Supervisor"?: string;
+  "Date Completed"?: string;
+  "FacOps Suite"?: string;
+  "Type Code"?: string;
+  "Estimated Hours"?: string;
+  "Hours Remaining"?: string;
+  "Asset ID"?: string;
+  "Last Saved"?: string;
 }
 
 export interface ScheduledLabor {

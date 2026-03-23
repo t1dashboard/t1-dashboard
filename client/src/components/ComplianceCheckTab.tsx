@@ -180,6 +180,8 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
                   <th className="py-3 px-4 text-left font-medium">Work Order</th>
                   <th className="py-3 px-4 text-left font-medium">Description</th>
                   <th className="py-3 px-4 text-left font-medium">Shift</th>
+                  <th className="py-3 px-4 text-left font-medium">Assigned To</th>
+                  <th className="py-3 px-4 text-left font-medium">Supervisor</th>
                   <th className="py-3 px-4 text-left font-medium">Status</th>
                   <th className="py-3 px-4 text-left font-medium">Sched Start Date</th>
                   <th className="py-3 px-4 text-left font-medium">Sched End Date</th>
@@ -217,6 +219,8 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
                       </td>
                       <td className="py-3 px-4 truncate">{wo["Description"]}</td>
                       <td className="py-3 px-4">{wo["Shift"]}</td>
+                      <td className="py-3 px-4">{wo["Assigned To Name"]}</td>
+                      <td className="py-3 px-4">{wo["Supervisor"]}</td>
                       <td className="py-3 px-4">{wo["Status"]}</td>
                       <td className="py-3 px-4">
                         {wo["Sched. Start Date"]

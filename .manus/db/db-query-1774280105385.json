@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'work_orders' AND TABLE_SCHEMA = DATABASE() AND COLUMN_NAME IN ('date_completed', 'supervisor', 'facops_suite', 'type_code', 'estimated_hours', 'hours_remaining', 'asset_id', 'last_saved');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'work_orders' AND TABLE_SCHEMA = DATABASE() AND COLUMN_NAME IN ('date_completed', 'supervisor', 'facops_suite', 'type_code', 'estimated_hours', 'hours_remaining', 'asset_id', 'last_saved');",
+  "rows": [
+    {
+      "COLUMN_NAME": "supervisor"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nsupervisor\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}
