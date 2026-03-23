@@ -9,10 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, parseExcelDate, getTWeekRange } from "@/lib/dateUtils";
 import ScheduledLaborReviewTab from "@/components/ScheduledLaborReviewTab";
+import WOClosureSLATab from "@/components/WOClosureSLATab";
+import { DeferralWorkOrder } from "@/lib/api";
 
 interface InboxReviewProps {
   workOrders: WorkOrder[];
   scheduledLabor: ScheduledLabor[];
+  deferralWorkOrders: DeferralWorkOrder[];
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
@@ -20,7 +23,7 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 // Production Impact values to include (exclude 40)
 const INCLUDED_PRODUCTION_IMPACTS = [10, 15, 20, 25, 30];
 
-export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewProps) {
+export default function InboxReview({ workOrders, scheduledLabor, deferralWorkOrders }: InboxReviewProps) {
   const [activeTab, setActiveTab] = useState("wo-campaign");
 
   // WO Campaign: filter work orders whose description contains "WO Campaign" (case-insensitive)
@@ -125,7 +128,7 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
 
       {/* Sub-tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="wo-campaign" className="flex items-center gap-2">
             WO Campaign
             <Badge variant="secondary" className="text-xs">{woCampaignOrders.length}</Badge>
@@ -140,6 +143,9 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
           <TabsTrigger value="production-impact" className="flex items-center gap-2">
             Production Impact
             <Badge variant="secondary" className="text-xs">{productionImpactOrders.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="closure-sla" className="flex items-center gap-2">
+            WO Closure SLA
           </TabsTrigger>
         </TabsList>
 
@@ -370,6 +376,11 @@ export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewP
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* WO Closure SLA Adherence Tab */}
+        <TabsContent value="closure-sla" className="mt-6">
+          <WOClosureSLATab workOrders={workOrders} deferralWorkOrders={deferralWorkOrders} />
         </TabsContent>
       </Tabs>
     </div>

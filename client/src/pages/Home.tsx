@@ -564,7 +564,7 @@ export default function Home() {
           )}
 
           {activeView === "inbox-review" && workOrders.length > 0 && (
-            <InboxReview workOrders={workOrders} scheduledLabor={scheduledLabor} />
+            <InboxReview workOrders={workOrders} scheduledLabor={scheduledLabor} deferralWorkOrders={deferralWorkOrders} />
           )}
 
           {activeView === "schedule-adherence" && (
