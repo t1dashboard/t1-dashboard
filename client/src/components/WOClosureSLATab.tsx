@@ -3,7 +3,7 @@
  * 
  * Compares Date Completed (closed date) vs Sched End Date (work complete date)
  * SLA: 2 business days for normal WOs, 21 business days for WOs on the >90 days deferral awaiting invoice sheet
- * Groups by Supervisor to show each supervisor's adherence metric
+ * Groups by month and quarter, then by supervisor within each month
  */
 
 import { useMemo, useState } from "react";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { WorkOrder } from "@/types/workOrder";
 import { DeferralWorkOrder } from "@/lib/api";
 import { parseExcelDate, formatDate } from "@/lib/dateUtils";
-import { ChevronDown, ChevronUp, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
+import { ChevronDown, ChevronUp, CheckCircle2, AlertTriangle, Clock, TrendingUp, TrendingDown } from "lucide-react";
 
 interface WOClosureSLATabProps {
   workOrders: WorkOrder[];
@@ -38,12 +38,31 @@ interface SupervisorMetric {
   workOrders: SLAWorkOrder[];
 }
 
+interface MonthlyData {
+  month: string; // YYYY-MM
+  label: string; // "Mar 2026"
+  total: number;
+  withinSLA: number;
+  outsideSLA: number;
+  adherencePercent: number;
+  supervisors: SupervisorMetric[];
+  workOrders: SLAWorkOrder[];
+}
+
+interface QuarterlyData {
+  quarter: string; // "2026-Q1"
+  label: string; // "Q1 2026"
+  total: number;
+  withinSLA: number;
+  outsideSLA: number;
+  adherencePercent: number;
+}
+
 /**
  * Count business days between two dates (excluding weekends)
  * Does NOT count the start date, counts the end date
  */
 function countBusinessDays(start: Date, end: Date): number {
-  // Normalize to start of day
   const s = new Date(start.getFullYear(), start.getMonth(), start.getDate());
   const e = new Date(end.getFullYear(), end.getMonth(), end.getDate());
   
@@ -51,11 +70,11 @@ function countBusinessDays(start: Date, end: Date): number {
   
   let count = 0;
   const current = new Date(s);
-  current.setDate(current.getDate() + 1); // Start from day after
+  current.setDate(current.getDate() + 1);
   
   while (current <= e) {
     const day = current.getDay();
-    if (day !== 0 && day !== 6) { // Not Sunday (0) or Saturday (6)
+    if (day !== 0 && day !== 6) {
       count++;
     }
     current.setDate(current.getDate() + 1);
@@ -64,14 +83,56 @@ function countBusinessDays(start: Date, end: Date): number {
   return count;
 }
 
+function formatMonth(monthStr: string): string {
+  const [year, month] = monthStr.split("-");
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthIndex = parseInt(month, 10) - 1;
+  return `${monthNames[monthIndex]} ${year}`;
+}
+
+function getQuarterKey(monthStr: string): string {
+  const [year, month] = monthStr.split("-");
+  const m = parseInt(month, 10);
+  const q = Math.ceil(m / 3);
+  return `${year}-Q${q}`;
+}
+
+function getQuarterLabel(quarterKey: string): string {
+  const [year, q] = quarterKey.split("-Q");
+  return `Q${q} ${year}`;
+}
+
+function getAdherenceColor(percent: number): string {
+  if (percent >= 90) return "text-green-600 dark:text-green-400";
+  if (percent >= 70) return "text-yellow-600 dark:text-yellow-400";
+  return "text-red-600 dark:text-red-400";
+}
+
+function getAdherenceBg(percent: number): string {
+  if (percent >= 90) return "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800";
+  if (percent >= 70) return "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800";
+  return "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800";
+}
+
+function getProgressColor(percent: number): string {
+  if (percent >= 90) return "bg-green-500";
+  if (percent >= 70) return "bg-yellow-500";
+  return "bg-red-500";
+}
+
+const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
+
+// Supervisors to exclude (no longer employed)
+const EXCLUDED_SUPERVISORS = new Set(["ABOSTWICK"]);
+
 export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOClosureSLATabProps) {
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
   const [expandedSupervisors, setExpandedSupervisors] = useState<Set<string>>(new Set());
 
   // Build set of WO numbers that are/were on the Awaiting Invoice deferral sheet
   const invoiceWOSet = useMemo(() => {
     const set = new Set<string>();
     deferralWorkOrders.forEach(dwo => {
-      // Only include WOs from the "Awaiting Invoice" category for 21-day SLA
       const category = (dwo["Deferral Reason Selected"] || "").trim();
       if (category === "Awaiting Invoice") {
         set.add(String(dwo["Work Order"]));
@@ -79,9 +140,6 @@ export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOCl
     });
     return set;
   }, [deferralWorkOrders]);
-
-  // Supervisors to exclude (no longer employed)
-  const EXCLUDED_SUPERVISORS = new Set(["ABOSTWICK"]);
 
   // Filter and compute SLA for closed work orders
   const slaWorkOrders = useMemo(() => {
@@ -91,7 +149,6 @@ export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOCl
       const status = (wo["Status"] || "").toUpperCase();
       if (status !== "CLOSED") return;
       
-      // Exclude former employees
       const supervisor = (wo["Supervisor"] || "").trim();
       if (EXCLUDED_SUPERVISORS.has(supervisor.toUpperCase())) return;
       
@@ -100,8 +157,7 @@ export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOCl
       
       if (!schedEndDate || !dateCompleted) return;
       
-      // Detect likely wrong-year data entry: if dates are ~1 year apart (365 ± 30 days),
-      // someone probably chose the wrong year for the sched end date
+      // Detect likely wrong-year data entry (365 ± 30 days)
       const calendarDaysApart = Math.abs(
         (dateCompleted.getTime() - schedEndDate.getTime()) / (1000 * 60 * 60 * 24)
       );
@@ -127,35 +183,86 @@ export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOCl
     return results;
   }, [workOrders, invoiceWOSet]);
 
-  // Group by supervisor
-  const supervisorMetrics = useMemo(() => {
-    const groups: Record<string, SLAWorkOrder[]> = {};
+  // Group by month (based on Date Completed)
+  const monthlyData: MonthlyData[] = useMemo(() => {
+    const monthMap = new Map<string, SLAWorkOrder[]>();
     
     slaWorkOrders.forEach(swo => {
-      const supervisor = swo.wo["Supervisor"] || "Unassigned";
-      if (!groups[supervisor]) groups[supervisor] = [];
-      groups[supervisor].push(swo);
+      const year = swo.dateCompleted.getFullYear();
+      const month = String(swo.dateCompleted.getMonth() + 1).padStart(2, "0");
+      const monthKey = `${year}-${month}`;
+      
+      if (!monthMap.has(monthKey)) monthMap.set(monthKey, []);
+      monthMap.get(monthKey)!.push(swo);
     });
-    
-    const metrics: SupervisorMetric[] = Object.entries(groups)
-      .map(([supervisor, wos]) => {
-        const total = wos.length;
-        const withinSLA = wos.filter(w => w.withinSLA).length;
-        const outsideSLA = total - withinSLA;
-        const adherencePercent = total > 0 ? Math.round((withinSLA / total) * 100) : 0;
-        
-        // Sort WOs: outside SLA first (most overdue), then within SLA
-        wos.sort((a, b) => {
-          if (a.withinSLA !== b.withinSLA) return a.withinSLA ? 1 : -1;
-          return b.businessDays - a.businessDays;
-        });
-        
-        return { supervisor, total, withinSLA, outsideSLA, adherencePercent, workOrders: wos };
-      })
-      .sort((a, b) => a.adherencePercent - b.adherencePercent); // Worst adherence first
-    
-    return metrics;
+
+    const months = Array.from(monthMap.keys()).sort((a, b) => b.localeCompare(a));
+
+    return months.map(monthKey => {
+      const wos = monthMap.get(monthKey)!;
+      const total = wos.length;
+      const withinSLA = wos.filter(w => w.withinSLA).length;
+      const outsideSLA = total - withinSLA;
+      const adherencePercent = total > 0 ? Math.round((withinSLA / total) * 100) : 0;
+
+      // Group by supervisor within this month
+      const supervisorMap = new Map<string, SLAWorkOrder[]>();
+      wos.forEach(swo => {
+        const sup = swo.wo["Supervisor"] || "Unassigned";
+        if (!supervisorMap.has(sup)) supervisorMap.set(sup, []);
+        supervisorMap.get(sup)!.push(swo);
+      });
+
+      const supervisors: SupervisorMetric[] = Array.from(supervisorMap.entries())
+        .map(([supervisor, swos]) => {
+          const sTotal = swos.length;
+          const sWithin = swos.filter(w => w.withinSLA).length;
+          const sOutside = sTotal - sWithin;
+          const sPercent = sTotal > 0 ? Math.round((sWithin / sTotal) * 100) : 0;
+
+          swos.sort((a, b) => {
+            if (a.withinSLA !== b.withinSLA) return a.withinSLA ? 1 : -1;
+            return b.businessDays - a.businessDays;
+          });
+
+          return { supervisor, total: sTotal, withinSLA: sWithin, outsideSLA: sOutside, adherencePercent: sPercent, workOrders: swos };
+        })
+        .sort((a, b) => a.adherencePercent - b.adherencePercent);
+
+      return {
+        month: monthKey,
+        label: formatMonth(monthKey),
+        total,
+        withinSLA,
+        outsideSLA,
+        adherencePercent,
+        supervisors,
+        workOrders: wos,
+      };
+    });
   }, [slaWorkOrders]);
+
+  // Quarterly rollups
+  const quarterlyData: QuarterlyData[] = useMemo(() => {
+    const quarterMap = new Map<string, { total: number; withinSLA: number }>();
+
+    monthlyData.forEach(md => {
+      const qKey = getQuarterKey(md.month);
+      if (!quarterMap.has(qKey)) quarterMap.set(qKey, { total: 0, withinSLA: 0 });
+      const entry = quarterMap.get(qKey)!;
+      entry.total += md.total;
+      entry.withinSLA += md.withinSLA;
+    });
+
+    const quarters = Array.from(quarterMap.keys()).sort((a, b) => b.localeCompare(a));
+
+    return quarters.map(qKey => {
+      const entry = quarterMap.get(qKey)!;
+      const outsideSLA = entry.total - entry.withinSLA;
+      const adherencePercent = entry.total > 0 ? Math.round((entry.withinSLA / entry.total) * 100) : 0;
+      return { quarter: qKey, label: getQuarterLabel(qKey), total: entry.total, withinSLA: entry.withinSLA, outsideSLA, adherencePercent };
+    });
+  }, [monthlyData]);
 
   // Overall metrics
   const overallMetrics = useMemo(() => {
@@ -166,31 +273,23 @@ export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOCl
     return { total, withinSLA, outsideSLA, adherencePercent };
   }, [slaWorkOrders]);
 
-  const toggleSupervisor = (supervisor: string) => {
-    setExpandedSupervisors(prev => {
+  const toggleMonth = (month: string) => {
+    setExpandedMonths(prev => {
       const next = new Set(prev);
-      if (next.has(supervisor)) {
-        next.delete(supervisor);
-      } else {
-        next.add(supervisor);
-      }
+      if (next.has(month)) next.delete(month);
+      else next.add(month);
       return next;
     });
   };
 
-  const getAdherenceColor = (percent: number) => {
-    if (percent >= 90) return "text-green-600 dark:text-green-400";
-    if (percent >= 70) return "text-yellow-600 dark:text-yellow-400";
-    return "text-red-600 dark:text-red-400";
+  const toggleSupervisor = (key: string) => {
+    setExpandedSupervisors(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   };
-
-  const getAdherenceBg = (percent: number) => {
-    if (percent >= 90) return "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800";
-    if (percent >= 70) return "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800";
-    return "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800";
-  };
-
-  const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
   if (slaWorkOrders.length === 0) {
     return (
@@ -244,127 +343,170 @@ export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOCl
         </CardContent>
       </Card>
 
-      {/* Supervisor Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle>By Supervisor</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Click a supervisor row to see their individual work orders
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {supervisorMetrics.map(metric => {
-              const isExpanded = expandedSupervisors.has(metric.supervisor);
-              return (
-                <div key={metric.supervisor} className="border rounded-lg overflow-hidden">
-                  {/* Supervisor row */}
-                  <button
-                    onClick={() => toggleSupervisor(metric.supervisor)}
-                    className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="font-medium text-left min-w-[160px]">{metric.supervisor}</div>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <span>{metric.total} WOs</span>
-                        <span className="text-green-600 dark:text-green-400">{metric.withinSLA} within</span>
-                        <span className="text-red-600 dark:text-red-400">{metric.outsideSLA} outside</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Badge 
-                        variant="outline" 
-                        className={`font-bold ${getAdherenceColor(metric.adherencePercent)}`}
-                      >
-                        {metric.adherencePercent}%
-                      </Badge>
-                      {/* Progress bar */}
-                      <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all ${
-                            metric.adherencePercent >= 90 ? "bg-green-500" :
-                            metric.adherencePercent >= 70 ? "bg-yellow-500" : "bg-red-500"
-                          }`}
-                          style={{ width: `${metric.adherencePercent}%` }}
-                        />
-                      </div>
-                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </div>
-                  </button>
-
-                  {/* Expanded WO details */}
-                  {isExpanded && (
-                    <div className="border-t overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b bg-muted/30">
-                            <th className="text-left py-2 px-4 font-medium">Work Order</th>
-                            <th className="text-left py-2 px-4 font-medium">Description</th>
-                            <th className="text-left py-2 px-4 font-medium">Data Center</th>
-                            <th className="text-left py-2 px-4 font-medium">Sched End Date</th>
-                            <th className="text-left py-2 px-4 font-medium">Date Completed</th>
-                            <th className="text-left py-2 px-4 font-medium">Business Days</th>
-                            <th className="text-left py-2 px-4 font-medium">SLA</th>
-                            <th className="text-left py-2 px-4 font-medium">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {metric.workOrders.map(swo => (
-                            <tr 
-                              key={swo.wo["Work Order"]} 
-                              className={`border-b last:border-b-0 ${
-                                !swo.withinSLA ? "bg-red-50/50 dark:bg-red-950/10" : ""
-                              }`}
-                            >
-                              <td className="py-2 px-4">
-                                <a
-                                  href={`${BASE_URL}${swo.wo["Work Order"]}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline font-medium"
-                                >
-                                  {swo.wo["Work Order"]}
-                                </a>
-                              </td>
-                              <td className="py-2 px-4 truncate max-w-[200px]">{swo.wo["Description"]}</td>
-                              <td className="py-2 px-4">{swo.wo["Data Center"]}</td>
-                              <td className="py-2 px-4">{formatDate(swo.wo["Sched. End Date"])}</td>
-                              <td className="py-2 px-4">{formatDate(swo.wo["Date Completed"])}</td>
-                              <td className="py-2 px-4 font-medium">
-                                <span className={swo.withinSLA ? "" : "text-red-600 dark:text-red-400"}>
-                                  {swo.businessDays}
-                                </span>
-                              </td>
-                              <td className="py-2 px-4">
-                                {swo.isInvoiceWO ? (
-                                  <Badge variant="outline" className="text-xs">21 days</Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-xs">2 days</Badge>
-                                )}
-                              </td>
-                              <td className="py-2 px-4">
-                                {swo.withinSLA ? (
-                                  <Badge variant="outline" className="text-xs text-green-600 border-green-300">
-                                    Within SLA
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-xs text-red-600 border-red-300">
-                                    {swo.businessDays - swo.slaLimit}d over
-                                  </Badge>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+      {/* Quarterly Adherence Badges */}
+      {quarterlyData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Quarterly Adherence</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4">
+              {quarterlyData.map(qd => (
+                <div key={qd.quarter} className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${getAdherenceBg(qd.adherencePercent)}`}>
+                  <div>
+                    <div className="text-sm font-medium">{qd.label}</div>
+                    <div className="text-xs text-muted-foreground">{qd.withinSLA}/{qd.total} within SLA</div>
+                  </div>
+                  <div className={`text-xl font-bold ${getAdherenceColor(qd.adherencePercent)}`}>
+                    {qd.adherencePercent}%
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Monthly Breakdown */}
+      {monthlyData.map(md => {
+        const isMonthExpanded = expandedMonths.has(md.month);
+        return (
+          <Card key={md.month}>
+            <CardHeader className="cursor-pointer" onClick={() => toggleMonth(md.month)}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <CardTitle className="text-base">{md.label}</CardTitle>
+                  <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md border ${getAdherenceBg(md.adherencePercent)}`}>
+                    <span className={`text-lg font-bold ${getAdherenceColor(md.adherencePercent)}`}>{md.adherencePercent}%</span>
+                    <span className="text-xs text-muted-foreground">
+                      {md.withinSLA}/{md.total} within SLA
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="text-green-600 dark:text-green-400">{md.withinSLA} within</span>
+                    <span className="text-red-600 dark:text-red-400">{md.outsideSLA} outside</span>
+                  </div>
+                  {isMonthExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </div>
+            </CardHeader>
+
+            {isMonthExpanded && (
+              <CardContent className="pt-0">
+                {/* Supervisor breakdown table */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground mb-3">By Supervisor</h4>
+                  {md.supervisors.map(metric => {
+                    const supKey = `${md.month}-${metric.supervisor}`;
+                    const isSupExpanded = expandedSupervisors.has(supKey);
+                    return (
+                      <div key={supKey} className="border rounded-lg overflow-hidden">
+                        {/* Supervisor row */}
+                        <button
+                          onClick={() => toggleSupervisor(supKey)}
+                          className="w-full flex items-center justify-between p-3 hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="font-medium text-left min-w-[140px] text-sm">{metric.supervisor}</div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span>{metric.total} WOs</span>
+                              <span className="text-green-600 dark:text-green-400">{metric.withinSLA} within</span>
+                              <span className="text-red-600 dark:text-red-400">{metric.outsideSLA} outside</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge 
+                              variant="outline" 
+                              className={`font-bold ${getAdherenceColor(metric.adherencePercent)}`}
+                            >
+                              {metric.adherencePercent}%
+                            </Badge>
+                            <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full transition-all ${getProgressColor(metric.adherencePercent)}`}
+                                style={{ width: `${metric.adherencePercent}%` }}
+                              />
+                            </div>
+                            {isSupExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </div>
+                        </button>
+
+                        {/* Expanded WO details */}
+                        {isSupExpanded && (
+                          <div className="border-t overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b bg-muted/30">
+                                  <th className="text-left py-2 px-3 font-medium">Work Order</th>
+                                  <th className="text-left py-2 px-3 font-medium">Description</th>
+                                  <th className="text-left py-2 px-3 font-medium">Data Center</th>
+                                  <th className="text-left py-2 px-3 font-medium">Sched End Date</th>
+                                  <th className="text-left py-2 px-3 font-medium">Date Completed</th>
+                                  <th className="text-left py-2 px-3 font-medium">Biz Days</th>
+                                  <th className="text-left py-2 px-3 font-medium">SLA</th>
+                                  <th className="text-left py-2 px-3 font-medium">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {metric.workOrders.map(swo => (
+                                  <tr 
+                                    key={swo.wo["Work Order"]} 
+                                    className={`border-b last:border-b-0 ${
+                                      !swo.withinSLA ? "bg-red-50/50 dark:bg-red-950/10" : ""
+                                    }`}
+                                  >
+                                    <td className="py-2 px-3">
+                                      <a
+                                        href={`${BASE_URL}${swo.wo["Work Order"]}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:underline font-medium"
+                                      >
+                                        {swo.wo["Work Order"]}
+                                      </a>
+                                    </td>
+                                    <td className="py-2 px-3 truncate max-w-[200px]">{swo.wo["Description"]}</td>
+                                    <td className="py-2 px-3">{swo.wo["Data Center"]}</td>
+                                    <td className="py-2 px-3">{formatDate(swo.wo["Sched. End Date"])}</td>
+                                    <td className="py-2 px-3">{formatDate(swo.wo["Date Completed"])}</td>
+                                    <td className="py-2 px-3 font-medium">
+                                      <span className={swo.withinSLA ? "" : "text-red-600 dark:text-red-400"}>
+                                        {swo.businessDays}
+                                      </span>
+                                    </td>
+                                    <td className="py-2 px-3">
+                                      <Badge variant="outline" className="text-xs">
+                                        {swo.isInvoiceWO ? "21 days" : "2 days"}
+                                      </Badge>
+                                    </td>
+                                    <td className="py-2 px-3">
+                                      {swo.withinSLA ? (
+                                        <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                                          Within SLA
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-xs text-red-600 border-red-300">
+                                          {swo.businessDays - swo.slaLimit}d over
+                                        </Badge>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            )}
+          </Card>
+        );
+      })}
     </div>
   );
 }
