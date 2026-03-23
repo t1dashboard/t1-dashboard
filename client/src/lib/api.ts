@@ -260,6 +260,33 @@ export async function getScheduleAdherenceByWeek(week: string): Promise<Adherenc
   return res.json();
 }
 
+// ============================================================
+// Invoice SLA Overrides
+// ============================================================
+
+export interface InvoiceSLAOverride {
+  work_order_number: string;
+  description: string | null;
+  reason: string;
+  created_at: string;
+}
+
+export async function getInvoiceSLAOverrides(): Promise<InvoiceSLAOverride[]> {
+  const res = await fetch(`${API_BASE}/invoice-sla-overrides`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function addInvoiceSLAOverrides(records: { workOrderNumber: string; description?: string; reason?: string }[]): Promise<{ success: boolean; count: number }> {
+  const res = await fetch(`${API_BASE}/invoice-sla-overrides`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(records),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function unlockWorkOrders(workOrderNumbers: string[]): Promise<{ success: boolean }> {
   const res = await fetch(`${API_BASE}/schedule-locks/unlock`, {
     method: "POST",

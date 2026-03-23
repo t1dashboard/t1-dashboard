@@ -157,33 +157,54 @@ describe("WO Closure SLA - Adherence Percentage", () => {
   });
 });
 
-describe("WO Closure SLA - Invoice WO Detection", () => {
-  it("should identify Awaiting Invoice WOs for 21-day SLA", () => {
-    const deferralWOs = [
-      { "Work Order": "12345", "Deferral Reason Selected": "Awaiting Invoice" },
-      { "Work Order": "12346", "Deferral Reason Selected": "Pending Parts" },
-      { "Work Order": "12347", "Deferral Reason Selected": "Awaiting Invoice" },
-    ];
+describe("WO Closure SLA - Invoice WO Detection (DB overrides + description pattern)", () => {
+  // Simulates the new logic: DB overrides set + description pattern matching
+  const INVOICE_DESCRIPTION_PATTERNS = [
+    "[MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING",
+  ];
+
+  function matchesInvoiceDescription(description: string): boolean {
+    const upper = (description || "").toUpperCase();
+    return INVOICE_DESCRIPTION_PATTERNS.some(pattern => upper.includes(pattern.toUpperCase()));
+  }
+
+  it("should identify WOs in the DB overrides set for 21-day SLA", () => {
+    const invoiceOverrideSet = new Set(["2586065", "2585494", "2602387", "3328923"]);
     
-    const invoiceSet = new Set<string>();
-    deferralWOs.forEach(dwo => {
-      if ((dwo["Deferral Reason Selected"] || "").trim() === "Awaiting Invoice") {
-        invoiceSet.add(String(dwo["Work Order"]));
-      }
-    });
-    
-    expect(invoiceSet.has("12345")).toBe(true);
-    expect(invoiceSet.has("12346")).toBe(false);
-    expect(invoiceSet.has("12347")).toBe(true);
-    expect(invoiceSet.size).toBe(2);
+    expect(invoiceOverrideSet.has("2586065")).toBe(true);
+    expect(invoiceOverrideSet.has("2585494")).toBe(true);
+    expect(invoiceOverrideSet.has("2602387")).toBe(true);
+    expect(invoiceOverrideSet.has("3328923")).toBe(true);
+    expect(invoiceOverrideSet.has("9999999")).toBe(false);
   });
 
-  it("should assign correct SLA based on invoice status", () => {
-    const invoiceSet = new Set(["12345", "12347"]);
+  it("should match description pattern for wastewater sampling WOs", () => {
+    expect(matchesInvoiceDescription("[MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING")).toBe(true);
+    expect(matchesInvoiceDescription("MWG | [MSME/Vendor] Process Water / Wastewater Sampling")).toBe(true);
+    expect(matchesInvoiceDescription("NCG | [MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING - Monthly")).toBe(true);
+  });
+
+  it("should NOT match unrelated descriptions", () => {
+    expect(matchesInvoiceDescription("MWG-6 Tug Charger Prep Work")).toBe(false);
+    expect(matchesInvoiceDescription("Regular maintenance work order")).toBe(false);
+    expect(matchesInvoiceDescription("")).toBe(false);
+  });
+
+  it("should assign correct SLA based on DB override or description pattern", () => {
+    const invoiceOverrideSet = new Set(["2586065", "2585494"]);
     
-    expect(invoiceSet.has("12345") ? 21 : 2).toBe(21);
-    expect(invoiceSet.has("12346") ? 21 : 2).toBe(2);
-    expect(invoiceSet.has("12347") ? 21 : 2).toBe(21);
+    function getSLALimit(woNumber: string, description: string): number {
+      return (invoiceOverrideSet.has(woNumber) || matchesInvoiceDescription(description)) ? 21 : 2;
+    }
+
+    // In DB overrides
+    expect(getSLALimit("2586065", "MWG-6 Tug Charger Prep Work")).toBe(21);
+    // Matches description pattern
+    expect(getSLALimit("9999999", "[MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING")).toBe(21);
+    // Neither
+    expect(getSLALimit("1111111", "Regular work order")).toBe(2);
+    // Both (DB override + description match)
+    expect(getSLALimit("2586065", "[MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING")).toBe(21);
   });
 });
 
@@ -208,10 +229,8 @@ describe("WO Closure SLA - Wrong Year Detection", () => {
   });
 
   it("should detect 390 days apart as wrong year (within ±30)", () => {
-    const schedEnd = new Date(2025, 1, 17); // Feb 17, 2025
-    const completed = new Date(2026, 2, 23); // Mar 23, 2026 (~399 days)
-    // Actually ~399 days, let's use a closer one
     const schedEnd2 = new Date(2025, 1, 22); // Feb 22, 2025
+    const completed = new Date(2026, 2, 23); // Mar 23, 2026
     expect(isLikelyWrongYear(schedEnd2, completed)).toBe(true);
   });
 
@@ -222,10 +241,8 @@ describe("WO Closure SLA - Wrong Year Detection", () => {
   });
 
   it("should NOT flag 400 days apart (outside ±30 range)", () => {
-    const schedEnd = new Date(2025, 1, 17);  // Feb 17, 2025
-    const completed = new Date(2026, 2, 23); // Mar 23, 2026 (~399 days)
-    // 399 is within range, use a wider gap
     const schedEnd2 = new Date(2025, 1, 10); // Feb 10, 2025 (~406 days)
+    const completed = new Date(2026, 2, 23); // Mar 23, 2026
     expect(isLikelyWrongYear(schedEnd2, completed)).toBe(false);
   });
 
@@ -257,5 +274,31 @@ describe("WO Closure SLA - Excluded Supervisors", () => {
   it("should NOT exclude other supervisors", () => {
     expect(EXCLUDED_SUPERVISORS.has("STEVEN.EGELAND")).toBe(false);
     expect(EXCLUDED_SUPERVISORS.has("SMSHERIDAN")).toBe(false);
+  });
+});
+
+describe("WO Closure SLA - March 2026 Filter", () => {
+  it("should include WOs completed in March 2026", () => {
+    const dateCompleted = new Date(2026, 2, 15); // March 15, 2026
+    const isMarCh2026 = dateCompleted.getMonth() === 2 && dateCompleted.getFullYear() === 2026;
+    expect(isMarCh2026).toBe(true);
+  });
+
+  it("should exclude WOs completed in February 2026", () => {
+    const dateCompleted = new Date(2026, 1, 28); // Feb 28, 2026
+    const isMarch2026 = dateCompleted.getMonth() === 2 && dateCompleted.getFullYear() === 2026;
+    expect(isMarch2026).toBe(false);
+  });
+
+  it("should exclude WOs completed in April 2026", () => {
+    const dateCompleted = new Date(2026, 3, 1); // Apr 1, 2026
+    const isMarch2026 = dateCompleted.getMonth() === 2 && dateCompleted.getFullYear() === 2026;
+    expect(isMarch2026).toBe(false);
+  });
+
+  it("should exclude WOs completed in March 2025", () => {
+    const dateCompleted = new Date(2025, 2, 15); // March 15, 2025
+    const isMarch2026 = dateCompleted.getMonth() === 2 && dateCompleted.getFullYear() === 2026;
+    expect(isMarch2026).toBe(false);
   });
 });

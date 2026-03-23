@@ -574,6 +574,50 @@ router.get("/deferral-work-orders", async (_req: Request, res: Response) => {
 });
 
 // ============================================================
+// Invoice SLA Overrides - Track WOs that get 21-day SLA
+// ============================================================
+
+// Get all invoice SLA override WO numbers
+router.get("/invoice-sla-overrides", async (_req: Request, res: Response) => {
+  try {
+    const rows = await query("SELECT work_order_number, description, reason, created_at FROM invoice_sla_overrides ORDER BY id");
+    res.json(rows);
+  } catch (error: any) {
+    console.error("Error fetching invoice SLA overrides:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add invoice SLA override WO numbers
+router.post("/invoice-sla-overrides", async (req: Request, res: Response) => {
+  try {
+    const records = req.body;
+    if (!Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({ error: "Expected an array of records with workOrderNumber" });
+    }
+
+    for (const record of records) {
+      if (!record.workOrderNumber) {
+        return res.status(400).json({ error: "Each record must have workOrderNumber" });
+      }
+    }
+
+    const sql = `INSERT IGNORE INTO invoice_sla_overrides (work_order_number, description, reason) VALUES ${records.map(() => "(?, ?, ?)").join(", ")}`;
+    const values = records.flatMap((r: any) => [
+      String(r.workOrderNumber),
+      r.description || null,
+      r.reason || "Manual override",
+    ]);
+
+    await execute(sql, values);
+    res.json({ success: true, count: records.length });
+  } catch (error: any) {
+    console.error("Error adding invoice SLA overrides:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================
 // Schedule Adherence - Reason tracking for incomplete locked orders
 // ============================================================
 

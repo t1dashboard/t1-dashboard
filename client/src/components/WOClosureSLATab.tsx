@@ -2,21 +2,22 @@
  * WO Closure SLA Adherence Tab
  * 
  * Compares Date Completed (closed date) vs Sched End Date (work complete date)
- * SLA: 2 business days for normal WOs, 21 business days for WOs on the >90 days deferral awaiting invoice sheet
+ * SLA: 2 business days for normal WOs, 21 business days for WOs in the invoice SLA overrides DB
+ *      or matching the description pattern "[MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING"
+ * Currently filtered to March only
  * Groups by month and quarter, then by supervisor within each month
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { WorkOrder } from "@/types/workOrder";
-import { DeferralWorkOrder } from "@/lib/api";
+import { getInvoiceSLAOverrides, InvoiceSLAOverride } from "@/lib/api";
 import { parseExcelDate, formatDate } from "@/lib/dateUtils";
-import { ChevronDown, ChevronUp, CheckCircle2, AlertTriangle, Clock, TrendingUp, TrendingDown } from "lucide-react";
+import { ChevronDown, ChevronUp, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
 
 interface WOClosureSLATabProps {
   workOrders: WorkOrder[];
-  deferralWorkOrders: DeferralWorkOrder[];
 }
 
 interface SLAWorkOrder {
@@ -120,28 +121,52 @@ function getProgressColor(percent: number): string {
   return "bg-red-500";
 }
 
+// Description patterns that automatically get 21-day SLA
+const INVOICE_DESCRIPTION_PATTERNS = [
+  "[MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING",
+];
+
+function matchesInvoiceDescription(description: string): boolean {
+  const upper = (description || "").toUpperCase();
+  return INVOICE_DESCRIPTION_PATTERNS.some(pattern => upper.includes(pattern.toUpperCase()));
+}
+
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
 // Supervisors to exclude (no longer employed)
 const EXCLUDED_SUPERVISORS = new Set(["ABOSTWICK"]);
 
-export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOClosureSLATabProps) {
+export default function WOClosureSLATab({ workOrders }: WOClosureSLATabProps) {
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
   const [expandedSupervisors, setExpandedSupervisors] = useState<Set<string>>(new Set());
+  const [invoiceOverrides, setInvoiceOverrides] = useState<InvoiceSLAOverride[]>([]);
+  const [loadingOverrides, setLoadingOverrides] = useState(true);
 
-  // Build set of WO numbers that are/were on the Awaiting Invoice deferral sheet
+  // Load invoice SLA overrides from database
+  useEffect(() => {
+    async function loadOverrides() {
+      try {
+        const overrides = await getInvoiceSLAOverrides();
+        setInvoiceOverrides(overrides);
+      } catch (error) {
+        console.error("Error loading invoice SLA overrides:", error);
+      } finally {
+        setLoadingOverrides(false);
+      }
+    }
+    loadOverrides();
+  }, []);
+
+  // Build set of WO numbers from DB overrides
   const invoiceWOSet = useMemo(() => {
     const set = new Set<string>();
-    deferralWorkOrders.forEach(dwo => {
-      const category = (dwo["Deferral Reason Selected"] || "").trim();
-      if (category === "Awaiting Invoice") {
-        set.add(String(dwo["Work Order"]));
-      }
+    invoiceOverrides.forEach(override => {
+      set.add(String(override.work_order_number));
     });
     return set;
-  }, [deferralWorkOrders]);
+  }, [invoiceOverrides]);
 
-  // Filter and compute SLA for closed work orders
+  // Filter and compute SLA for closed work orders (March only for now)
   const slaWorkOrders = useMemo(() => {
     const results: SLAWorkOrder[] = [];
     
@@ -156,6 +181,11 @@ export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOCl
       const dateCompleted = parseExcelDate(wo["Date Completed"]);
       
       if (!schedEndDate || !dateCompleted) return;
+
+      // Filter to March only for now
+      const completedMonth = dateCompleted.getMonth(); // 0-indexed, March = 2
+      const completedYear = dateCompleted.getFullYear();
+      if (completedMonth !== 2 || completedYear !== 2026) return;
       
       // Detect likely wrong-year data entry (365 ± 30 days)
       const calendarDaysApart = Math.abs(
@@ -164,7 +194,10 @@ export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOCl
       if (calendarDaysApart >= 335 && calendarDaysApart <= 395) return;
       
       const woNumber = String(wo["Work Order"]);
-      const isInvoiceWO = invoiceWOSet.has(woNumber);
+      const description = wo["Description"] || "";
+      
+      // Check if this WO gets 21-day SLA: either in DB overrides or matches description pattern
+      const isInvoiceWO = invoiceWOSet.has(woNumber) || matchesInvoiceDescription(description);
       const slaLimit = isInvoiceWO ? 21 : 2;
       const businessDays = countBusinessDays(schedEndDate, dateCompleted);
       const withinSLA = businessDays <= slaLimit;
@@ -291,12 +324,23 @@ export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOCl
     });
   };
 
+  if (loadingOverrides) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-pulse" />
+          <p className="text-muted-foreground">Loading SLA data...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (slaWorkOrders.length === 0) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
           <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No closed work orders with both Sched End Date and Date Completed found.</p>
+          <p className="text-muted-foreground">No closed work orders with both Sched End Date and Date Completed found for March 2026.</p>
         </CardContent>
       </Card>
     );
@@ -312,7 +356,7 @@ export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOCl
             WO Closure SLA Adherence
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            SLA: 2 business days from work complete to closure. WOs on the &gt;90 day deferral awaiting invoice sheet get 21 business days.
+            SLA: 2 business days from work complete to closure. Invoice/vendor WOs get 21 business days. Currently showing March 2026 only.
           </p>
         </CardHeader>
         <CardContent>

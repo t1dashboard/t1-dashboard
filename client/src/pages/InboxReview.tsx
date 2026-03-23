@@ -10,12 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate, parseExcelDate, getTWeekRange } from "@/lib/dateUtils";
 import ScheduledLaborReviewTab from "@/components/ScheduledLaborReviewTab";
 import WOClosureSLATab from "@/components/WOClosureSLATab";
-import { DeferralWorkOrder } from "@/lib/api";
 
 interface InboxReviewProps {
   workOrders: WorkOrder[];
   scheduledLabor: ScheduledLabor[];
-  deferralWorkOrders: DeferralWorkOrder[];
+  deferralWorkOrders: any[];
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
@@ -23,7 +22,7 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 // Production Impact values to include (exclude 40)
 const INCLUDED_PRODUCTION_IMPACTS = [10, 15, 20, 25, 30];
 
-export default function InboxReview({ workOrders, scheduledLabor, deferralWorkOrders }: InboxReviewProps) {
+export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewProps) {
   const [activeTab, setActiveTab] = useState("wo-campaign");
 
   // WO Campaign: filter work orders whose description contains "WO Campaign" (case-insensitive)
@@ -291,7 +290,7 @@ export default function InboxReview({ workOrders, scheduledLabor, deferralWorkOr
 
         {/* WO Closure SLA Adherence Tab */}
         <TabsContent value="closure-sla" className="mt-6">
-          <WOClosureSLATab workOrders={workOrders} deferralWorkOrders={deferralWorkOrders} />
+          <WOClosureSLATab workOrders={workOrders} />
         </TabsContent>
 
         {/* Production Impact Tab */}

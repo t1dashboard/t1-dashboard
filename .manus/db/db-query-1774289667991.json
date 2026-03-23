@@ -1,0 +1,322 @@
+{
+  "query": "DESCRIBE work_orders;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute DESCRIBE work_orders;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "work_order_number",
+      "Type": "varchar(64)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "description",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "data_center",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "sched_start_date",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "assigned_to_name",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "status",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "type",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "equipment_description",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "priority",
+      "Type": "varchar(500)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "shift",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "ehs_lor",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "operational_lor",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "deferral_reason_selected",
+      "Type": "varchar(16)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "trade",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "uploaded_at",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "uploaded_by",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "route",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "sched_end_date",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "production_impact",
+      "Type": "varchar(16)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "compliance_window_start_date",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "compliance_window_end_date",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "discipline",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "organization",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "department",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "equipment",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "class",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "reported_by",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "pm_code",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "assigned_to",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "date_created",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "supervisor",
+      "Type": "varchar(256)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "date_completed",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "facops_suite",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "type_code",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "estimated_hours",
+      "Type": "varchar(32)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "hours_remaining",
+      "Type": "varchar(32)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "asset_id",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "last_saved",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint\tNO\tPRI\tNULL\tauto_increment\nwork_order_number\tvarchar(64)\tNO\t\tNULL\t\ndescription\tvarchar(255)\tYES\t\tNULL\t\ndata_center\tvarchar(128)\tYES\t\tNULL\t\nsched_start_date\tvarchar(64)\tYES\t\tNULL\t\nassigned_to_name\tvarchar(100)\tYES\t\tNULL\t\nstatus\tvarchar(64)\tYES\t\tNULL\t\ntype\tvarchar(100)\tYES\t\tNULL\t\nequipment_description\tvarchar(255)\tYES\t\tNULL\t\npriority\tvarchar(500)\tYES\t\tNULL\t\nshift\tvarchar(64)\tYES\t\tNULL\t\nehs_lor\tvarchar(64)\tYES\t\tNULL\t\noperational_lor\tvarchar(64)\tYES\t\tNULL\t\ndeferral_reason_selected\tvarchar(16)\tYES\t\tNULL\t\ntrade\tvarchar(64)\tYES\t\tNULL\t\nuploaded_at\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nuploaded_by\tint\tNO\t\tNULL\t\nroute\tvarchar(100)\tYES\t\tNULL\t\nsched_end_date\tvarchar(64)\tYES\t\tNULL\t\nproduction_impact\tvarchar(16)\tYES\t\tNULL\t\ncompliance_window_start_date\tvarchar(100)\tYES\t\tNULL\t\ncompliance_window_end_date\tvarchar(100)\tYES\t\tNULL\t\ndiscipline\tvarchar(128)\tYES\t\tNULL\t\norganization\tvarchar(128)\tYES\t\tNULL\t\ndepartment\tvarchar(128)\tYES\t\tNULL\t\nequipment\tvarchar(128)\tYES\t\tNULL\t\nclass\tvarchar(128)\tYES\t\tNULL\t\nreported_by\tvarchar(64)\tYES\t\tNULL\t\npm_code\tvarchar(100)\tYES\t\tNULL\t\nassigned_to\tvarchar(128)\tYES\t\tNULL\t\ndate_created\tvarchar(64)\tYES\t\tNULL\t\nsupervisor\tvarchar(256)\tYES\t\tNULL\t\ndate_completed\tvarchar(64)\tYES\t\tNULL\t\nfacops_suite\tvarchar(128)\tYES\t\tNULL\t\ntype_code\tvarchar(64)\tYES\t\tNULL\t\nestimated_hours\tvarchar(32)\tYES\t\tNULL\t\nhours_remaining\tvarchar(32)\tYES\t\tNULL\t\nasset_id\tvarchar(64)\tYES\t\tNULL\t\nlast_saved\tvarchar(64)\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}

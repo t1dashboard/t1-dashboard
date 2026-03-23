@@ -1,0 +1,9 @@
+{
+  "query": "INSERT IGNORE INTO invoice_sla_overrides (work_order_number, description, reason) VALUES\n('2586065', 'MWG-6 Tug Charger Prep Work', 'Manual override - Awaiting Invoice'),\n('2585494', 'MWG6 | Gen Yard | PTX-11 Nitrogen Pressure Gauge [Vendor] [PTW]', 'Manual override - Awaiting Invoice'),\n('2602387', NULL, 'Manual override - Awaiting Invoice'),\n('3328923', NULL, 'Manual override - Awaiting Invoice');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute INSERT IGNORE INTO invoice_sla_overrides (work_order_number, description, reason) VALUES\n('2586065', 'MWG-6 Tug Charger Prep Work', 'Manual override - Awaiting Invoice'),\n('2585494', 'MWG6 | Gen Yard | PTX-11 Nitrogen Pressure Gauge [Vendor] [PTW]', 'Manual override - Awaiting Invoice'),\n('2602387', NULL, 'Manual override - Awaiting Invoice'),\n('3328923', NULL, 'Manual override - Awaiting Invoice');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 69
+}

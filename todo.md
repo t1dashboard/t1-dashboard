@@ -210,3 +210,7 @@
 - [x] WO Closure SLA: Widen wrong-year detection from ±5 days to ±30 days (335-395 days)
 - [x] WO Closure SLA: Add monthly and quarterly breakdowns by supervisor (similar to Schedule Adherence)
 - [x] Move WO Closure SLA Adherence tab to beside WOs Awaiting Closure under Inbox Review
+- [x] WO Closure SLA: Create invoice_sla_overrides DB table to persist which WOs get 21-day SLA
+- [x] WO Closure SLA: Stop using deferral upload spreadsheet for 21-day determination
+- [x] WO Closure SLA: Seed DB with specific WOs (2586065, 2585494, 2602387, 3328923) and description pattern rule ([MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING)
+- [x] WO Closure SLA: Filter to March only for now
