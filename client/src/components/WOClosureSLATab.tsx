@@ -100,12 +100,12 @@ export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOCl
       
       if (!schedEndDate || !dateCompleted) return;
       
-      // Detect likely wrong-year data entry: if dates are ~1 year apart (365 ± 5 days),
+      // Detect likely wrong-year data entry: if dates are ~1 year apart (365 ± 30 days),
       // someone probably chose the wrong year for the sched end date
       const calendarDaysApart = Math.abs(
         (dateCompleted.getTime() - schedEndDate.getTime()) / (1000 * 60 * 60 * 24)
       );
-      if (calendarDaysApart >= 360 && calendarDaysApart <= 370) return;
+      if (calendarDaysApart >= 335 && calendarDaysApart <= 395) return;
       
       const woNumber = String(wo["Work Order"]);
       const isInvoiceWO = invoiceWOSet.has(woNumber);

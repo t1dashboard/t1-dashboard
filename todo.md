@@ -207,3 +207,4 @@
 - [x] Fix WO Closure SLA tab showing no work orders - check column mapping for Sched End Date and Date Completed
 - [x] WO Closure SLA: Exclude WOs where sched end date and date completed are ~1 year apart (365 ± 5 days) as likely wrong-year data entry error
 - [x] WO Closure SLA: Remove ABOSTWICK from supervisor list (no longer employed)
+- [x] WO Closure SLA: Widen wrong-year detection from ±5 days to ±30 days (335-395 days)

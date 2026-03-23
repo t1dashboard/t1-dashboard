@@ -192,7 +192,7 @@ describe("WO Closure SLA - Wrong Year Detection", () => {
     const calendarDaysApart = Math.abs(
       (dateCompleted.getTime() - schedEndDate.getTime()) / (1000 * 60 * 60 * 24)
     );
-    return calendarDaysApart >= 360 && calendarDaysApart <= 370;
+    return calendarDaysApart >= 335 && calendarDaysApart <= 395;
   }
 
   it("should detect exactly 365 days apart as wrong year", () => {
@@ -201,28 +201,32 @@ describe("WO Closure SLA - Wrong Year Detection", () => {
     expect(isLikelyWrongYear(schedEnd, completed)).toBe(true);
   });
 
-  it("should detect 362 days apart as wrong year (within ±5)", () => {
-    const schedEnd = new Date(2025, 2, 26); // Mar 26, 2025
-    const completed = new Date(2026, 2, 23); // Mar 23, 2026
+  it("should detect 340 days apart as wrong year (within ±30)", () => {
+    const schedEnd = new Date(2025, 3, 18); // Apr 18, 2025
+    const completed = new Date(2026, 2, 23); // Mar 23, 2026 (~340 days)
     expect(isLikelyWrongYear(schedEnd, completed)).toBe(true);
   });
 
-  it("should detect 368 days apart as wrong year (within ±5)", () => {
-    const schedEnd = new Date(2025, 2, 20); // Mar 20, 2025
-    const completed = new Date(2026, 2, 23); // Mar 23, 2026
-    expect(isLikelyWrongYear(schedEnd, completed)).toBe(true);
+  it("should detect 390 days apart as wrong year (within ±30)", () => {
+    const schedEnd = new Date(2025, 1, 17); // Feb 17, 2025
+    const completed = new Date(2026, 2, 23); // Mar 23, 2026 (~399 days)
+    // Actually ~399 days, let's use a closer one
+    const schedEnd2 = new Date(2025, 1, 22); // Feb 22, 2025
+    expect(isLikelyWrongYear(schedEnd2, completed)).toBe(true);
   });
 
-  it("should NOT flag 350 days apart (outside ±5 range)", () => {
-    const schedEnd = new Date(2025, 3, 7);  // Apr 7, 2025
-    const completed = new Date(2026, 2, 23); // Mar 23, 2026
+  it("should NOT flag 330 days apart (outside ±30 range)", () => {
+    const schedEnd = new Date(2025, 3, 28);  // Apr 28, 2025
+    const completed = new Date(2026, 2, 23); // Mar 23, 2026 (~330 days)
     expect(isLikelyWrongYear(schedEnd, completed)).toBe(false);
   });
 
-  it("should NOT flag 380 days apart (outside ±5 range)", () => {
-    const schedEnd = new Date(2025, 2, 8);  // Mar 8, 2025
-    const completed = new Date(2026, 2, 23); // Mar 23, 2026
-    expect(isLikelyWrongYear(schedEnd, completed)).toBe(false);
+  it("should NOT flag 400 days apart (outside ±30 range)", () => {
+    const schedEnd = new Date(2025, 1, 17);  // Feb 17, 2025
+    const completed = new Date(2026, 2, 23); // Mar 23, 2026 (~399 days)
+    // 399 is within range, use a wider gap
+    const schedEnd2 = new Date(2025, 1, 10); // Feb 10, 2025 (~406 days)
+    expect(isLikelyWrongYear(schedEnd2, completed)).toBe(false);
   });
 
   it("should NOT flag normal 2-day difference", () => {
