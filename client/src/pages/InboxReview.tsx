@@ -140,12 +140,12 @@ export default function InboxReview({ workOrders, scheduledLabor, deferralWorkOr
             WOs Awaiting Closure
             <Badge variant="secondary" className="text-xs">{awaitingClosureOrders.length}</Badge>
           </TabsTrigger>
+          <TabsTrigger value="closure-sla" className="flex items-center gap-2">
+            WO Closure SLA
+          </TabsTrigger>
           <TabsTrigger value="production-impact" className="flex items-center gap-2">
             Production Impact
             <Badge variant="secondary" className="text-xs">{productionImpactOrders.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="closure-sla" className="flex items-center gap-2">
-            WO Closure SLA
           </TabsTrigger>
         </TabsList>
 
@@ -289,6 +289,11 @@ export default function InboxReview({ workOrders, scheduledLabor, deferralWorkOr
           </Card>
         </TabsContent>
 
+        {/* WO Closure SLA Adherence Tab */}
+        <TabsContent value="closure-sla" className="mt-6">
+          <WOClosureSLATab workOrders={workOrders} deferralWorkOrders={deferralWorkOrders} />
+        </TabsContent>
+
         {/* Production Impact Tab */}
         <TabsContent value="production-impact" className="mt-6">
           <Card>
@@ -376,11 +381,6 @@ export default function InboxReview({ workOrders, scheduledLabor, deferralWorkOr
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* WO Closure SLA Adherence Tab */}
-        <TabsContent value="closure-sla" className="mt-6">
-          <WOClosureSLATab workOrders={workOrders} deferralWorkOrders={deferralWorkOrders} />
         </TabsContent>
       </Tabs>
     </div>

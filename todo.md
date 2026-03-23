@@ -209,3 +209,4 @@
 - [x] WO Closure SLA: Remove ABOSTWICK from supervisor list (no longer employed)
 - [x] WO Closure SLA: Widen wrong-year detection from ±5 days to ±30 days (335-395 days)
 - [x] WO Closure SLA: Add monthly and quarterly breakdowns by supervisor (similar to Schedule Adherence)
+- [x] Move WO Closure SLA Adherence tab to beside WOs Awaiting Closure under Inbox Review
