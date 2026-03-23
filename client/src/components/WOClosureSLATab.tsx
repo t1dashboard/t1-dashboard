@@ -80,6 +80,9 @@ export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOCl
     return set;
   }, [deferralWorkOrders]);
 
+  // Supervisors to exclude (no longer employed)
+  const EXCLUDED_SUPERVISORS = new Set(["ABOSTWICK"]);
+
   // Filter and compute SLA for closed work orders
   const slaWorkOrders = useMemo(() => {
     const results: SLAWorkOrder[] = [];
@@ -88,10 +91,21 @@ export default function WOClosureSLATab({ workOrders, deferralWorkOrders }: WOCl
       const status = (wo["Status"] || "").toUpperCase();
       if (status !== "CLOSED") return;
       
+      // Exclude former employees
+      const supervisor = (wo["Supervisor"] || "").trim();
+      if (EXCLUDED_SUPERVISORS.has(supervisor.toUpperCase())) return;
+      
       const schedEndDate = parseExcelDate(wo["Sched. End Date"]);
       const dateCompleted = parseExcelDate(wo["Date Completed"]);
       
       if (!schedEndDate || !dateCompleted) return;
+      
+      // Detect likely wrong-year data entry: if dates are ~1 year apart (365 ± 5 days),
+      // someone probably chose the wrong year for the sched end date
+      const calendarDaysApart = Math.abs(
+        (dateCompleted.getTime() - schedEndDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (calendarDaysApart >= 360 && calendarDaysApart <= 370) return;
       
       const woNumber = String(wo["Work Order"]);
       const isInvoiceWO = invoiceWOSet.has(woNumber);

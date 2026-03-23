@@ -205,3 +205,5 @@
 - [x] Add WO Closure SLA Adherence tab grouped by supervisor (compare date completed vs sched end date, 2-day normal / 21-day for invoice WOs)
 - [x] Restore Assigned To Name and Supervisor columns across all sections that previously had them
 - [x] Fix WO Closure SLA tab showing no work orders - check column mapping for Sched End Date and Date Completed
+- [x] WO Closure SLA: Exclude WOs where sched end date and date completed are ~1 year apart (365 ± 5 days) as likely wrong-year data entry error
+- [x] WO Closure SLA: Remove ABOSTWICK from supervisor list (no longer employed)

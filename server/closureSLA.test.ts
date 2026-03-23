@@ -186,3 +186,72 @@ describe("WO Closure SLA - Invoice WO Detection", () => {
     expect(invoiceSet.has("12347") ? 21 : 2).toBe(21);
   });
 });
+
+describe("WO Closure SLA - Wrong Year Detection", () => {
+  function isLikelyWrongYear(schedEndDate: Date, dateCompleted: Date): boolean {
+    const calendarDaysApart = Math.abs(
+      (dateCompleted.getTime() - schedEndDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return calendarDaysApart >= 360 && calendarDaysApart <= 370;
+  }
+
+  it("should detect exactly 365 days apart as wrong year", () => {
+    const schedEnd = new Date(2025, 2, 23); // Mar 23, 2025
+    const completed = new Date(2026, 2, 23); // Mar 23, 2026
+    expect(isLikelyWrongYear(schedEnd, completed)).toBe(true);
+  });
+
+  it("should detect 362 days apart as wrong year (within ±5)", () => {
+    const schedEnd = new Date(2025, 2, 26); // Mar 26, 2025
+    const completed = new Date(2026, 2, 23); // Mar 23, 2026
+    expect(isLikelyWrongYear(schedEnd, completed)).toBe(true);
+  });
+
+  it("should detect 368 days apart as wrong year (within ±5)", () => {
+    const schedEnd = new Date(2025, 2, 20); // Mar 20, 2025
+    const completed = new Date(2026, 2, 23); // Mar 23, 2026
+    expect(isLikelyWrongYear(schedEnd, completed)).toBe(true);
+  });
+
+  it("should NOT flag 350 days apart (outside ±5 range)", () => {
+    const schedEnd = new Date(2025, 3, 7);  // Apr 7, 2025
+    const completed = new Date(2026, 2, 23); // Mar 23, 2026
+    expect(isLikelyWrongYear(schedEnd, completed)).toBe(false);
+  });
+
+  it("should NOT flag 380 days apart (outside ±5 range)", () => {
+    const schedEnd = new Date(2025, 2, 8);  // Mar 8, 2025
+    const completed = new Date(2026, 2, 23); // Mar 23, 2026
+    expect(isLikelyWrongYear(schedEnd, completed)).toBe(false);
+  });
+
+  it("should NOT flag normal 2-day difference", () => {
+    const schedEnd = new Date(2026, 2, 21); // Mar 21, 2026
+    const completed = new Date(2026, 2, 23); // Mar 23, 2026
+    expect(isLikelyWrongYear(schedEnd, completed)).toBe(false);
+  });
+
+  it("should detect wrong year when sched end is AFTER completed (future year typo)", () => {
+    const schedEnd = new Date(2027, 2, 23); // Mar 23, 2027
+    const completed = new Date(2026, 2, 23); // Mar 23, 2026
+    expect(isLikelyWrongYear(schedEnd, completed)).toBe(true);
+  });
+});
+
+describe("WO Closure SLA - Excluded Supervisors", () => {
+  const EXCLUDED_SUPERVISORS = new Set(["ABOSTWICK"]);
+
+  it("should exclude ABOSTWICK", () => {
+    expect(EXCLUDED_SUPERVISORS.has("ABOSTWICK")).toBe(true);
+  });
+
+  it("should exclude case-insensitively when uppercased", () => {
+    const supervisor = "ABostwick";
+    expect(EXCLUDED_SUPERVISORS.has(supervisor.toUpperCase())).toBe(true);
+  });
+
+  it("should NOT exclude other supervisors", () => {
+    expect(EXCLUDED_SUPERVISORS.has("STEVEN.EGELAND")).toBe(false);
+    expect(EXCLUDED_SUPERVISORS.has("SMSHERIDAN")).toBe(false);
+  });
+});
