@@ -1,0 +1,80 @@
+{
+  "query": "SELECT work_order_number, status, sched_end_date, date_completed, supervisor FROM work_orders WHERE status = 'Closed' LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT work_order_number, status, sched_end_date, date_completed, supervisor FROM work_orders WHERE status = 'Closed' LIMIT 10;",
+  "rows": [
+    {
+      "work_order_number": "2441765",
+      "status": "Closed",
+      "sched_end_date": "12/31/25",
+      "date_completed": "NULL",
+      "supervisor": "OLDBENKENOBI"
+    },
+    {
+      "work_order_number": "2441766",
+      "status": "Closed",
+      "sched_end_date": "1/30/26",
+      "date_completed": "NULL",
+      "supervisor": "OLDBENKENOBI"
+    },
+    {
+      "work_order_number": "2441767",
+      "status": "Closed",
+      "sched_end_date": "2/28/26",
+      "date_completed": "NULL",
+      "supervisor": "OLDBENKENOBI"
+    },
+    {
+      "work_order_number": "2548891",
+      "status": "Closed",
+      "sched_end_date": "12/12/25",
+      "date_completed": "NULL",
+      "supervisor": "LITTLENA"
+    },
+    {
+      "work_order_number": "2584555",
+      "status": "Closed",
+      "sched_end_date": "12/12/25",
+      "date_completed": "NULL",
+      "supervisor": "ABOSTWICK"
+    },
+    {
+      "work_order_number": "2584769",
+      "status": "Closed",
+      "sched_end_date": "1/10/26",
+      "date_completed": "NULL",
+      "supervisor": "LITTLENA"
+    },
+    {
+      "work_order_number": "2584966",
+      "status": "Closed",
+      "sched_end_date": "2/2/26",
+      "date_completed": "NULL",
+      "supervisor": "OLDBENKENOBI"
+    },
+    {
+      "work_order_number": "2584967",
+      "status": "Closed",
+      "sched_end_date": "9/12/24",
+      "date_completed": "NULL",
+      "supervisor": "TORREL.COLLINS"
+    },
+    {
+      "work_order_number": "2584968",
+      "status": "Closed",
+      "sched_end_date": "11/24/25",
+      "date_completed": "NULL",
+      "supervisor": "ABOSTWICK"
+    },
+    {
+      "work_order_number": "2584969",
+      "status": "Closed",
+      "sched_end_date": "9/1/24",
+      "date_completed": "NULL",
+      "supervisor": "TORREL.COLLINS"
+    }
+  ],
+  "messages": [],
+  "stdout": "work_order_number\tstatus\tsched_end_date\tdate_completed\tsupervisor\n2441765\tClosed\t12/31/25\tNULL\tOLDBENKENOBI\n2441766\tClosed\t1/30/26\tNULL\tOLDBENKENOBI\n2441767\tClosed\t2/28/26\tNULL\tOLDBENKENOBI\n2548891\tClosed\t12/12/25\tNULL\tLITTLENA\n2584555\tClosed\t12/12/25\tNULL\tABOSTWICK\n2584769\tClosed\t1/10/26\tNULL\tLITTLENA\n2584966\tClosed\t2/2/26\tNULL\tOLDBENKENOBI\n2584967\tClosed\t9/12/24\tNULL\tTORREL.COLLINS\n2584968\tClosed\t11/24/25\tNULL\tABOSTWICK\n2584969\tClosed\t9/1/24\tNULL\tTORREL.COLLINS\n",
+  "stderr": "",
+  "execution_time_ms": 134
+}

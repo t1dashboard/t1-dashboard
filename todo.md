@@ -204,3 +204,4 @@
 - [x] Schedule Adherence: Remove date-moved WOs that were completed early or are routine maintenance from adherence stats
 - [x] Add WO Closure SLA Adherence tab grouped by supervisor (compare date completed vs sched end date, 2-day normal / 21-day for invoice WOs)
 - [x] Restore Assigned To Name and Supervisor columns across all sections that previously had them
+- [x] Fix WO Closure SLA tab showing no work orders - check column mapping for Sched End Date and Date Completed
