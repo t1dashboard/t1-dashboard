@@ -218,3 +218,4 @@
 - [x] WO Closure SLA: Add WO 2585274 and WO 3268987 as specific DB overrides for 21-day SLA
 - [x] Schedule Lock Review: Remove WOs 2585784, 3224860, 2585085 from Incomplete Locked Work Orders and pie chart (one-time exclusion)
 - [x] T tabs: Fix jumbled columns where names and work order status words are mixed together
+- [x] Schedule Adherence: Remove WOs 2585784, 3224860, 2585085 from adherence data (pie charts and calculations)

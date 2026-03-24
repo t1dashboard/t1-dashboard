@@ -631,6 +631,9 @@ const VALID_ADHERENCE_REASONS = [
   "SOW Changed",
 ];
 
+// One-time exclusion of specific work orders from schedule adherence data
+const EXCLUDED_ADHERENCE_WOS = ['2585784', '3224860', '2585085'];
+
 // Submit adherence reasons (batch)
 router.post("/schedule-adherence", async (req: Request, res: Response) => {
   try {
@@ -680,7 +683,10 @@ router.post("/schedule-adherence", async (req: Request, res: Response) => {
 // Get all adherence records
 router.get("/schedule-adherence", async (_req: Request, res: Response) => {
   try {
-    const rows = await query("SELECT * FROM schedule_adherence ORDER BY submitted_at DESC");
+    const rows = await query(
+      `SELECT * FROM schedule_adherence WHERE work_order_number NOT IN (${EXCLUDED_ADHERENCE_WOS.map(() => '?').join(',')}) ORDER BY submitted_at DESC`,
+      EXCLUDED_ADHERENCE_WOS
+    );
     const records = rows.map((row: any) => ({
       id: row.id,
       workOrderNumber: row.work_order_number,
@@ -706,9 +712,10 @@ router.get("/schedule-adherence/summary", async (_req: Request, res: Response) =
         reason,
         COUNT(*) as count
       FROM schedule_adherence
+      WHERE work_order_number NOT IN (${EXCLUDED_ADHERENCE_WOS.map(() => '?').join(',')})
       GROUP BY DATE_FORMAT(submitted_at, '%Y-%m'), reason
       ORDER BY month DESC, reason
-    `);
+    `, EXCLUDED_ADHERENCE_WOS);
     res.json(rows);
   } catch (error: any) {
     console.error("Error fetching adherence summary:", error);
@@ -738,12 +745,13 @@ router.get("/schedule-adherence/stats", async (_req: Request, res: Response) => 
         COUNT(DISTINCT sl.work_order_number) as total_locked
       FROM schedule_locks sl
       WHERE sl.lock_week < ?
+        AND sl.work_order_number NOT IN (${EXCLUDED_ADHERENCE_WOS.map(() => '?').join(',')})
         AND sl.lock_week IN (
           SELECT DISTINCT lock_week FROM schedule_adherence
         )
       GROUP BY sl.lock_week
       ORDER BY sl.lock_week DESC
-    `, [thisMondayStr]);
+    `, [thisMondayStr, ...EXCLUDED_ADHERENCE_WOS]);
 
     // Get count of WOs with a reason per week (these are the ones NOT completed as planned)
     const reasonRows = await query(`
@@ -752,8 +760,9 @@ router.get("/schedule-adherence/stats", async (_req: Request, res: Response) => 
         COUNT(DISTINCT work_order_number) as with_reason
       FROM schedule_adherence
       WHERE lock_week < ?
+        AND work_order_number NOT IN (${EXCLUDED_ADHERENCE_WOS.map(() => '?').join(',')})
       GROUP BY lock_week
-    `, [thisMondayStr]);
+    `, [thisMondayStr, ...EXCLUDED_ADHERENCE_WOS]);
 
     const reasonMap = new Map<string, number>();
     for (const row of reasonRows as any[]) {
@@ -789,8 +798,8 @@ router.get("/schedule-adherence/by-week", async (req: Request, res: Response) =>
       return res.status(400).json({ error: "week query parameter required" });
     }
     const rows = await query(
-      "SELECT * FROM schedule_adherence WHERE lock_week = ? ORDER BY work_order_number",
-      [String(week)]
+      `SELECT * FROM schedule_adherence WHERE lock_week = ? AND work_order_number NOT IN (${EXCLUDED_ADHERENCE_WOS.map(() => '?').join(',')}) ORDER BY work_order_number`,
+      [String(week), ...EXCLUDED_ADHERENCE_WOS]
     );
     const records = rows.map((row: any) => ({
       id: row.id,

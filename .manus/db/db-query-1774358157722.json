@@ -1,0 +1,37 @@
+{
+  "query": "SELECT * FROM schedule_adherence WHERE work_order_number IN ('2585784', '3224860', '2585085');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute SELECT * FROM schedule_adherence WHERE work_order_number IN ('2585784', '3224860', '2585085');",
+  "rows": [
+    {
+      "id": "240004",
+      "work_order_number": "2585784",
+      "description": "NCG Building 1 Stairset 1 dead lightbulbs [LOTO][CFE/CFT]",
+      "data_center": "NCG1",
+      "lock_week": "2026-03-09",
+      "reason": "Missing Parts/Tools",
+      "submitted_at": "2026-03-24 12:34:33"
+    },
+    {
+      "id": "240005",
+      "work_order_number": "3224860",
+      "description": "NCG-2 Lights out on Stairs Penthouse B Roof access [LOTO][CFE/CFT]",
+      "data_center": "NCG2",
+      "lock_week": "2026-03-09",
+      "reason": "Missing Parts/Tools",
+      "submitted_at": "2026-03-24 12:34:33"
+    },
+    {
+      "id": "240007",
+      "work_order_number": "2585085",
+      "description": "NCG6 Lights not working in comm room 6.02.E.09 [LOTO]",
+      "data_center": "NCG6",
+      "lock_week": "2026-03-09",
+      "reason": "Missing Parts/Tools",
+      "submitted_at": "2026-03-24 12:34:33"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\twork_order_number\tdescription\tdata_center\tlock_week\treason\tsubmitted_at\n240004\t2585784\tNCG Building 1 Stairset 1 dead lightbulbs [LOTO][CFE/CFT]\tNCG1\t2026-03-09\tMissing Parts/Tools\t2026-03-24 12:34:33\n240005\t3224860\tNCG-2 Lights out on Stairs Penthouse B Roof access [LOTO][CFE/CFT]\tNCG2\t2026-03-09\tMissing Parts/Tools\t2026-03-24 12:34:33\n240007\t2585085\tNCG6 Lights not working in comm room 6.02.E.09 [LOTO]\tNCG6\t2026-03-09\tMissing Parts/Tools\t2026-03-24 12:34:33\n",
+  "stderr": "",
+  "execution_time_ms": 98
+}
