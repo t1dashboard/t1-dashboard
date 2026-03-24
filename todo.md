@@ -214,3 +214,5 @@
 - [x] WO Closure SLA: Stop using deferral upload spreadsheet for 21-day determination
 - [x] WO Closure SLA: Seed DB with specific WOs (2586065, 2585494, 2602387, 3328923) and description pattern rule ([MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING)
 - [x] WO Closure SLA: Filter to March only for now
+- [x] WO Closure SLA: Add "SAND FILTER SKID ANNUAL PM" as description pattern for 21-day SLA
+- [x] WO Closure SLA: Add WO 2585274 and WO 3268987 as specific DB overrides for 21-day SLA

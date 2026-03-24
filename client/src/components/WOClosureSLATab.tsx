@@ -124,6 +124,7 @@ function getProgressColor(percent: number): string {
 // Description patterns that automatically get 21-day SLA
 const INVOICE_DESCRIPTION_PATTERNS = [
   "[MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING",
+  "SAND FILTER SKID ANNUAL PM",
 ];
 
 function matchesInvoiceDescription(description: string): boolean {

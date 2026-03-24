@@ -161,6 +161,7 @@ describe("WO Closure SLA - Invoice WO Detection (DB overrides + description patt
   // Simulates the new logic: DB overrides set + description pattern matching
   const INVOICE_DESCRIPTION_PATTERNS = [
     "[MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING",
+    "SAND FILTER SKID ANNUAL PM",
   ];
 
   function matchesInvoiceDescription(description: string): boolean {
@@ -169,12 +170,14 @@ describe("WO Closure SLA - Invoice WO Detection (DB overrides + description patt
   }
 
   it("should identify WOs in the DB overrides set for 21-day SLA", () => {
-    const invoiceOverrideSet = new Set(["2586065", "2585494", "2602387", "3328923"]);
+    const invoiceOverrideSet = new Set(["2586065", "2585494", "2602387", "3328923", "2585274", "3268987"]);
     
     expect(invoiceOverrideSet.has("2586065")).toBe(true);
     expect(invoiceOverrideSet.has("2585494")).toBe(true);
     expect(invoiceOverrideSet.has("2602387")).toBe(true);
     expect(invoiceOverrideSet.has("3328923")).toBe(true);
+    expect(invoiceOverrideSet.has("2585274")).toBe(true);
+    expect(invoiceOverrideSet.has("3268987")).toBe(true);
     expect(invoiceOverrideSet.has("9999999")).toBe(false);
   });
 
@@ -182,6 +185,12 @@ describe("WO Closure SLA - Invoice WO Detection (DB overrides + description patt
     expect(matchesInvoiceDescription("[MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING")).toBe(true);
     expect(matchesInvoiceDescription("MWG | [MSME/Vendor] Process Water / Wastewater Sampling")).toBe(true);
     expect(matchesInvoiceDescription("NCG | [MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING - Monthly")).toBe(true);
+  });
+
+  it("should match description pattern for sand filter skid annual PM WOs", () => {
+    expect(matchesInvoiceDescription("SAND FILTER SKID ANNUAL PM")).toBe(true);
+    expect(matchesInvoiceDescription("MWG | Sand Filter Skid Annual PM")).toBe(true);
+    expect(matchesInvoiceDescription("NCG | SAND FILTER SKID ANNUAL PM - Scheduled")).toBe(true);
   });
 
   it("should NOT match unrelated descriptions", () => {

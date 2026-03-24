@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO invoice_sla_overrides (work_order_number, description, reason) VALUES ('2585274', 'MWG1-GYA- Domestic water line rupture [OOS]', 'Manual override - vendor/invoice WO'), ('3268987', 'NCG1 and NCG3 EG Fuel delivery', 'Manual override - vendor/invoice WO') ON DUPLICATE KEY UPDATE description = VALUES(description), reason = VALUES(reason);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user LTmfYgwcE1mg9cB.root --database Jdx475rzuNGCt88odzGLDy --execute INSERT INTO invoice_sla_overrides (work_order_number, description, reason) VALUES ('2585274', 'MWG1-GYA- Domestic water line rupture [OOS]', 'Manual override - vendor/invoice WO'), ('3268987', 'NCG1 and NCG3 EG Fuel delivery', 'Manual override - vendor/invoice WO') ON DUPLICATE KEY UPDATE description = VALUES(description), reason = VALUES(reason);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 79
+}
