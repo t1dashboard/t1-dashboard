@@ -52,14 +52,16 @@ export default function RiskIdentificationTab({ workOrders }: RiskIdentification
         <div className="overflow-x-auto">
           <table className="w-full table-fixed">
             <colgroup>
+              <col style={{ width: "7%" }} />
+              <col style={{ width: "20%" }} />
+              <col style={{ width: "7%" }} />
+              <col style={{ width: "10%" }} />
               <col style={{ width: "8%" }} />
-              <col style={{ width: "26%" }} />
-              <col style={{ width: "9%" }} />
               <col style={{ width: "12%" }} />
-              <col style={{ width: "15%" }} />
               <col style={{ width: "10%" }} />
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "10%" }} />
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "9%" }} />
+              <col style={{ width: "9%" }} />
             </colgroup>
             <thead>
               <tr className="border-b border-border bg-muted/30">

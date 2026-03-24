@@ -47,7 +47,7 @@ const ADHERENCE_REASONS = [
 ] as const;
 
 // One-time exclusion of specific work orders from Schedule Lock Review
-const EXCLUDED_WORK_ORDERS = new Set(["3335323", "3316827", "3336866", "3335916", "3335907", "3336865"]);
+const EXCLUDED_WORK_ORDERS = new Set(["3335323", "3316827", "3336866", "3335916", "3335907", "3336865", "2585784", "3224860", "2585085"]);
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 

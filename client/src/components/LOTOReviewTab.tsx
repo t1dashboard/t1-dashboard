@@ -80,15 +80,17 @@ export default function LOTOReviewTab({ workOrders, scheduledLabor, pmCodes }: L
         <div className="overflow-x-auto">
           <table className="w-full table-fixed">
             <colgroup>
-              <col style={{ width: "8%" }} />
-              <col style={{ width: "22%" }} />
-              <col style={{ width: "8%" }} />
-              <col style={{ width: "11%" }} />
-              <col style={{ width: "14%" }} />
+              <col style={{ width: "7%" }} />
+              <col style={{ width: "17%" }} />
+              <col style={{ width: "6%" }} />
+              <col style={{ width: "9%" }} />
+              <col style={{ width: "7%" }} />
               <col style={{ width: "10%" }} />
               <col style={{ width: "9%" }} />
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "8%" }} />
               <col style={{ width: "9%" }} />
-              <col style={{ width: "9%" }} />
+              <col style={{ width: "10%" }} />
             </colgroup>
             <thead>
               <tr className="border-b border-border bg-muted/30">

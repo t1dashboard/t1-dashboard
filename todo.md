@@ -216,3 +216,5 @@
 - [x] WO Closure SLA: Filter to March only for now
 - [x] WO Closure SLA: Add "SAND FILTER SKID ANNUAL PM" as description pattern for 21-day SLA
 - [x] WO Closure SLA: Add WO 2585274 and WO 3268987 as specific DB overrides for 21-day SLA
+- [x] Schedule Lock Review: Remove WOs 2585784, 3224860, 2585085 from Incomplete Locked Work Orders and pie chart (one-time exclusion)
+- [x] T tabs: Fix jumbled columns where names and work order status words are mixed together

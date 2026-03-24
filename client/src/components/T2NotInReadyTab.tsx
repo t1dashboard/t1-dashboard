@@ -103,11 +103,13 @@ export default function T2NotInReadyTab({ workOrders }: T2NotInReadyTabProps) {
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: "9%" }} />
-                <col style={{ width: "33%" }} />
+                <col style={{ width: "25%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "11%" }} />
                 <col style={{ width: "10%" }} />
                 <col style={{ width: "14%" }} />
-                <col style={{ width: "20%" }} />
-                <col style={{ width: "14%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "11%" }} />
               </colgroup>
               <thead>
                 <tr className="border-b border-border bg-muted/30">

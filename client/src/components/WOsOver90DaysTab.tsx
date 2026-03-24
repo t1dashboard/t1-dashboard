@@ -55,13 +55,15 @@ export default function WOsOver90DaysTab({ workOrders }: WOsOver90DaysTabProps) 
         <div className="overflow-x-auto">
           <table className="w-full table-fixed">
             <colgroup>
-              <col style={{ width: "9%" }} />
-              <col style={{ width: "28%" }} />
-              <col style={{ width: "9%" }} />
-              <col style={{ width: "12%" }} />
-              <col style={{ width: "16%" }} />
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "20%" }} />
+              <col style={{ width: "8%" }} />
+              <col style={{ width: "10%" }} />
               <col style={{ width: "14%" }} />
+              <col style={{ width: "8%" }} />
               <col style={{ width: "12%" }} />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "10%" }} />
             </colgroup>
             <thead>
               <tr className="border-b border-border bg-muted/30">

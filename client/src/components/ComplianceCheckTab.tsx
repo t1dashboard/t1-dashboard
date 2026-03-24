@@ -162,17 +162,19 @@ export default function ComplianceCheckTab({ workOrders }: ComplianceCheckTabPro
           <div className="overflow-x-auto">
             <table className="w-full text-sm table-fixed">
               <colgroup>
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "14%" }} />
                 <col style={{ width: "7%" }} />
-                <col style={{ width: "7%" }} />
-                <col style={{ width: "18%" }} />
-                <col style={{ width: "10%" }} />
                 <col style={{ width: "8%" }} />
-                <col style={{ width: "9%" }} />
-                <col style={{ width: "9%" }} />
-                <col style={{ width: "10%" }} />
                 <col style={{ width: "8%" }} />
                 <col style={{ width: "7%" }} />
-                <col style={{ width: "7%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "5%" }} />
               </colgroup>
               <thead className="bg-muted">
                 <tr>

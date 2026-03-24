@@ -121,10 +121,12 @@ export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTa
             <div className="overflow-x-auto">
               <table className="w-full table-fixed">
                 <colgroup>
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "28%" }} />
+                  <col style={{ width: "11%" }} />
                   <col style={{ width: "10%" }} />
-                  <col style={{ width: "42%" }} />
                   <col style={{ width: "14%" }} />
-                  <col style={{ width: "20%" }} />
+                  <col style={{ width: "14%" }} />
                   <col style={{ width: "14%" }} />
                 </colgroup>
                 <thead>
