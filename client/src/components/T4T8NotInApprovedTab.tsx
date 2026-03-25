@@ -23,9 +23,10 @@ export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTa
       const status = wo["Status"]?.toUpperCase() || "";
       const isCancelled = status === "CANCELLED";
       const isClosed = status === "CLOSED";
+      const isInProcess = status === "IN PROCESS";
       const isPlanning = status === "PLANNING";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
-      return !isCancelled && !isClosed && !isCMCC && isPlanning && isT4T8Week(wo["Sched. Start Date"]);
+      return !isCancelled && !isClosed && !isInProcess && !isCMCC && isPlanning && isT4T8Week(wo["Sched. Start Date"]);
     });
     
     // Group by data center

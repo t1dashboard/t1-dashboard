@@ -24,8 +24,9 @@ export default function T1NotInReadyTab({ workOrders }: T1NotInReadyTabProps) {
       const isCancelled = status === "CANCELLED";
       const isClosed = status === "CLOSED";
       const isReady = status === "READY";
+      const isInProcess = status === "IN PROCESS";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
-      return !isCancelled && !isClosed && !isCMCC && !isReady && isNextWeek(wo["Sched. Start Date"]);
+      return !isCancelled && !isClosed && !isInProcess && !isCMCC && !isReady && isNextWeek(wo["Sched. Start Date"]);
     });
     
     // Sort alphabetically by data center
