@@ -84,6 +84,8 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
 
       const deferral = (wo["Deferral Reason Selected"] || "").trim().toLowerCase();
       if (deferral === "awaiting invoice") {
+        // Awaiting Invoice: only show Work Complete status, >16 business days
+        if (status.toLowerCase() !== "work complete") return false;
         const bizDays = calculateBusinessDaysSinceStart(wo["Sched. Start Date"]);
         return bizDays !== null && bizDays > 16;
       } else {
