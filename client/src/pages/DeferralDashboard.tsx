@@ -155,7 +155,7 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
   const missingCount = missingDeferralOrders.length;
 
   // Render a category table grouped by data center
-  function renderCategoryTable(orders: (DeferralWorkOrder | WorkOrder)[], showShift = true, isAwaitingInvoice = false) {
+  function renderCategoryTable(orders: (DeferralWorkOrder | WorkOrder)[], _unused = true, isAwaitingInvoice = false) {
     if (orders.length === 0) {
       return <p className="text-sm text-muted-foreground py-4 text-center">No work orders in this category.</p>;
     }
@@ -181,19 +181,21 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
             <div className="overflow-x-auto">
               <table className="w-full text-sm table-fixed">
                 <colgroup>
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: showShift ? "33%" : "43%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "25%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "11%" }} />
                   <col style={{ width: "10%" }} />
-                  {showShift && <col style={{ width: "15%" }} />}
-                  <col style={{ width: "13%" }} />
-                  <col style={{ width: "12%" }} />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-2 px-3 font-medium">Work Order</th>
                     <th className="text-left py-2 px-3 font-medium">Description</th>
                     <th className="text-left py-2 px-3 font-medium">Data Center</th>
-                    {showShift && <th className="text-left py-2 px-3 font-medium">Shift</th>}
+                    <th className="text-left py-2 px-3 font-medium">Supervisor</th>
+                    <th className="text-left py-2 px-3 font-medium">Assigned To</th>
                     <th className="text-left py-2 px-3 font-medium">Sched Start Date</th>
                     <th className="text-right py-2 px-3 font-medium">{daysColumnLabel}</th>
                   </tr>
@@ -232,7 +234,8 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
                         </td>
                         <td className="py-2 px-3 truncate">{wo["Description"]}</td>
                         <td className="py-2 px-3 font-medium">{wo["Data Center"]}</td>
-                        {showShift && <td className="py-2 px-3">{wo["Shift"] || "—"}</td>}
+                        <td className="py-2 px-3">{wo["Supervisor"] || "—"}</td>
+                        <td className="py-2 px-3">{wo["Assigned To Name"] || wo["Assigned To"] || "—"}</td>
                         <td className="py-2 px-3 text-muted-foreground">{wo["Sched. Start Date"] || "—"}</td>
                         <td className="py-2 px-3 text-right">
                           {displayDays !== null ? (
