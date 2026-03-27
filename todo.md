@@ -220,3 +220,4 @@
 - [x] T tabs: Fix jumbled columns where names and work order status words are mixed together
 - [x] Schedule Adherence: Remove WOs 2585784, 3224860, 2585085 from adherence data (pie charts and calculations)
 - [x] T1/T2/T3 Not in Ready and T4-T8 Not in Approved: Exclude work orders with "In Process" status
+- [x] Deferral Dashboard: Change Awaiting Invoice tab from >90 calendar days to >16 business days threshold

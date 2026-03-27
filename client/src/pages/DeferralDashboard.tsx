@@ -17,6 +17,7 @@ const DEFERRAL_CATEGORIES = [
 const ALLOWED_STATUSES = ["Planning", "Ready to Schedule", "Approved", "Work Complete"];
 const EXCLUDED_STATUSES = ["Cancelled"];
 
+/** Calculate calendar days since scheduled start. Returns null if <=90 or invalid. */
 function calculateDaysSinceStart(schedStartDate: string | null | undefined): number | null {
   if (!schedStartDate) return null;
   const d = new Date(schedStartDate);
@@ -26,6 +27,30 @@ function calculateDaysSinceStart(schedStartDate: string | null | undefined): num
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   if (diffDays <= 90) return null;
   return diffDays;
+}
+
+/** Calculate business days (Mon-Fri) since scheduled start. Returns the count regardless of threshold. */
+function calculateBusinessDaysSinceStart(schedStartDate: string | null | undefined): number | null {
+  if (!schedStartDate) return null;
+  const start = new Date(schedStartDate);
+  if (isNaN(start.getTime())) return null;
+  const now = new Date();
+  if (now <= start) return 0;
+
+  let businessDays = 0;
+  const current = new Date(start);
+  current.setHours(0, 0, 0, 0);
+  const end = new Date(now);
+  end.setHours(0, 0, 0, 0);
+
+  while (current < end) {
+    current.setDate(current.getDate() + 1);
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      businessDays++;
+    }
+  }
+  return businessDays;
 }
 
 interface DeferralDashboardProps {
@@ -50,15 +75,21 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
     loadData();
   }, []);
 
-  // Filter deferral orders to only allowed statuses, exclude Cancelled, and >90 days
+  // Filter deferral orders: Awaiting Invoice uses >16 business days, all others use >90 calendar days
   const filteredOrders = useMemo(() => {
     return deferralOrders.filter((wo) => {
       const status = (wo["Status"] || "").trim();
-      // Exclude cancelled work orders
       if (EXCLUDED_STATUSES.some(s => status.toLowerCase() === s.toLowerCase())) return false;
       if (!ALLOWED_STATUSES.some(s => status.toLowerCase() === s.toLowerCase())) return false;
-      const totalDays = calculateDaysSinceStart(wo["Sched. Start Date"]);
-      return totalDays !== null && totalDays > 90;
+
+      const deferral = (wo["Deferral Reason Selected"] || "").trim().toLowerCase();
+      if (deferral === "awaiting invoice") {
+        const bizDays = calculateBusinessDaysSinceStart(wo["Sched. Start Date"]);
+        return bizDays !== null && bizDays > 16;
+      } else {
+        const totalDays = calculateDaysSinceStart(wo["Sched. Start Date"]);
+        return totalDays !== null && totalDays > 90;
+      }
     });
   }, [deferralOrders]);
 
@@ -79,25 +110,17 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
   // Missing Deferral: WOs from main data with an actual deferral category code (not just "YES")
   // that are NOT in any of the 6 deferral files
   const missingDeferralOrders = useMemo(() => {
-    // Get all WO numbers from the deferral files
     const deferralWONumbers = new Set(
       deferralOrders.map(wo => String(wo["Work Order"]).trim())
     );
-
-    // Known deferral category values (actual codes, not just "YES")
     const knownDeferralCategories = DEFERRAL_CATEGORIES.map(c => c.match.toLowerCase());
 
-    // Find main WOs with a real deferral code that are NOT in any deferral file
     return workOrders
       .filter((wo) => {
         const deferral = (wo["Deferral Reason Selected"] || "").trim().toLowerCase();
-        // Only include WOs that have an actual deferral category code
-        // Exclude "yes" (no specific category) and empty/no values
         if (!deferral || deferral === "no" || deferral === "yes") return false;
-        // Must be a recognized deferral category
         if (!knownDeferralCategories.includes(deferral)) return false;
         const status = (wo["Status"] || "").trim();
-        // Exclude cancelled
         if (EXCLUDED_STATUSES.some(s => status.toLowerCase() === s.toLowerCase())) return false;
         if (!ALLOWED_STATUSES.some(s => status.toLowerCase() === s.toLowerCase())) return false;
         const woNum = String(wo["Work Order"]).trim();
@@ -130,7 +153,7 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
   const missingCount = missingDeferralOrders.length;
 
   // Render a category table grouped by data center
-  function renderCategoryTable(orders: (DeferralWorkOrder | WorkOrder)[], showShift = true) {
+  function renderCategoryTable(orders: (DeferralWorkOrder | WorkOrder)[], showShift = true, isAwaitingInvoice = false) {
     if (orders.length === 0) {
       return <p className="text-sm text-muted-foreground py-4 text-center">No work orders in this category.</p>;
     }
@@ -143,6 +166,8 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
       byDataCenter[dc].push(wo);
     }
     const dataCenters = Object.keys(byDataCenter).sort();
+
+    const daysColumnLabel = isAwaitingInvoice ? "Business Days" : "Days Since Start";
 
     return (
       <div className="space-y-6">
@@ -168,12 +193,29 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
                     <th className="text-left py-2 px-3 font-medium">Data Center</th>
                     {showShift && <th className="text-left py-2 px-3 font-medium">Shift</th>}
                     <th className="text-left py-2 px-3 font-medium">Sched Start Date</th>
-                    <th className="text-right py-2 px-3 font-medium">Days Since Start</th>
+                    <th className="text-right py-2 px-3 font-medium">{daysColumnLabel}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {byDataCenter[dc].map((wo: any) => {
-                    const totalDays = calculateDaysSinceStart(wo["Sched. Start Date"]);
+                    const displayDays = isAwaitingInvoice
+                      ? calculateBusinessDaysSinceStart(wo["Sched. Start Date"])
+                      : calculateDaysSinceStart(wo["Sched. Start Date"]);
+
+                    // Color thresholds differ for awaiting invoice (business days) vs others (calendar days)
+                    const getColorClass = (days: number) => {
+                      if (isAwaitingInvoice) {
+                        // 21 = SLA deadline, 19+ = critical, 17-18 = warning
+                        if (days >= 21) return "bg-red-100 text-red-700";
+                        if (days >= 19) return "bg-orange-100 text-orange-700";
+                        return "bg-yellow-100 text-yellow-700";
+                      } else {
+                        if (days > 180) return "bg-red-100 text-red-700";
+                        if (days > 120) return "bg-orange-100 text-orange-700";
+                        return "bg-yellow-100 text-yellow-700";
+                      }
+                    };
+
                     return (
                       <tr key={wo["Work Order"]} className="border-b border-border/50 hover:bg-muted/30">
                         <td className="py-2 px-3">
@@ -191,13 +233,9 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
                         {showShift && <td className="py-2 px-3">{wo["Shift"] || "—"}</td>}
                         <td className="py-2 px-3 text-muted-foreground">{wo["Sched. Start Date"] || "—"}</td>
                         <td className="py-2 px-3 text-right">
-                          {totalDays !== null ? (
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${
-                              totalDays > 180 ? "bg-red-100 text-red-700" :
-                              totalDays > 120 ? "bg-orange-100 text-orange-700" :
-                              "bg-yellow-100 text-yellow-700"
-                            }`}>
-                              {totalDays} days
+                          {displayDays !== null ? (
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${getColorClass(displayDays)}`}>
+                              {displayDays} {isAwaitingInvoice ? "biz days" : "days"}
                             </span>
                           ) : (
                             <span className="text-muted-foreground text-xs">N/A</span>
@@ -241,7 +279,8 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
         <div>
           <h2 className="text-2xl font-semibold text-foreground">{">"}90 Days Deferral</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {totalFiltered} work orders with status Planning, Ready to Schedule, Approved, or Work Complete that are {">"}90 days past scheduled start date
+            Work orders with status Planning, Ready to Schedule, Approved, or Work Complete.
+            Awaiting Invoice: {">"}16 business days | All others: {">"}90 calendar days past scheduled start.
           </p>
         </div>
         <div className="flex-shrink-0">
@@ -251,8 +290,8 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
             <span className={`text-2xl font-bold ${missingCount > 0 ? "text-red-600" : "text-green-600"}`}>
               {missingCount}
             </span>
-            <span className={`text-sm ${missingCount > 0 ? "text-red-700" : "text-green-700"}`}>
-              Missing Deferral
+            <span className={`text-xs ${missingCount > 0 ? "text-red-600" : "text-green-600"}`}>
+              Missing<br />Deferral
             </span>
           </div>
         </div>
@@ -265,6 +304,9 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
             return (
               <TabsTrigger key={cat.key} value={cat.key} className="relative">
                 {cat.label}
+                {cat.key === "awaiting-invoice" && (
+                  <span className="ml-1 text-xs text-muted-foreground">(16 biz days)</span>
+                )}
                 {count > 0 && (
                   <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold">
                     {count}
@@ -285,6 +327,7 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
 
         {DEFERRAL_CATEGORIES.map((cat) => {
           const orders = categorizedOrders[cat.key] || [];
+          const isAwaitingInvoice = cat.key === "awaiting-invoice";
           return (
             <TabsContent key={cat.key} value={cat.key}>
               <Card>
@@ -293,11 +336,12 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
                     {cat.label}
                     <span className="text-sm font-normal text-muted-foreground">
                       — {orders.length} work order{orders.length !== 1 ? "s" : ""}
+                      {isAwaitingInvoice && " (>16 business days, 5 days before 21-day SLA)"}
                     </span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {renderCategoryTable(orders)}
+                  {renderCategoryTable(orders, true, isAwaitingInvoice)}
                 </CardContent>
               </Card>
             </TabsContent>
