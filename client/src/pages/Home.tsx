@@ -5,7 +5,8 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2, Lock, KeyRound, Menu, X } from "lucide-react";
+import { Upload, FileSpreadsheet, ChevronLeft, ChevronRight, Loader2, Lock, KeyRound, Menu, X, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Input } from "@/components/ui/input";
 import { WorkOrder, ScheduledLabor, PMCode } from "@/types/workOrder";
 import T1T3Dashboard from "./T1T3Dashboard";
@@ -27,6 +28,7 @@ import { toast } from "sonner";
 type ActiveView = "upload" | "schedule-lock" | "schedule-lock-review" | "schedule-adherence" | "scheduled-labor-review" | "inbox-review" | "t1t3" | "t4t8";
 
 export default function Home() {
+  const { theme, toggleTheme } = useTheme();
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [scheduledLabor, setScheduledLabor] = useState<ScheduledLabor[]>([]);
   const [pmCodes, setPmCodes] = useState<PMCode[]>([]);
@@ -183,11 +185,21 @@ export default function Home() {
 
       {/* Sidebar */}
       <aside className={`border-r border-border bg-card flex flex-col transition-all duration-300 fixed md:static z-40 h-full ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
-        {/* Title - Clickable to go to upload */}
+        {/* Title + Theme Toggle */}
         <div className="border-b border-border">
+          <div className="flex items-center justify-between px-4 pt-4 pb-0">
+            {!sidebarCollapsed && <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Dashboard</span>}
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            >
+              {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+            </button>
+          </div>
           <button 
             onClick={() => { setActiveView("upload"); setMobileMenuOpen(false); }}
-            className="p-6 text-left hover:bg-muted/50 transition-colors w-full"
+            className="px-6 pb-4 pt-2 text-left hover:bg-muted/50 transition-colors w-full"
           >
             {!sidebarCollapsed && (
               <>
