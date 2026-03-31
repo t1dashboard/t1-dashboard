@@ -128,15 +128,6 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes }: T
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-medium text-foreground">T1-T3 Dashboard</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {weekRanges.slice(0, 3).join(' | ')}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {weekRanges.slice(3, 6).join(' | ')}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {weekRanges.slice(6).join(' | ')}
-          </p>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           {/* Last uploaded timestamp */}

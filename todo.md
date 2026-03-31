@@ -224,3 +224,5 @@
 - [x] Deferral Dashboard: Awaiting Invoice tab should only show work orders with Work Complete status
 - [x] Deferral Dashboard: Replace Shift column with Supervisor and add Assigned To column in all deferral tables
 - [x] Add dark/light mode toggle in the top left corner of the sidebar
+- [x] Update work week leaders from WorkExecutionandPlanningGuide.docx
+- [x] Remove T-week date lines from T1-T3 Dashboard header
