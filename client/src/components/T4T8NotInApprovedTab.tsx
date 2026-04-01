@@ -11,11 +11,12 @@ import DataCenterFilter from "@/components/DataCenterFilter";
 
 interface T4T8NotInApprovedTabProps {
   workOrders: WorkOrder[];
+  commentsMap: Record<string, string>;
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
-export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTabProps) {
+export default function T4T8NotInApprovedTab({ workOrders, commentsMap }: T4T8NotInApprovedTabProps) {
   const [selectedDCs, setSelectedDCs] = useState<Set<string>>(new Set());
 
   const groupedOrders = useMemo(() => {
@@ -122,13 +123,14 @@ export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTa
             <div className="overflow-x-auto">
               <table className="w-full table-fixed">
                 <colgroup>
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "18%" }} />
                   <col style={{ width: "9%" }} />
-                  <col style={{ width: "28%" }} />
+                  <col style={{ width: "8%" }} />
                   <col style={{ width: "11%" }} />
                   <col style={{ width: "10%" }} />
-                  <col style={{ width: "14%" }} />
-                  <col style={{ width: "14%" }} />
-                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "27%" }} />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
@@ -139,6 +141,7 @@ export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTa
                     <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Supervisor</th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Most Recent Comment</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -166,6 +169,7 @@ export default function T4T8NotInApprovedTab({ workOrders }: T4T8NotInApprovedTa
                       <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
                       <td className="py-3 px-4 text-sm">{wo["Supervisor"]}</td>
                       <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
+                      <td className="py-3 px-4 text-sm text-muted-foreground truncate" title={commentsMap[String(wo["Work Order"])] || ""}>{commentsMap[String(wo["Work Order"])] || ""}</td>
                     </tr>
                   ))}
                 </tbody>

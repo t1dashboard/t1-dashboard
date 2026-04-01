@@ -55,9 +55,10 @@ function calculateBusinessDaysSinceStart(schedStartDate: string | null | undefin
 
 interface DeferralDashboardProps {
   workOrders: WorkOrder[];
+  commentsMap: Record<string, string>;
 }
 
-export default function DeferralDashboard({ workOrders }: DeferralDashboardProps) {
+export default function DeferralDashboard({ workOrders, commentsMap }: DeferralDashboardProps) {
   const [deferralOrders, setDeferralOrders] = useState<DeferralWorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -181,13 +182,14 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
             <div className="overflow-x-auto">
               <table className="w-full text-sm table-fixed">
                 <colgroup>
-                  <col style={{ width: "8%" }} />
-                  <col style={{ width: "25%" }} />
-                  <col style={{ width: "8%" }} />
-                  <col style={{ width: "14%" }} />
-                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "7%" }} />
+                  <col style={{ width: "17%" }} />
+                  <col style={{ width: "7%" }} />
                   <col style={{ width: "11%" }} />
-                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "11%" }} />
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "30%" }} />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-border">
@@ -198,6 +200,7 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
                     <th className="text-left py-2 px-3 font-medium">Assigned To</th>
                     <th className="text-left py-2 px-3 font-medium">Sched Start Date</th>
                     <th className="text-right py-2 px-3 font-medium">{daysColumnLabel}</th>
+                    <th className="text-left py-2 px-3 font-medium">Most Recent Comment</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -246,6 +249,7 @@ export default function DeferralDashboard({ workOrders }: DeferralDashboardProps
                             <span className="text-muted-foreground text-xs">N/A</span>
                           )}
                         </td>
+                        <td className="py-2 px-3 text-muted-foreground truncate" title={commentsMap[String(wo["Work Order"])] || ""}>{commentsMap[String(wo["Work Order"])] || ""}</td>
                       </tr>
                     );
                   })}

@@ -226,3 +226,8 @@
 - [x] Add dark/light mode toggle in the top left corner of the sidebar
 - [x] Update work week leaders from WorkExecutionandPlanningGuide.docx
 - [x] Remove T-week date lines from T1-T3 Dashboard header
+- [x] Add comments spreadsheet upload on Upload Data page (work_order_id + latest comment)
+- [x] Add Most Recent Comment column to T1/T2/T3 Not in Ready tabs
+- [x] Add Most Recent Comment column to T4-T8 Not in Approved tab
+- [x] Add Most Recent Comment column to >30 Days tab
+- [x] Add Most Recent Comment column to >90 Days Deferral tabs

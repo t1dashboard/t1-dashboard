@@ -817,4 +817,93 @@ router.get("/schedule-adherence/by-week", async (req: Request, res: Response) =>
   }
 });
 
+// ============================================================
+// Work Order Comments - File Upload
+// ============================================================
+
+// Upload comments via Excel file (expects columns: Work Order / work_order_id, Latest Comment / comment)
+router.post("/comments/upload", upload.single("file"), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const json = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+    if (json.length === 0) {
+      return res.status(400).json({ error: "No data found in spreadsheet" });
+    }
+
+    // Create table if not exists
+    await execute(`CREATE TABLE IF NOT EXISTS work_order_comments (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      work_order_number VARCHAR(50) NOT NULL,
+      latest_comment TEXT,
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_wo (work_order_number)
+    )`);
+
+    // Clear existing comments
+    await execute("DELETE FROM work_order_comments");
+
+    // Parse - support various column name formats
+    const comments = json.map((row: any) => {
+      const woNum = String(
+        row["Work Order"] || row["work_order_id"] || row["Work Order Number"] || row["WO"] || Object.values(row)[0] || ""
+      ).trim();
+      const comment = String(
+        row["Latest Comment"] || row["Comment"] || row["Comments"] || row["comment"] || row["latest_comment"] || Object.values(row)[1] || ""
+      ).trim();
+      return { workOrderNumber: woNum, comment };
+    }).filter(c => c.workOrderNumber);
+
+    // Insert in batches of 100
+    const batchSize = 100;
+    for (let i = 0; i < comments.length; i += batchSize) {
+      const batch = comments.slice(i, i + batchSize);
+      const values = batch.flatMap(c => [c.workOrderNumber, c.comment]);
+      const sql = `INSERT INTO work_order_comments (work_order_number, latest_comment) VALUES ${batch.map(() => "(?, ?)").join(", ")} ON DUPLICATE KEY UPDATE latest_comment = VALUES(latest_comment), uploaded_at = CURRENT_TIMESTAMP`;
+      await execute(sql, values);
+    }
+
+    // Update upload metadata
+    await execute(
+      `INSERT INTO upload_metadata (data_type, uploaded_at) VALUES ('comments', NOW()) ON DUPLICATE KEY UPDATE uploaded_at = NOW()`
+    );
+
+    res.json({ success: true, count: comments.length });
+  } catch (error: any) {
+    console.error("Error uploading comments:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all comments as a map
+router.get("/comments", async (_req: Request, res: Response) => {
+  try {
+    // Check if table exists first
+    try {
+      const rows = await query("SELECT work_order_number, latest_comment FROM work_order_comments");
+      const commentMap: Record<string, string> = {};
+      rows.forEach((row: any) => {
+        commentMap[row.work_order_number] = row.latest_comment;
+      });
+      res.json(commentMap);
+    } catch (e: any) {
+      // Table doesn't exist yet, return empty
+      if (e.message?.includes("doesn't exist")) {
+        res.json({});
+      } else {
+        throw e;
+      }
+    }
+  } catch (error: any) {
+    console.error("Error fetching comments:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

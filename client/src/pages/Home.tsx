@@ -22,6 +22,7 @@ import {
   getPMCodes, uploadPMCodesFile,
   getDeferralWorkOrders, uploadDeferralWorkOrdersFile,
   DeferralWorkOrder, DeferralCategory,
+  uploadCommentsFile, getComments,
 } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -33,6 +34,7 @@ export default function Home() {
   const [scheduledLabor, setScheduledLabor] = useState<ScheduledLabor[]>([]);
   const [pmCodes, setPmCodes] = useState<PMCode[]>([]);
   const [deferralWorkOrders, setDeferralWorkOrders] = useState<DeferralWorkOrder[]>([]);
+  const [commentsMap, setCommentsMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
 
@@ -60,16 +62,18 @@ export default function Home() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [wo, sl, pm, dwo] = await Promise.all([
+        const [wo, sl, pm, dwo, cm] = await Promise.all([
           getWorkOrders(),
           getScheduledLabor(),
           getPMCodes(),
           getDeferralWorkOrders(),
+          getComments(),
         ]);
         setWorkOrders(wo);
         setScheduledLabor(sl);
         setPmCodes(pm);
         setDeferralWorkOrders(dwo);
+        setCommentsMap(cm);
         if (wo.length > 0) {
           setActiveView("t1t3");
         }
@@ -133,6 +137,24 @@ export default function Home() {
     } catch (error: any) {
       console.error("Error uploading PM codes:", error);
       toast.error("Failed to upload PM codes: " + error.message);
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleCommentsUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading("comments");
+    try {
+      const result = await uploadCommentsFile(file);
+      const cm = await getComments();
+      setCommentsMap(cm);
+      toast.success(`Uploaded ${result.count} comments`);
+    } catch (error: any) {
+      console.error("Error uploading comments:", error);
+      toast.error("Failed to upload comments: " + error.message);
     } finally {
       setUploading(null);
     }
@@ -402,7 +424,7 @@ export default function Home() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   {/* Work Order Upload */}
                   <div>
                     <label className="block text-sm font-medium mb-2">Work Order Information</label>
@@ -489,6 +511,34 @@ export default function Home() {
                       <p className="text-xs text-green-600 mt-2">✓ {pmCodes.length} PM codes loaded</p>
                     )}
                   </div>
+                  {/* Comments Upload */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Comments</label>
+                    <label className={`flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors ${uploading === "comments" ? "opacity-50 pointer-events-none" : ""}`}>
+                      {uploading === "comments" ? (
+                        <>
+                          <Loader2 className="h-8 w-8 text-muted-foreground mb-2 animate-spin" />
+                          <span className="text-sm text-muted-foreground">Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                          <span className="text-sm text-muted-foreground">Click to upload</span>
+                          <span className="text-xs text-muted-foreground mt-1">Most recent WO comments</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        onChange={handleCommentsUpload}
+                        className="hidden"
+                        disabled={uploading !== null}
+                      />
+                    </label>
+                    {Object.keys(commentsMap).length > 0 && (
+                      <p className="text-xs text-green-600 mt-2">✓ {Object.keys(commentsMap).length} comments loaded</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Deferral Work Orders Upload - 6 Categories */}
@@ -556,11 +606,11 @@ export default function Home() {
           )}
 
           {activeView === "t1t3" && workOrders.length > 0 && (
-            <T1T3Dashboard workOrders={workOrders} scheduledLabor={scheduledLabor} pmCodes={pmCodes} />
+            <T1T3Dashboard workOrders={workOrders} scheduledLabor={scheduledLabor} pmCodes={pmCodes} commentsMap={commentsMap} />
           )}
 
           {activeView === "t4t8" && workOrders.length > 0 && (
-            <T4T8Dashboard workOrders={workOrders} />
+            <T4T8Dashboard workOrders={workOrders} commentsMap={commentsMap} />
           )}
 
           {activeView === "schedule-lock" && workOrders.length > 0 && (
@@ -576,7 +626,7 @@ export default function Home() {
           )}
 
           {activeView === "inbox-review" && workOrders.length > 0 && (
-            <InboxReview workOrders={workOrders} scheduledLabor={scheduledLabor} deferralWorkOrders={deferralWorkOrders} />
+            <InboxReview workOrders={workOrders} scheduledLabor={scheduledLabor} deferralWorkOrders={deferralWorkOrders} commentsMap={commentsMap} />
           )}
 
           {activeView === "schedule-adherence" && (

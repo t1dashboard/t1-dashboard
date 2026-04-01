@@ -11,11 +11,12 @@ import DataCenterFilter from "@/components/DataCenterFilter";
 
 interface T3NotInReadyTabProps {
   workOrders: WorkOrder[];
+  commentsMap: Record<string, string>;
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
-export default function T3NotInReadyTab({ workOrders }: T3NotInReadyTabProps) {
+export default function T3NotInReadyTab({ workOrders, commentsMap }: T3NotInReadyTabProps) {
   const [selectedDCs, setSelectedDCs] = useState<Set<string>>(new Set());
 
   const t3NotReadyOrders = useMemo(() => {
@@ -103,14 +104,15 @@ export default function T3NotInReadyTab({ workOrders }: T3NotInReadyTabProps) {
           <div className="overflow-x-auto">
             <table className="w-full table-fixed">
               <colgroup>
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "18%" }} />
+                <col style={{ width: "7%" }} />
                 <col style={{ width: "9%" }} />
-                <col style={{ width: "25%" }} />
                 <col style={{ width: "8%" }} />
                 <col style={{ width: "11%" }} />
                 <col style={{ width: "10%" }} />
-                <col style={{ width: "14%" }} />
-                <col style={{ width: "12%" }} />
-                <col style={{ width: "11%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "20%" }} />
               </colgroup>
               <thead>
                 <tr className="border-b border-border bg-muted/30">
@@ -122,6 +124,7 @@ export default function T3NotInReadyTab({ workOrders }: T3NotInReadyTabProps) {
                   <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Assigned To</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Supervisor</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Most Recent Comment</th>
                 </tr>
               </thead>
               <tbody>
@@ -150,6 +153,7 @@ export default function T3NotInReadyTab({ workOrders }: T3NotInReadyTabProps) {
                     <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
                     <td className="py-3 px-4 text-sm">{wo["Supervisor"]}</td>
                     <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
+                    <td className="py-3 px-4 text-sm text-muted-foreground truncate" title={commentsMap[String(wo["Work Order"])] || ""}>{commentsMap[String(wo["Work Order"])] || ""}</td>
                   </tr>
                 ))}
               </tbody>

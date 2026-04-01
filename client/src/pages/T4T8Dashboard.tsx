@@ -14,9 +14,10 @@ import { useState } from "react";
 
 interface T4T8DashboardProps {
   workOrders: WorkOrder[];
+  commentsMap: Record<string, string>;
 }
 
-export default function T4T8Dashboard({ workOrders }: T4T8DashboardProps) {
+export default function T4T8Dashboard({ workOrders, commentsMap }: T4T8DashboardProps) {
   const [activeTab, setActiveTab] = useState("t1notready");
 
   return (
@@ -39,19 +40,19 @@ export default function T4T8Dashboard({ workOrders }: T4T8DashboardProps) {
         </TabsList>
 
         <TabsContent value="t1notready" className="mt-6">
-          <T1NotInReadyTab workOrders={workOrders} />
+          <T1NotInReadyTab workOrders={workOrders} commentsMap={commentsMap} />
         </TabsContent>
 
         <TabsContent value="t4t8notapproved" className="mt-6">
-          <T4T8NotInApprovedTab workOrders={workOrders} />
+          <T4T8NotInApprovedTab workOrders={workOrders} commentsMap={commentsMap} />
         </TabsContent>
 
         <TabsContent value="over30days" className="mt-6">
-          <WOsOver30DaysTab workOrders={workOrders} />
+          <WOsOver30DaysTab workOrders={workOrders} commentsMap={commentsMap} />
         </TabsContent>
 
         <TabsContent value="over90days" className="mt-6">
-          <DeferralDashboard workOrders={workOrders} />
+          <DeferralDashboard workOrders={workOrders} commentsMap={commentsMap} />
         </TabsContent>
 
         <TabsContent value="compliance" className="mt-6">

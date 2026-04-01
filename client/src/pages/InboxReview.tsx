@@ -15,6 +15,7 @@ interface InboxReviewProps {
   workOrders: WorkOrder[];
   scheduledLabor: ScheduledLabor[];
   deferralWorkOrders: any[];
+  commentsMap: Record<string, string>;
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
@@ -22,7 +23,7 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 // Production Impact values to include (exclude 40)
 const INCLUDED_PRODUCTION_IMPACTS = [10, 15, 20, 25, 30];
 
-export default function InboxReview({ workOrders, scheduledLabor }: InboxReviewProps) {
+export default function InboxReview({ workOrders, scheduledLabor, commentsMap }: InboxReviewProps) {
   const [activeTab, setActiveTab] = useState("wo-campaign");
 
   // WO Campaign: filter work orders whose description contains "WO Campaign" (case-insensitive)
