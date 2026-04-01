@@ -857,9 +857,13 @@ router.post("/comments/upload", upload.single("file"), async (req: Request, res:
       if (woNum.match(/^\d+\.0$/)) {
         woNum = woNum.replace(/\.0$/, "");
       }
-      const comment = String(
+      let comment = String(
         row["latest_comment"] ?? row["Latest Comment"] ?? row["Comment"] ?? row["Comments"] ?? row["comment"] ?? ""
       ).trim();
+      // Filter out hyperlink-only comments (eamprod URLs that are just WO links, not real comments)
+      if (/^https?:\/\/eamprod\.thefacebook\.com/i.test(comment)) {
+        comment = "";
+      }
       return { workOrderNumber: woNum, comment };
     }).filter(c => c.workOrderNumber && c.comment);
 
