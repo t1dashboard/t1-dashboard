@@ -821,7 +821,7 @@ router.get("/schedule-adherence/by-week", async (req: Request, res: Response) =>
 // Work Order Comments - File Upload
 // ============================================================
 
-// Upload comments via Excel file (expects columns: Work Order / work_order_id, Latest Comment / comment)
+// Upload comments via Excel file (expects columns: work_order_id + latest_comment)
 router.post("/comments/upload", upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
@@ -841,7 +841,7 @@ router.post("/comments/upload", upload.single("file"), async (req: Request, res:
     await execute(`CREATE TABLE IF NOT EXISTS work_order_comments (
       id INT AUTO_INCREMENT PRIMARY KEY,
       work_order_number VARCHAR(50) NOT NULL,
-      latest_comment TEXT,
+      latest_comment MEDIUMTEXT,
       uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE KEY unique_wo (work_order_number)
     )`);
@@ -851,17 +851,20 @@ router.post("/comments/upload", upload.single("file"), async (req: Request, res:
 
     // Parse - support various column name formats
     const comments = json.map((row: any) => {
-      const woNum = String(
-        row["Work Order"] || row["work_order_id"] || row["Work Order Number"] || row["WO"] || Object.values(row)[0] || ""
-      ).trim();
+      let woRaw = row["work_order_id"] ?? row["Work Order"] ?? row["Work Order Number"] ?? row["WO"] ?? Object.values(row)[0] ?? "";
+      // Handle numeric work order IDs (e.g. 3382693.0 -> "3382693")
+      let woNum = String(woRaw).trim();
+      if (woNum.match(/^\d+\.0$/)) {
+        woNum = woNum.replace(/\.0$/, "");
+      }
       const comment = String(
-        row["Latest Comment"] || row["Comment"] || row["Comments"] || row["comment"] || row["latest_comment"] || Object.values(row)[1] || ""
+        row["latest_comment"] ?? row["Latest Comment"] ?? row["Comment"] ?? row["Comments"] ?? row["comment"] ?? ""
       ).trim();
       return { workOrderNumber: woNum, comment };
-    }).filter(c => c.workOrderNumber);
+    }).filter(c => c.workOrderNumber && c.comment);
 
-    // Insert in batches of 100
-    const batchSize = 100;
+    // Insert in batches of 200
+    const batchSize = 200;
     for (let i = 0; i < comments.length; i += batchSize) {
       const batch = comments.slice(i, i + batchSize);
       const values = batch.flatMap(c => [c.workOrderNumber, c.comment]);
@@ -870,6 +873,10 @@ router.post("/comments/upload", upload.single("file"), async (req: Request, res:
     }
 
     // Update upload metadata
+    await execute(`CREATE TABLE IF NOT EXISTS upload_metadata (
+      data_type VARCHAR(50) PRIMARY KEY,
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
     await execute(
       `INSERT INTO upload_metadata (data_type, uploaded_at) VALUES ('comments', NOW()) ON DUPLICATE KEY UPDATE uploaded_at = NOW()`
     );
