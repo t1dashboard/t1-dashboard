@@ -836,14 +836,17 @@ router.post("/comments/upload", upload.single("file"), async (req: Request, res:
       return res.status(400).json({ error: "No data found in spreadsheet" });
     }
 
-    // Create table if not exists
+    // Create table if not exists (with comment_date column)
     await execute(`CREATE TABLE IF NOT EXISTS work_order_comments (
       id INT AUTO_INCREMENT PRIMARY KEY,
       work_order_number VARCHAR(50) NOT NULL,
       latest_comment MEDIUMTEXT,
+      comment_date VARCHAR(50),
       uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE KEY unique_wo (work_order_number)
     )`);
+    // Add comment_date column if it doesn't exist (for existing tables)
+    try { await execute(`ALTER TABLE work_order_comments ADD COLUMN comment_date VARCHAR(50)`); } catch(e) { /* column already exists */ }
 
     // Clear existing comments
     await execute("DELETE FROM work_order_comments");
@@ -863,15 +866,30 @@ router.post("/comments/upload", upload.single("file"), async (req: Request, res:
       if (/eamprod\.thefacebook\.com/i.test(comment)) {
         comment = "";
       }
-      return { workOrderNumber: woNum, comment };
+      // Parse comment date - XLSX.js returns Excel serial numbers for dates
+      const rawDate = row["Last Comment Date"] ?? row["latest_comment_date"] ?? row["Comment Date"] ?? "";
+      let commentDate = "";
+      if (typeof rawDate === "number" && rawDate > 0) {
+        // Convert Excel serial number to JS date
+        // Excel epoch is Jan 1, 1900 (with the 1900 leap year bug)
+        const excelEpoch = new Date(1899, 11, 30); // Dec 30, 1899
+        const jsDate = new Date(excelEpoch.getTime() + rawDate * 86400000);
+        commentDate = jsDate.toLocaleString("en-US", {
+          month: "2-digit", day: "2-digit", year: "numeric",
+          hour: "2-digit", minute: "2-digit", hour12: true
+        });
+      } else if (rawDate) {
+        commentDate = String(rawDate).trim();
+      }
+      return { workOrderNumber: woNum, comment, commentDate };
     }).filter(c => c.workOrderNumber && c.comment);
 
     // Insert in batches of 200
     const batchSize = 200;
     for (let i = 0; i < comments.length; i += batchSize) {
       const batch = comments.slice(i, i + batchSize);
-      const values = batch.flatMap(c => [c.workOrderNumber, c.comment]);
-      const sql = `INSERT INTO work_order_comments (work_order_number, latest_comment) VALUES ${batch.map(() => "(?, ?)").join(", ")} ON DUPLICATE KEY UPDATE latest_comment = VALUES(latest_comment), uploaded_at = CURRENT_TIMESTAMP`;
+      const values = batch.flatMap(c => [c.workOrderNumber, c.comment, c.commentDate || null]);
+      const sql = `INSERT INTO work_order_comments (work_order_number, latest_comment, comment_date) VALUES ${batch.map(() => "(?, ?, ?)").join(", ")} ON DUPLICATE KEY UPDATE latest_comment = VALUES(latest_comment), comment_date = VALUES(comment_date), uploaded_at = CURRENT_TIMESTAMP`;
       await execute(sql, values);
     }
 
@@ -898,13 +916,16 @@ router.get("/comments", async (_req: Request, res: Response) => {
       id INT AUTO_INCREMENT PRIMARY KEY,
       work_order_number VARCHAR(50) NOT NULL,
       latest_comment MEDIUMTEXT,
+      comment_date VARCHAR(50),
       uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE KEY unique_wo (work_order_number)
     )`);
-    const rows = await query("SELECT work_order_number, latest_comment FROM work_order_comments");
-    const map: Record<string, string> = {};
+    // Add comment_date column if it doesn't exist (for existing tables)
+    try { await execute(`ALTER TABLE work_order_comments ADD COLUMN comment_date VARCHAR(50)`); } catch(e) { /* column already exists */ }
+    const rows = await query("SELECT work_order_number, latest_comment, comment_date FROM work_order_comments");
+    const map: Record<string, { comment: string; date: string | null }> = {};
     for (const row of rows as any[]) {
-      map[row.work_order_number] = row.latest_comment;
+      map[row.work_order_number] = { comment: row.latest_comment, date: row.comment_date || null };
     }
     res.json(map);
   } catch (error: any) {

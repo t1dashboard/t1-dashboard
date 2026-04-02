@@ -22,7 +22,7 @@ import {
   getPMCodes, uploadPMCodesFile,
   getDeferralWorkOrders, uploadDeferralWorkOrdersFile,
   DeferralWorkOrder, DeferralCategory,
-  uploadCommentsFile, getComments,
+  uploadCommentsFile, getComments, CommentData,
 } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -34,7 +34,7 @@ export default function Home() {
   const [scheduledLabor, setScheduledLabor] = useState<ScheduledLabor[]>([]);
   const [pmCodes, setPmCodes] = useState<PMCode[]>([]);
   const [deferralWorkOrders, setDeferralWorkOrders] = useState<DeferralWorkOrder[]>([]);
-  const [commentsMap, setCommentsMap] = useState<Record<string, string>>({});
+  const [commentsMap, setCommentsMap] = useState<Record<string, CommentData>>({});
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
 

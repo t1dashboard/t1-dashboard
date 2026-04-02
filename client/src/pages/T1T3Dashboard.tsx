@@ -16,7 +16,7 @@ import T3NotInReadyTab from "@/components/T3NotInReadyTab";
 import ComplianceCheckTab from "@/components/ComplianceCheckTab";
 import DeconflictionTab from "@/components/DeconflictionTab";
 import { getTWeekRange, isTWeek } from "@/lib/dateUtils";
-import { getUploadMetadata, getComplianceAlerts, ComplianceAlert } from "@/lib/api";
+import { getUploadMetadata, getComplianceAlerts, ComplianceAlert, CommentData } from "@/lib/api";
 import {
   Search, ClipboardList, AlertTriangle, CheckCircle2, Clock, Bell, X, Shield
 } from "lucide-react";
@@ -25,7 +25,7 @@ interface T1T3DashboardProps {
   workOrders: WorkOrder[];
   scheduledLabor: ScheduledLabor[];
   pmCodes: PMCode[];
-  commentsMap?: Record<string, string>;
+  commentsMap?: Record<string, CommentData>;
 }
 
 export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes, commentsMap = {} }: T1T3DashboardProps) {

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, parseExcelDate, getTWeekRange } from "@/lib/dateUtils";
+import { CommentData } from "@/lib/api";
 import ScheduledLaborReviewTab from "@/components/ScheduledLaborReviewTab";
 import WOClosureSLATab from "@/components/WOClosureSLATab";
 
@@ -15,7 +16,7 @@ interface InboxReviewProps {
   workOrders: WorkOrder[];
   scheduledLabor: ScheduledLabor[];
   deferralWorkOrders: any[];
-  commentsMap?: Record<string, string>;
+  commentsMap?: Record<string, CommentData>;
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";

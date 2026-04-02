@@ -11,7 +11,7 @@ import DataCenterFilter from "@/components/DataCenterFilter";
 
 interface T3NotInReadyTabProps {
   workOrders: WorkOrder[];
-  commentsMap?: Record<string, string>;
+  commentsMap?: Record<string, { comment: string; date: string | null }>;
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
@@ -136,7 +136,9 @@ export default function T3NotInReadyTab({ workOrders, commentsMap = {} }: T3NotI
               <tbody>
                 {filteredOrders.map((wo) => {
                   const woNum = String(wo["Work Order"]);
-                  const comment = commentsMap[woNum] || "N/A";
+                  const commentData = commentsMap?.[woNum];
+                  const comment = commentData?.comment || "N/A";
+                  const commentDate = commentData?.date || null;
                   const isExpanded = expandedRows.has(woNum);
                   return (
                     <>
@@ -176,6 +178,12 @@ export default function T3NotInReadyTab({ workOrders, commentsMap = {} }: T3NotI
                             <div className="text-sm">
                               <span className="font-medium text-foreground">Full Comment: </span>
                               <span className="text-muted-foreground">{comment}</span>
+                              {commentDate && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  <span className="font-medium text-foreground">Comment Date: </span>
+                                  <span>{commentDate}</span>
+                                </div>
+                              )}
                             </div>
                           </td>
                         </tr>

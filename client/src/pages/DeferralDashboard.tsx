@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, AlertTriangle } from "lucide-react";
-import { getDeferralWorkOrders, DeferralWorkOrder } from "@/lib/api";
+import { getDeferralWorkOrders, DeferralWorkOrder, CommentData } from "@/lib/api";
 import { WorkOrder } from "@/types/workOrder";
 
 const DEFERRAL_CATEGORIES = [
@@ -55,7 +55,7 @@ function calculateBusinessDaysSinceStart(schedStartDate: string | null | undefin
 
 interface DeferralDashboardProps {
   workOrders: WorkOrder[];
-  commentsMap?: Record<string, string>;
+  commentsMap?: Record<string, CommentData>;
 }
 
 export default function DeferralDashboard({ workOrders, commentsMap = {} }: DeferralDashboardProps) {
@@ -218,7 +218,9 @@ export default function DeferralDashboard({ workOrders, commentsMap = {} }: Defe
                 <tbody>
                   {byDataCenter[dc].map((wo: any) => {
                     const woNum = String(wo["Work Order"]);
-                    const comment = commentsMap[woNum] || "N/A";
+                    const commentData = commentsMap?.[woNum];
+                    const comment = commentData?.comment || "N/A";
+                    const commentDate = commentData?.date || null;
                     const isExpanded = expandedRows.has(woNum);
                     const displayDays = isAwaitingInvoice
                       ? calculateBusinessDaysSinceStart(wo["Sched. Start Date"])
@@ -284,6 +286,12 @@ export default function DeferralDashboard({ workOrders, commentsMap = {} }: Defe
                                 <span className="font-medium text-foreground">Full Comment: </span>
                                 <span className="text-muted-foreground">{comment}</span>
                               </div>
+                              {commentDate && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  <span className="font-medium text-foreground">Comment Date: </span>
+                                  <span>{commentDate}</span>
+                                </div>
+                              )}
                             </td>
                           </tr>
                         )}
@@ -298,19 +306,15 @@ export default function DeferralDashboard({ workOrders, commentsMap = {} }: Defe
 
         {/* Summary: Total per Data Center */}
         {dataCenters.length > 1 && (
-          <div className="mt-4 pt-4 border-t-2 border-border">
-            <h4 className="text-sm font-semibold text-foreground mb-3 px-2">Summary by Data Center</h4>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 px-2">
-              {dataCenters.map((dc) => (
-                <div key={dc} className="flex items-center justify-between px-3 py-2 bg-muted/40 rounded-md border border-border/50">
-                  <span className="text-sm font-medium text-foreground">{dc}</span>
-                  <span className="text-sm font-bold text-primary ml-2">{byDataCenter[dc].length}</span>
+          <div className="pt-4 mt-4 border-t">
+            <h4 className="text-sm font-semibold text-foreground mb-2">Summary by Data Center</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 text-sm">
+              {dataCenters.map(dc => (
+                <div key={dc} className="flex justify-between items-center bg-muted/50 px-2 py-1 rounded">
+                  <span className="font-medium">{dc}</span>
+                  <span className="text-muted-foreground font-mono">{byDataCenter[dc].length}</span>
                 </div>
               ))}
-              <div className="flex items-center justify-between px-3 py-2 bg-primary/10 rounded-md border border-primary/30">
-                <span className="text-sm font-bold text-foreground">Total</span>
-                <span className="text-sm font-bold text-primary ml-2">{orders.length}</span>
-              </div>
             </div>
           </div>
         )}
@@ -319,98 +323,44 @@ export default function DeferralDashboard({ workOrders, commentsMap = {} }: Defe
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with Missing Deferral counter */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-foreground">{">"}90 Days Deferral</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Work orders with status Planning, Ready to Schedule, Approved, or Work Complete.
-            Awaiting Invoice: {">"}16 business days | All others: {">"}90 calendar days past scheduled start.
-          </p>
-        </div>
-        <div className="flex-shrink-0">
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${
-            missingCount > 0 ? "border-red-300 bg-red-50" : "border-green-300 bg-green-50"
-          }`}>
-            <span className={`text-2xl font-bold ${missingCount > 0 ? "text-red-600" : "text-green-600"}`}>
-              {missingCount}
-            </span>
-            <span className={`text-xs ${missingCount > 0 ? "text-red-600" : "text-green-600"}`}>
-              Missing<br />Deferral
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <Tabs defaultValue={DEFERRAL_CATEGORIES[0].key}>
-        <TabsList className="flex flex-wrap h-auto gap-1">
-          {DEFERRAL_CATEGORIES.map((cat) => {
-            const count = categorizedOrders[cat.key]?.length || 0;
-            return (
-              <TabsTrigger key={cat.key} value={cat.key} className="relative">
-                {cat.label}
-                {cat.key === "awaiting-invoice" && (
-                  <span className="ml-1 text-xs text-muted-foreground">(16 biz days)</span>
-                )}
-                {count > 0 && (
-                  <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold">
-                    {count}
-                  </span>
-                )}
-              </TabsTrigger>
-            );
-          })}
-          <TabsTrigger value="missing-deferral" className="relative">
-            Missing Deferral
-            {missingCount > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold">
-                {missingCount}
-              </span>
-            )}
+    <Tabs defaultValue="pending-procedure" className="w-full">
+      <div className="flex justify-between items-end mb-4">
+        <TabsList>
+          {DEFERRAL_CATEGORIES.map((cat) => (
+            <TabsTrigger key={cat.key} value={cat.key}>
+              {cat.label} ({categorizedOrders[cat.key]?.length || 0})
+            </TabsTrigger>
+          ))}
+          <TabsTrigger value="missing-deferral" className="text-yellow-600">
+            Missing Deferral ({missingCount})
           </TabsTrigger>
         </TabsList>
+        <div className="text-sm text-muted-foreground pr-2">Total: {totalFiltered + missingCount}</div>
+      </div>
 
-        {DEFERRAL_CATEGORIES.map((cat) => {
-          const orders = categorizedOrders[cat.key] || [];
-          const isAwaitingInvoice = cat.key === "awaiting-invoice";
-          return (
-            <TabsContent key={cat.key} value={cat.key}>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    {cat.label}
-                    <span className="text-sm font-normal text-muted-foreground">
-                      — {orders.length} work order{orders.length !== 1 ? "s" : ""}
-                      {isAwaitingInvoice && " (>16 business days, 5 days before 21-day SLA)"}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {renderCategoryTable(orders, true, isAwaitingInvoice)}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          );
-        })}
-
-        {/* Missing Deferral Tab */}
-        <TabsContent value="missing-deferral">
+      {DEFERRAL_CATEGORIES.map((cat) => (
+        <TabsContent key={cat.key} value={cat.key}>
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Missing Deferral
-                <span className="text-sm font-normal text-muted-foreground">
-                  — {missingCount} work order{missingCount !== 1 ? "s" : ""} with deferral = YES not assigned to any category
-                </span>
-              </CardTitle>
+              <CardTitle>{cat.label}</CardTitle>
             </CardHeader>
             <CardContent>
-              {renderCategoryTable(missingDeferralOrders)}
+              {renderCategoryTable(categorizedOrders[cat.key], true, cat.key === 'awaiting-invoice')}
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
-    </div>
+      ))}
+      <TabsContent value="missing-deferral">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-yellow-600">Missing Deferral</CardTitle>
+            <p className="text-sm text-muted-foreground pt-1">
+              Work orders with a specific deferral reason that were not found in any of the uploaded deferral spreadsheets.
+            </p>
+          </CardHeader>
+          <CardContent>{renderCategoryTable(missingDeferralOrders, false)}</CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
   );
 }

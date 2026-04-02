@@ -232,3 +232,4 @@
 - [x] Add expandable row to show full comment when clicking on a row
 - [x] >90 Days deferral tabs: replace Supervisor column with Status column
 - [x] Fix comments upload showing 0 comments - file works via scheduled labor upload but not comments upload
+- [x] Add Last Comment Date to comments storage and display in expandable rows

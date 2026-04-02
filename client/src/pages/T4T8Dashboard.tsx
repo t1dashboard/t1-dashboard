@@ -4,6 +4,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkOrder } from "@/types/workOrder";
+import { CommentData } from "@/lib/api";
 import T1NotInReadyTab from "@/components/T1NotInReadyTab";
 import T4T8NotInApprovedTab from "@/components/T4T8NotInApprovedTab";
 import WOsOver30DaysTab from "@/components/WOsOver30DaysTab";
@@ -14,7 +15,7 @@ import { useState } from "react";
 
 interface T4T8DashboardProps {
   workOrders: WorkOrder[];
-  commentsMap?: Record<string, string>;
+  commentsMap?: Record<string, CommentData>;
 }
 
 export default function T4T8Dashboard({ workOrders, commentsMap = {} }: T4T8DashboardProps) {

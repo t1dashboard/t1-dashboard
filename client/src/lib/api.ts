@@ -315,7 +315,12 @@ export async function uploadCommentsFile(file: File): Promise<{ success: boolean
   return res.json();
 }
 
-export async function getComments(): Promise<Record<string, string>> {
+export interface CommentData {
+  comment: string;
+  date: string | null;
+}
+
+export async function getComments(): Promise<Record<string, CommentData>> {
   const res = await fetch(`${API_BASE}/comments`);
   if (!res.ok) throw new Error(await res.text());
   return res.json();
