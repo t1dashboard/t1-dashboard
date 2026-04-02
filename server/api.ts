@@ -850,17 +850,17 @@ router.post("/comments/upload", upload.single("file"), async (req: Request, res:
 
     // Parse - support various column name formats
     const comments = json.map((row: any) => {
-      let woRaw = row["work_order_id"] ?? row["Work Order"] ?? row["Work Order Number"] ?? row["WO"] ?? Object.values(row)[0] ?? "";
+      let woRaw = row["work_order_id"] ?? row["Work Order"] ?? row["Work Order Number"] ?? row["WO"] ?? row["WO #"] ?? Object.values(row)[0] ?? "";
       // Handle numeric work order IDs (e.g. 3382693.0 -> "3382693")
       let woNum = String(woRaw).trim();
       if (woNum.match(/^\d+\.0$/)) {
         woNum = woNum.replace(/\.0$/, "");
       }
       let comment = String(
-        row["latest_comment"] ?? row["Latest Comment"] ?? row["Comment"] ?? row["Comments"] ?? row["comment"] ?? ""
+        row["latest_comment"] ?? row["Latest Comment"] ?? row["Most Recent Comment"] ?? row["Comment"] ?? row["Comments"] ?? row["comment"] ?? ""
       ).trim();
-      // Filter out hyperlink-only comments (eamprod URLs that are just WO links, not real comments)
-      if (/^https?:\/\/eamprod\.thefacebook\.com/i.test(comment)) {
+      // Filter out any comment containing an eamprod hyperlink — these are just WO reference links, not real comments
+      if (/eamprod\.thefacebook\.com/i.test(comment)) {
         comment = "";
       }
       return { workOrderNumber: woNum, comment };

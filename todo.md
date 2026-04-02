@@ -231,3 +231,4 @@
 - [x] Wire comments upload into frontend (api.ts + Home.tsx upload handler + commentsMap state)
 - [x] Add expandable row to show full comment when clicking on a row
 - [x] >90 Days deferral tabs: replace Supervisor column with Status column
+- [x] Fix comments upload showing 0 comments - file works via scheduled labor upload but not comments upload
