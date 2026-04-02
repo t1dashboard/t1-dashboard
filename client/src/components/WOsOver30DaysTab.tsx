@@ -2,45 +2,45 @@
  * Swiss Rationalism: Clean data presentation for work orders over 30 days with no deferral code
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, parseExcelDate } from "@/lib/dateUtils";
 
 interface WOsOver30DaysTabProps {
   workOrders: WorkOrder[];
-  commentsMap: Record<string, string>;
+  commentsMap?: Record<string, string>;
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
-export default function WOsOver30DaysTab({ workOrders, commentsMap }: WOsOver30DaysTabProps) {
+export default function WOsOver30DaysTab({ workOrders, commentsMap = {} }: WOsOver30DaysTabProps) {
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRow = (woNum: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(woNum)) next.delete(woNum);
+      else next.add(woNum);
+      return next;
+    });
+  };
+
   const groupedOrders = useMemo(() => {
     const today = new Date();
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - 30);
 
     const filtered = workOrders.filter((wo) => {
-      // Basic filters
       const isCancelled = wo["Status"]?.toUpperCase() === "CANCELLED";
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
-      
-      // Type must be Corrective Maintenance
       const isCorrective = wo["Type"] === "Corrective Maintenance";
-      
-      // Status must be Planning or Ready to Schedule
       const status = wo["Status"]?.toUpperCase();
       const isValidStatus = status === "PLANNING" || status === "READY TO SCHEDULE";
-      
-      // Schedule start date must be <= 30 days ago (30+ days old)
       const schedDate = parseExcelDate(wo["Sched. Start Date"]);
       const isOlderThan30Days = schedDate && schedDate <= thirtyDaysAgo;
-      
-      // Deferral Reason Selected must be "NO" (no deferral code)
       const deferralCode = wo["Deferral Reason Selected"]?.toUpperCase();
       const hasDeferralNo = deferralCode === "NO";
-      
-      // Work order number must be numeric only (no letters)
       const woNumber = String(wo["Work Order"]);
       const isNumericOnly = /^\d+$/.test(woNumber);
       
@@ -48,17 +48,13 @@ export default function WOsOver30DaysTab({ workOrders, commentsMap }: WOsOver30D
              isOlderThan30Days && hasDeferralNo && isNumericOnly;
     });
     
-    // Group by data center
     const grouped = filtered.reduce((acc, wo) => {
       const dc = wo["Data Center"] || "Unknown";
-      if (!acc[dc]) {
-        acc[dc] = [];
-      }
+      if (!acc[dc]) acc[dc] = [];
       acc[dc].push(wo);
       return acc;
     }, {} as Record<string, WorkOrder[]>);
 
-    // Sort data centers alphabetically and sort work orders within each group
     const sortedGroups: Record<string, WorkOrder[]> = {};
     Object.keys(grouped)
       .sort()
@@ -90,7 +86,6 @@ export default function WOsOver30DaysTab({ workOrders, commentsMap }: WOsOver30D
 
   return (
     <div className="space-y-6">
-      {/* Summary Card */}
       <Card className="bg-primary/5 border-primary/20">
         <CardContent className="py-6">
           <div className="text-center">
@@ -113,13 +108,13 @@ export default function WOsOver30DaysTab({ workOrders, commentsMap }: WOsOver30D
               <table className="w-full table-fixed">
                 <colgroup>
                   <col style={{ width: "8%" }} />
-                  <col style={{ width: "18%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "8%" }} />
-                  <col style={{ width: "11%" }} />
+                  <col style={{ width: "22%" }} />
                   <col style={{ width: "10%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "27%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "18%" }} />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
@@ -134,31 +129,54 @@ export default function WOsOver30DaysTab({ workOrders, commentsMap }: WOsOver30D
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((wo, index) => (
-                    <tr 
-                      key={index} 
-                      className="border-b border-border/50 hover:bg-muted/20 transition-colors"
-                      style={{ borderBottomWidth: '0.5px' }}
-                    >
-                      <td className="py-3 px-4">
-                        <a
-                          href={`${BASE_URL}${wo["Work Order"]}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
+                  {orders.map((wo) => {
+                    const woNum = String(wo["Work Order"]);
+                    const comment = commentsMap[woNum] || "N/A";
+                    const isExpanded = expandedRows.has(woNum);
+                    return (
+                      <>
+                        <tr 
+                          key={woNum} 
+                          className="border-b border-border/50 hover:bg-muted/20 transition-colors cursor-pointer"
+                          style={{ borderBottomWidth: isExpanded ? '0px' : '0.5px' }}
+                          onClick={(e) => {
+                            if ((e.target as HTMLElement).closest('a')) return;
+                            toggleRow(woNum);
+                          }}
                         >
-                          {wo["Work Order"]}
-                        </a>
-                      </td>
-                      <td className="py-3 px-4 text-sm truncate">{wo["Description"]}</td>
-                      <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
-                      <td className="py-3 px-4 text-sm truncate">{wo["Shift"]}</td>
-                      <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
-                      <td className="py-3 px-4 text-sm">{wo["Supervisor"]}</td>
-                      <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
-                      <td className="py-3 px-4 text-sm text-muted-foreground truncate" title={commentsMap[String(wo["Work Order"])] || ""}>{commentsMap[String(wo["Work Order"])] || ""}</td>
-                    </tr>
-                  ))}
+                          <td className="py-3 px-4">
+                            <a
+                              href={`${BASE_URL}${woNum}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              {woNum}
+                            </a>
+                          </td>
+                          <td className="py-3 px-4 text-sm truncate">{wo["Description"]}</td>
+                          <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
+                          <td className="py-3 px-4 text-sm truncate">{wo["Shift"]}</td>
+                          <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
+                          <td className="py-3 px-4 text-sm">{wo["Supervisor"]}</td>
+                          <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
+                          <td className="py-3 px-4 text-sm truncate text-muted-foreground" title={comment}>
+                            {comment}
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr key={`${woNum}-expanded`} className="border-b border-border/50 bg-muted/10" style={{ borderBottomWidth: '0.5px' }}>
+                            <td colSpan={8} className="py-3 px-4">
+                              <div className="text-sm">
+                                <span className="font-medium text-foreground">Full Comment: </span>
+                                <span className="text-muted-foreground">{comment}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

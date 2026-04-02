@@ -287,8 +287,18 @@ export async function addInvoiceSLAOverrides(records: { workOrderNumber: string;
   return res.json();
 }
 
+export async function unlockWorkOrders(workOrderNumbers: string[]): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/schedule-locks/unlock`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workOrderNumbers }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 // ============================================================
-// Work Order Comments
+// Comments
 // ============================================================
 
 export async function uploadCommentsFile(file: File): Promise<{ success: boolean; count: number }> {
@@ -307,16 +317,6 @@ export async function uploadCommentsFile(file: File): Promise<{ success: boolean
 
 export async function getComments(): Promise<Record<string, string>> {
   const res = await fetch(`${API_BASE}/comments`);
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
-export async function unlockWorkOrders(workOrderNumbers: string[]): Promise<{ success: boolean }> {
-  const res = await fetch(`${API_BASE}/schedule-locks/unlock`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ workOrderNumbers }),
-  });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }

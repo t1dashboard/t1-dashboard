@@ -14,10 +14,10 @@ import { useState } from "react";
 
 interface T4T8DashboardProps {
   workOrders: WorkOrder[];
-  commentsMap: Record<string, string>;
+  commentsMap?: Record<string, string>;
 }
 
-export default function T4T8Dashboard({ workOrders, commentsMap }: T4T8DashboardProps) {
+export default function T4T8Dashboard({ workOrders, commentsMap = {} }: T4T8DashboardProps) {
   const [activeTab, setActiveTab] = useState("t1notready");
 
   return (

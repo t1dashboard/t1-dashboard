@@ -424,7 +424,7 @@ export default function Home() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-3 gap-6">
                   {/* Work Order Upload */}
                   <div>
                     <label className="block text-sm font-medium mb-2">Work Order Information</label>
@@ -511,34 +511,6 @@ export default function Home() {
                       <p className="text-xs text-green-600 mt-2">✓ {pmCodes.length} PM codes loaded</p>
                     )}
                   </div>
-                  {/* Comments Upload */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Comments</label>
-                    <label className={`flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors ${uploading === "comments" ? "opacity-50 pointer-events-none" : ""}`}>
-                      {uploading === "comments" ? (
-                        <>
-                          <Loader2 className="h-8 w-8 text-muted-foreground mb-2 animate-spin" />
-                          <span className="text-sm text-muted-foreground">Uploading...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                          <span className="text-sm text-muted-foreground">Click to upload</span>
-                          <span className="text-xs text-muted-foreground mt-1">Most recent WO comments</span>
-                        </>
-                      )}
-                      <input
-                        type="file"
-                        accept=".xlsx,.xls,.csv"
-                        onChange={handleCommentsUpload}
-                        className="hidden"
-                        disabled={uploading !== null}
-                      />
-                    </label>
-                    {Object.keys(commentsMap).length > 0 && (
-                      <p className="text-xs text-green-600 mt-2">✓ {Object.keys(commentsMap).length} comments loaded</p>
-                    )}
-                  </div>
                 </div>
 
                 {/* Deferral Work Orders Upload - 6 Categories */}
@@ -579,6 +551,35 @@ export default function Home() {
                   </div>
                   {deferralWorkOrders.length > 0 && (
                     <p className="text-xs text-green-600 mt-2">✓ {deferralWorkOrders.length} total deferral work orders loaded</p>
+                  )}
+                </div>
+
+                {/* Comments Upload */}
+                <div className="mt-6">
+                  <label className="block text-sm font-medium mb-2">Work Order Comments</label>
+                  <label className={`flex flex-col items-center justify-center h-40 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors ${uploading === "comments" ? "opacity-50 pointer-events-none" : ""}`}>
+                    {uploading === "comments" ? (
+                      <>
+                        <Loader2 className="h-8 w-8 text-muted-foreground mb-2 animate-spin" />
+                        <span className="text-sm text-muted-foreground">Uploading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                        <span className="text-sm text-muted-foreground">Click to upload</span>
+                        <span className="text-xs text-muted-foreground mt-1">Hexagon export with latest comments</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={handleCommentsUpload}
+                      className="hidden"
+                      disabled={uploading !== null}
+                    />
+                  </label>
+                  {Object.keys(commentsMap).length > 0 && (
+                    <p className="text-xs text-green-600 mt-2">✓ {Object.keys(commentsMap).length} comments loaded</p>
                   )}
                 </div>
 

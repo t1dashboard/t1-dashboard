@@ -11,13 +11,23 @@ import DataCenterFilter from "@/components/DataCenterFilter";
 
 interface T3NotInReadyTabProps {
   workOrders: WorkOrder[];
-  commentsMap: Record<string, string>;
+  commentsMap?: Record<string, string>;
 }
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
-export default function T3NotInReadyTab({ workOrders, commentsMap }: T3NotInReadyTabProps) {
+export default function T3NotInReadyTab({ workOrders, commentsMap = {} }: T3NotInReadyTabProps) {
   const [selectedDCs, setSelectedDCs] = useState<Set<string>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRow = (woNum: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(woNum)) next.delete(woNum);
+      else next.add(woNum);
+      return next;
+    });
+  };
 
   const t3NotReadyOrders = useMemo(() => {
     const filtered = workOrders.filter((wo) => {
@@ -30,7 +40,6 @@ export default function T3NotInReadyTab({ workOrders, commentsMap }: T3NotInRead
       return !isCancelled && !isClosed && !isInProcess && !isCMCC && !isReady && isT3Week(wo["Sched. Start Date"]);
     });
     
-    // Sort alphabetically by data center
     return filtered.sort((a, b) => {
       const dcA = a["Data Center"] || "";
       const dcB = b["Data Center"] || "";
@@ -38,7 +47,6 @@ export default function T3NotInReadyTab({ workOrders, commentsMap }: T3NotInRead
     });
   }, [workOrders]);
 
-  // Get all unique data centers from the filtered orders
   const allDataCenters = useMemo(() => {
     const dcs = new Set<string>();
     t3NotReadyOrders.forEach((wo) => {
@@ -47,13 +55,11 @@ export default function T3NotInReadyTab({ workOrders, commentsMap }: T3NotInRead
     return Array.from(dcs);
   }, [t3NotReadyOrders]);
 
-  // Apply data center filter
   const filteredOrders = useMemo(() => {
     if (selectedDCs.size === 0) return t3NotReadyOrders;
     return t3NotReadyOrders.filter((wo) => selectedDCs.has(wo["Data Center"]));
   }, [t3NotReadyOrders, selectedDCs]);
 
-  // Get Work Week Leaders for T3 week - always compute, regardless of work order count
   const { start: t3Start } = getT3WeekRange();
   const weekLeaders = getWorkWeekLeaders(t3Start);
 
@@ -105,14 +111,14 @@ export default function T3NotInReadyTab({ workOrders, commentsMap }: T3NotInRead
             <table className="w-full table-fixed">
               <colgroup>
                 <col style={{ width: "8%" }} />
-                <col style={{ width: "18%" }} />
+                <col style={{ width: "20%" }} />
                 <col style={{ width: "7%" }} />
-                <col style={{ width: "9%" }} />
+                <col style={{ width: "10%" }} />
                 <col style={{ width: "8%" }} />
-                <col style={{ width: "11%" }} />
+                <col style={{ width: "12%" }} />
                 <col style={{ width: "10%" }} />
                 <col style={{ width: "9%" }} />
-                <col style={{ width: "20%" }} />
+                <col style={{ width: "16%" }} />
               </colgroup>
               <thead>
                 <tr className="border-b border-border bg-muted/30">
@@ -128,34 +134,55 @@ export default function T3NotInReadyTab({ workOrders, commentsMap }: T3NotInRead
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((wo) => (
-                  <tr 
-                    key={wo["Work Order"]} 
-                    className="border-b border-border/50 hover:bg-muted/20 transition-colors"
-                    style={{ borderBottomWidth: '0.5px' }}
-                  >
-                    <td className="py-3 px-4">
-                      <a
-                        href={`${BASE_URL}${wo["Work Order"]}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="work-order-number text-primary hover:underline"
+                {filteredOrders.map((wo) => {
+                  const woNum = String(wo["Work Order"]);
+                  const comment = commentsMap[woNum] || "N/A";
+                  const isExpanded = expandedRows.has(woNum);
+                  return (
+                    <>
+                      <tr 
+                        key={woNum} 
+                        className="border-b border-border/50 hover:bg-muted/20 transition-colors cursor-pointer"
+                        style={{ borderBottomWidth: isExpanded ? '0px' : '0.5px' }}
+                        onClick={(e) => {
+                          if ((e.target as HTMLElement).closest('a')) return;
+                          toggleRow(woNum);
+                        }}
                       >
-                        {wo["Work Order"]}
-                      </a>
-                    </td>
-                    <td className="py-3 px-4 text-sm truncate">{wo["Description"]}</td>
-                    <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
-                    <td className="py-3 px-4 text-sm">
-                      {formatDate(wo["Sched. Start Date"])}
-                    </td>
-                    <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
-                    <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
-                    <td className="py-3 px-4 text-sm">{wo["Supervisor"]}</td>
-                    <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
-                    <td className="py-3 px-4 text-sm text-muted-foreground truncate" title={commentsMap[String(wo["Work Order"])] || ""}>{commentsMap[String(wo["Work Order"])] || ""}</td>
-                  </tr>
-                ))}
+                        <td className="py-3 px-4">
+                          <a
+                            href={`${BASE_URL}${woNum}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="work-order-number text-primary hover:underline"
+                          >
+                            {woNum}
+                          </a>
+                        </td>
+                        <td className="py-3 px-4 text-sm truncate">{wo["Description"]}</td>
+                        <td className="py-3 px-4 text-sm font-medium">{wo["Data Center"]}</td>
+                        <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
+                        <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
+                        <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
+                        <td className="py-3 px-4 text-sm">{wo["Supervisor"]}</td>
+                        <td className="py-3 px-4 text-sm">{wo["Status"]}</td>
+                        <td className="py-3 px-4 text-sm truncate text-muted-foreground" title={comment}>
+                          {comment}
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr key={`${woNum}-expanded`} className="border-b border-border/50 bg-muted/10" style={{ borderBottomWidth: '0.5px' }}>
+                          <td colSpan={9} className="py-3 px-4">
+                            <div className="text-sm">
+                              <span className="font-medium text-foreground">Full Comment: </span>
+                              <span className="text-muted-foreground">{comment}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })}
               </tbody>
             </table>
           </div>

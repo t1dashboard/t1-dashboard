@@ -25,10 +25,10 @@ interface T1T3DashboardProps {
   workOrders: WorkOrder[];
   scheduledLabor: ScheduledLabor[];
   pmCodes: PMCode[];
-  commentsMap: Record<string, string>;
+  commentsMap?: Record<string, string>;
 }
 
-export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes, commentsMap }: T1T3DashboardProps) {
+export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes, commentsMap = {} }: T1T3DashboardProps) {
   const [activeTab, setActiveTab] = useState("t3notready");
   const [searchQuery, setSearchQuery] = useState("");
   const [lastUploaded, setLastUploaded] = useState<string | null>(null);

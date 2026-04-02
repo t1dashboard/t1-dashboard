@@ -818,10 +818,9 @@ router.get("/schedule-adherence/by-week", async (req: Request, res: Response) =>
 });
 
 // ============================================================
-// Work Order Comments - File Upload
+// Comments Upload & Retrieval
 // ============================================================
 
-// Upload comments via Excel file (expects columns: work_order_id + latest_comment)
 router.post("/comments/upload", upload.single("file"), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
@@ -895,22 +894,19 @@ router.post("/comments/upload", upload.single("file"), async (req: Request, res:
 // Get all comments as a map
 router.get("/comments", async (_req: Request, res: Response) => {
   try {
-    // Check if table exists first
-    try {
-      const rows = await query("SELECT work_order_number, latest_comment FROM work_order_comments");
-      const commentMap: Record<string, string> = {};
-      rows.forEach((row: any) => {
-        commentMap[row.work_order_number] = row.latest_comment;
-      });
-      res.json(commentMap);
-    } catch (e: any) {
-      // Table doesn't exist yet, return empty
-      if (e.message?.includes("doesn't exist")) {
-        res.json({});
-      } else {
-        throw e;
-      }
+    await execute(`CREATE TABLE IF NOT EXISTS work_order_comments (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      work_order_number VARCHAR(50) NOT NULL,
+      latest_comment MEDIUMTEXT,
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_wo (work_order_number)
+    )`);
+    const rows = await query("SELECT work_order_number, latest_comment FROM work_order_comments");
+    const map: Record<string, string> = {};
+    for (const row of rows as any[]) {
+      map[row.work_order_number] = row.latest_comment;
     }
+    res.json(map);
   } catch (error: any) {
     console.error("Error fetching comments:", error);
     res.status(500).json({ error: error.message });

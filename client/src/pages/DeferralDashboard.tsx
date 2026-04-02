@@ -55,12 +55,22 @@ function calculateBusinessDaysSinceStart(schedStartDate: string | null | undefin
 
 interface DeferralDashboardProps {
   workOrders: WorkOrder[];
-  commentsMap: Record<string, string>;
+  commentsMap?: Record<string, string>;
 }
 
-export default function DeferralDashboard({ workOrders, commentsMap }: DeferralDashboardProps) {
+export default function DeferralDashboard({ workOrders, commentsMap = {} }: DeferralDashboardProps) {
   const [deferralOrders, setDeferralOrders] = useState<DeferralWorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRow = (woNum: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(woNum)) next.delete(woNum);
+      else next.add(woNum);
+      return next;
+    });
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -183,28 +193,33 @@ export default function DeferralDashboard({ workOrders, commentsMap }: DeferralD
               <table className="w-full text-sm table-fixed">
                 <colgroup>
                   <col style={{ width: "7%" }} />
-                  <col style={{ width: "17%" }} />
+                  <col style={{ width: "20%" }} />
                   <col style={{ width: "7%" }} />
-                  <col style={{ width: "11%" }} />
-                  <col style={{ width: "11%" }} />
                   <col style={{ width: "9%" }} />
-                  <col style={{ width: "8%" }} />
-                  <col style={{ width: "30%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "16%" }} />
+                  <col style={{ width: "10%" }} />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-2 px-3 font-medium">Work Order</th>
                     <th className="text-left py-2 px-3 font-medium">Description</th>
                     <th className="text-left py-2 px-3 font-medium">Data Center</th>
-                    <th className="text-left py-2 px-3 font-medium">Supervisor</th>
+                    <th className="text-left py-2 px-3 font-medium">Status</th>
                     <th className="text-left py-2 px-3 font-medium">Assigned To</th>
                     <th className="text-left py-2 px-3 font-medium">Sched Start Date</th>
                     <th className="text-right py-2 px-3 font-medium">{daysColumnLabel}</th>
                     <th className="text-left py-2 px-3 font-medium">Most Recent Comment</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {byDataCenter[dc].map((wo: any) => {
+                    const woNum = String(wo["Work Order"]);
+                    const comment = commentsMap[woNum] || "N/A";
+                    const isExpanded = expandedRows.has(woNum);
                     const displayDays = isAwaitingInvoice
                       ? calculateBusinessDaysSinceStart(wo["Sched. Start Date"])
                       : calculateDaysSinceStart(wo["Sched. Start Date"]);
@@ -212,7 +227,6 @@ export default function DeferralDashboard({ workOrders, commentsMap }: DeferralD
                     // Color thresholds differ for awaiting invoice (business days) vs others (calendar days)
                     const getColorClass = (days: number) => {
                       if (isAwaitingInvoice) {
-                        // 21 = SLA deadline, 19+ = critical, 17-18 = warning
                         if (days >= 21) return "bg-red-100 text-red-700";
                         if (days >= 19) return "bg-orange-100 text-orange-700";
                         return "bg-yellow-100 text-yellow-700";
@@ -224,33 +238,56 @@ export default function DeferralDashboard({ workOrders, commentsMap }: DeferralD
                     };
 
                     return (
-                      <tr key={wo["Work Order"]} className="border-b border-border/50 hover:bg-muted/30">
-                        <td className="py-2 px-3">
-                          <a
-                            href={`https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=${wo["Work Order"]}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline font-medium"
-                          >
-                            {wo["Work Order"]}
-                          </a>
-                        </td>
-                        <td className="py-2 px-3 truncate">{wo["Description"]}</td>
-                        <td className="py-2 px-3 font-medium">{wo["Data Center"]}</td>
-                        <td className="py-2 px-3">{wo["Supervisor"] || "—"}</td>
-                        <td className="py-2 px-3">{wo["Assigned To Name"] || wo["Assigned To"] || "—"}</td>
-                        <td className="py-2 px-3 text-muted-foreground">{wo["Sched. Start Date"] || "—"}</td>
-                        <td className="py-2 px-3 text-right">
-                          {displayDays !== null ? (
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${getColorClass(displayDays)}`}>
-                              {displayDays} {isAwaitingInvoice ? "biz days" : "days"}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">N/A</span>
-                          )}
-                        </td>
-                        <td className="py-2 px-3 text-muted-foreground truncate" title={commentsMap[String(wo["Work Order"])] || ""}>{commentsMap[String(wo["Work Order"])] || ""}</td>
-                      </tr>
+                      <>
+                        <tr
+                          key={woNum}
+                          className="border-b border-border/50 hover:bg-muted/30 cursor-pointer"
+                          style={{ borderBottomWidth: isExpanded ? '0px' : '0.5px' }}
+                          onClick={(e) => {
+                            if ((e.target as HTMLElement).closest('a')) return;
+                            toggleRow(woNum);
+                          }}
+                        >
+                          <td className="py-2 px-3">
+                            <a
+                              href={`https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=${woNum}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline font-medium"
+                            >
+                              {woNum}
+                            </a>
+                          </td>
+                          <td className="py-2 px-3 truncate">{wo["Description"]}</td>
+                          <td className="py-2 px-3 font-medium">{wo["Data Center"]}</td>
+                          <td className="py-2 px-3">{wo["Status"] || "—"}</td>
+                          <td className="py-2 px-3">{wo["Assigned To Name"] || wo["Assigned To"] || "—"}</td>
+                          <td className="py-2 px-3 text-muted-foreground">{wo["Sched. Start Date"] || "—"}</td>
+                          <td className="py-2 px-3 text-right">
+                            {displayDays !== null ? (
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${getColorClass(displayDays)}`}>
+                                {displayDays} {isAwaitingInvoice ? "biz days" : "days"}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">N/A</span>
+                            )}
+                          </td>
+                          <td className="py-2 px-3 truncate text-muted-foreground" title={comment}>
+                            {comment}
+                          </td>
+                          <td></td>
+                        </tr>
+                        {isExpanded && (
+                          <tr key={`${woNum}-expanded`} className="border-b border-border/50 bg-muted/10" style={{ borderBottomWidth: '0.5px' }}>
+                            <td colSpan={9} className="py-3 px-4">
+                              <div className="text-sm">
+                                <span className="font-medium text-foreground">Full Comment: </span>
+                                <span className="text-muted-foreground">{comment}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     );
                   })}
                 </tbody>

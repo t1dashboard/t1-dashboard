@@ -226,11 +226,8 @@
 - [x] Add dark/light mode toggle in the top left corner of the sidebar
 - [x] Update work week leaders from WorkExecutionandPlanningGuide.docx
 - [x] Remove T-week date lines from T1-T3 Dashboard header
-- [x] Add comments spreadsheet upload on Upload Data page (work_order_id + latest comment)
-- [x] Add Most Recent Comment column to T1/T2/T3 Not in Ready tabs
-- [x] Add Most Recent Comment column to T4-T8 Not in Approved tab
-- [x] Add Most Recent Comment column to >30 Days tab
-- [x] Add Most Recent Comment column to >90 Days Deferral tabs
-- [x] Fix comments upload to handle large spreadsheet files (increase file size limit)
-- [x] Map correct columns from user's comments spreadsheet (work order number + latest comment)
-- [x] Filter out hyperlink-only comments (eamprod URLs) and show N/A instead
+- [x] Add expandable row to show full comment when clicking on a row (T1/T2/T3 Not in Ready, T4-T8 Not in Approved, >30 Days, >90 Days Deferral)
+- [x] Fix frontend comments sheet upload error (works via curl but fails in browser)
+- [x] Wire comments upload into frontend (api.ts + Home.tsx upload handler + commentsMap state)
+- [x] Add expandable row to show full comment when clicking on a row
+- [x] >90 Days deferral tabs: replace Supervisor column with Status column
