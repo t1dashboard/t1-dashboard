@@ -312,6 +312,14 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
           {wo["Description"]}
         </div>
         <div className="font-medium mt-0.5">{wo["Data Center"]}</div>
+        {wo["Assigned To Name"] && (
+          <div className="text-muted-foreground mt-0.5 truncate" title={wo["Assigned To Name"]}>
+            {wo["Assigned To Name"]}
+          </div>
+        )}
+        {wo["Shift"] && (
+          <div className="text-muted-foreground">{wo["Shift"]}</div>
+        )}
       </a>
     );
   };
@@ -554,6 +562,11 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
                                 <span className="font-medium">{wo["Data Center"]}</span>
                                 <span className="text-muted-foreground">{wo["Shift"]}</span>
                               </div>
+                              {wo["Assigned To Name"] && (
+                                <div className="text-muted-foreground mt-0.5 truncate" title={wo["Assigned To Name"]}>
+                                  {wo["Assigned To Name"]}
+                                </div>
+                              )}
                               <div className="text-muted-foreground mt-0.5">{wo["Status"]}</div>
                             </a>
                           );
@@ -597,6 +610,11 @@ export default function WorkLoadTab({ workOrders, weekFilter = "t1", onWeekChang
                                 <span className="font-medium">{wo["Data Center"]}</span>
                                 <span className="text-muted-foreground">{wo["Shift"]}</span>
                               </div>
+                              {wo["Assigned To Name"] && (
+                                <div className="text-muted-foreground mt-0.5 truncate" title={wo["Assigned To Name"]}>
+                                  {wo["Assigned To Name"]}
+                                </div>
+                              )}
                               <div className="text-muted-foreground mt-0.5">{wo["Status"]}</div>
                             </a>
                           );
