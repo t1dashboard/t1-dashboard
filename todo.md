@@ -235,3 +235,5 @@
 - [x] Add Last Comment Date to comments storage and display in expandable rows
 - [x] Add Assigned To name and Shift under each work order in the Workload tab
 - [x] Reorganize Production Impact tab: sort by date first, then by building within each date (remove separate building group sections)
+- [x] Filter out work orders with description containing "MSME/VENDOR] PROCESS WATER / WASTEWATER S" from Locked Schedule Review
+- [x] One-time removal: remove WO 2613203 from Sched Start Date Moved section
