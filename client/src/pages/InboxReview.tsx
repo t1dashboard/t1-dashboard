@@ -105,18 +105,43 @@ export default function InboxReview({ workOrders, scheduledLabor, commentsMap = 
       });
   }, [workOrders]);
 
-  // Group production impact orders by data center
-  const productionImpactByDC = useMemo(() => {
-    const groups: Record<string, WorkOrder[]> = {};
+  // Group production impact orders by date first, then by building within each date
+  const productionImpactByDate = useMemo(() => {
+    const dateGroups: Record<string, WorkOrder[]> = {};
     productionImpactOrders.forEach(wo => {
-      const dc = wo["Data Center"] || "Unknown";
-      if (!groups[dc]) groups[dc] = [];
-      groups[dc].push(wo);
+      const schedDate = parseExcelDate(wo["Sched. Start Date"]);
+      const dateKey = schedDate ? formatDate(wo["Sched. Start Date"]) : "No Date";
+      if (!dateGroups[dateKey]) dateGroups[dateKey] = [];
+      dateGroups[dateKey].push(wo);
     });
-    return Object.keys(groups).sort().map(dc => ({
-      dataCenter: dc,
-      orders: groups[dc]
-    }));
+
+    // Sort dates chronologically
+    const sortedDates = Object.keys(dateGroups).sort((a, b) => {
+      if (a === "No Date") return 1;
+      if (b === "No Date") return -1;
+      const dateA = new Date(a);
+      const dateB = new Date(b);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    return sortedDates.map(date => {
+      // Within each date, group by building/data center
+      const dcGroups: Record<string, WorkOrder[]> = {};
+      dateGroups[date].forEach(wo => {
+        const dc = wo["Data Center"] || "Unknown";
+        if (!dcGroups[dc]) dcGroups[dc] = [];
+        dcGroups[dc].push(wo);
+      });
+      const buildings = Object.keys(dcGroups).sort().map(dc => ({
+        dataCenter: dc,
+        orders: dcGroups[dc]
+      }));
+      return {
+        date,
+        totalCount: dateGroups[date].length,
+        buildings
+      };
+    });
   }, [productionImpactOrders]);
 
   return (
@@ -301,78 +326,88 @@ export default function InboxReview({ workOrders, scheduledLabor, commentsMap = 
             <CardHeader>
               <CardTitle>Production Impact</CardTitle>
               <p className="text-sm text-muted-foreground">
-                {productionImpactOrders.length} T1-T3 work orders with Production Impact of 10, 15, 20, 25, or 30 (excluding 40), organized by data center
+                {productionImpactOrders.length} T1-T3 work orders with Production Impact of 10, 15, 20, 25, or 30 (excluding 40), organized by date then building
               </p>
             </CardHeader>
             <CardContent className="p-0">
-              {productionImpactByDC.length > 0 ? (
-                productionImpactByDC.map(group => (
-                  <div key={group.dataCenter} className="border-b border-border last:border-b-0">
-                    <div className="px-4 py-3 bg-muted/40 border-b border-border">
-                      <h3 className="text-sm font-semibold text-foreground">
-                        {group.dataCenter} ({group.orders.length})
+              {productionImpactByDate.length > 0 ? (
+                productionImpactByDate.map(dateGroup => (
+                  <div key={dateGroup.date} className="border-b border-border last:border-b-0">
+                    {/* Date header */}
+                    <div className="px-4 py-3 bg-primary/10 border-b border-border">
+                      <h3 className="text-sm font-bold text-foreground">
+                        {dateGroup.date} ({dateGroup.totalCount} WOs)
                       </h3>
                     </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm table-fixed">
-                        <colgroup>
-                          <col style={{ width: "10%" }} />
-                          <col style={{ width: "28%" }} />
-                          <col style={{ width: "10%" }} />
-                          <col style={{ width: "12%" }} />
-                          <col style={{ width: "12%" }} />
-                          <col style={{ width: "10%" }} />
-                          <col style={{ width: "8%" }} />
-                          <col style={{ width: "10%" }} />
-                        </colgroup>
-                        <thead>
-                          <tr className="border-b border-border bg-muted/30">
-                            <th className="text-left py-3 px-4 font-medium">Work Order</th>
-                            <th className="text-left py-3 px-4 font-medium">Description</th>
-                            <th className="text-left py-3 px-4 font-medium">Data Center</th>
-                            <th className="text-left py-3 px-4 font-medium">Sched Start Date</th>
-                            <th className="text-left py-3 px-4 font-medium">Shift</th>
-                            <th className="text-left py-3 px-4 font-medium">Status</th>
-                            <th className="text-left py-3 px-4 font-medium">Impact</th>
-                            <th className="text-left py-3 px-4 font-medium">Priority</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {group.orders.map((wo) => {
-                            const impact = Number(wo["Production Impact"]);
-                            // Color-code by impact severity: lower number = higher impact
-                            const impactColor = impact <= 15
-                              ? "text-red-600 font-semibold"
-                              : impact <= 20
-                                ? "text-orange-600 font-semibold"
-                                : impact <= 25
-                                  ? "text-yellow-600 font-medium"
-                                  : "text-foreground";
-                            return (
-                              <tr key={wo["Work Order"]} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
-                                <td className="py-3 px-4">
-                                  <a
-                                    href={`${BASE_URL}${wo["Work Order"]}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-primary hover:underline font-mono"
-                                  >
-                                    {wo["Work Order"]}
-                                  </a>
-                                </td>
-                                <td className="py-3 px-4 truncate" title={wo["Description"]}>{wo["Description"]}</td>
-                                <td className="py-3 px-4">{wo["Data Center"]}</td>
-                                <td className="py-3 px-4">{formatDate(wo["Sched. Start Date"])}</td>
-                                <td className="py-3 px-4">{wo["Shift"]}</td>
-                                <td className="py-3 px-4">{wo["Status"]}</td>
-                                <td className={`py-3 px-4 ${impactColor}`}>{impact}</td>
-                                <td className="py-3 px-4">{wo["Priority"]}</td>
+                    {/* Building sub-groups within this date */}
+                    {dateGroup.buildings.map(building => (
+                      <div key={`${dateGroup.date}-${building.dataCenter}`}>
+                        <div className="px-6 py-2 bg-muted/40 border-b border-border/50">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            {building.dataCenter} ({building.orders.length})
+                          </span>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm table-fixed">
+                            <colgroup>
+                              <col style={{ width: "10%" }} />
+                              <col style={{ width: "32%" }} />
+                              <col style={{ width: "10%" }} />
+                              <col style={{ width: "12%" }} />
+                              <col style={{ width: "12%" }} />
+                              <col style={{ width: "8%" }} />
+                              <col style={{ width: "8%" }} />
+                              <col style={{ width: "8%" }} />
+                            </colgroup>
+                            <thead>
+                              <tr className="border-b border-border bg-muted/30">
+                                <th className="text-left py-2 px-4 font-medium text-xs">Work Order</th>
+                                <th className="text-left py-2 px-4 font-medium text-xs">Description</th>
+                                <th className="text-left py-2 px-4 font-medium text-xs">Assigned To</th>
+                                <th className="text-left py-2 px-4 font-medium text-xs">Shift</th>
+                                <th className="text-left py-2 px-4 font-medium text-xs">Status</th>
+                                <th className="text-left py-2 px-4 font-medium text-xs">Impact</th>
+                                <th className="text-left py-2 px-4 font-medium text-xs">Priority</th>
+                                <th className="text-left py-2 px-4 font-medium text-xs">Type</th>
                               </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                            </thead>
+                            <tbody>
+                              {building.orders.map((wo) => {
+                                const impact = Number(wo["Production Impact"]);
+                                const impactColor = impact <= 15
+                                  ? "text-red-600 font-semibold"
+                                  : impact <= 20
+                                    ? "text-orange-600 font-semibold"
+                                    : impact <= 25
+                                      ? "text-yellow-600 font-medium"
+                                      : "text-foreground";
+                                return (
+                                  <tr key={wo["Work Order"]} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
+                                    <td className="py-2 px-4">
+                                      <a
+                                        href={`${BASE_URL}${wo["Work Order"]}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:underline font-mono text-xs"
+                                      >
+                                        {wo["Work Order"]}
+                                      </a>
+                                    </td>
+                                    <td className="py-2 px-4 truncate text-xs" title={wo["Description"]}>{wo["Description"]}</td>
+                                    <td className="py-2 px-4 text-xs truncate" title={wo["Assigned To Name"]}>{wo["Assigned To Name"] || "—"}</td>
+                                    <td className="py-2 px-4 text-xs">{wo["Shift"]}</td>
+                                    <td className="py-2 px-4 text-xs">{wo["Status"]}</td>
+                                    <td className={`py-2 px-4 text-xs ${impactColor}`}>{impact}</td>
+                                    <td className="py-2 px-4 text-xs">{wo["Priority"]}</td>
+                                    <td className="py-2 px-4 text-xs">{wo["Type"]}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ))
               ) : (

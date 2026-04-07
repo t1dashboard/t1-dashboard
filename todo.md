@@ -234,3 +234,4 @@
 - [x] Fix comments upload showing 0 comments - file works via scheduled labor upload but not comments upload
 - [x] Add Last Comment Date to comments storage and display in expandable rows
 - [x] Add Assigned To name and Shift under each work order in the Workload tab
+- [x] Reorganize Production Impact tab: sort by date first, then by building within each date (remove separate building group sections)
