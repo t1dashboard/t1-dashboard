@@ -411,11 +411,25 @@ router.get("/upload-metadata", async (_req: Request, res: Response) => {
       query("SELECT MAX(uploaded_at) as last_uploaded FROM deferral_work_orders"),
     ]);
 
+    // Get webhook sync timestamps from upload_metadata table
+    let webhookSync: Record<string, string | null> = { work_orders: null, scheduled_labor: null, comments: null };
+    try {
+      await execute(`CREATE TABLE IF NOT EXISTS upload_metadata (
+        data_type VARCHAR(50) PRIMARY KEY,
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`);
+      const syncRows = await query("SELECT data_type, uploaded_at FROM upload_metadata") as any[];
+      for (const row of syncRows) {
+        webhookSync[row.data_type] = row.uploaded_at;
+      }
+    } catch(e) { /* table may not exist yet */ }
+
     res.json({
       workOrders: woRows[0]?.last_uploaded || null,
       scheduledLabor: slRows[0]?.last_uploaded || null,
       pmCodes: pmRows[0]?.last_uploaded || null,
       deferralWorkOrders: defRows[0]?.last_uploaded || null,
+      webhookSync,
     });
   } catch (error: any) {
     console.error("Error fetching upload metadata:", error);

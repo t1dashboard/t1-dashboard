@@ -126,6 +126,12 @@ export interface UploadMetadata {
   workOrders: string | null;
   scheduledLabor: string | null;
   pmCodes: string | null;
+  deferralWorkOrders: string | null;
+  webhookSync: {
+    work_orders: string | null;
+    scheduled_labor: string | null;
+    comments: string | null;
+  };
 }
 
 export async function getUploadMetadata(): Promise<UploadMetadata> {

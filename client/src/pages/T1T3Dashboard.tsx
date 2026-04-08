@@ -32,6 +32,7 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes, com
   const [activeTab, setActiveTab] = useState("t3notready");
   const [searchQuery, setSearchQuery] = useState("");
   const [lastUploaded, setLastUploaded] = useState<string | null>(null);
+  const [lastWebhookSync, setLastWebhookSync] = useState<string | null>(null);
   const [complianceAlerts, setComplianceAlerts] = useState<ComplianceAlert[]>([]);
   const [alertsDismissed, setAlertsDismissed] = useState(false);
   const [workloadWeek, setWorkloadWeek] = useState<WeekFilter>("t1");
@@ -42,6 +43,7 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes, com
       try {
         const metadata = await getUploadMetadata();
         setLastUploaded(metadata.workOrders);
+        setLastWebhookSync(metadata.webhookSync?.work_orders || null);
       } catch (e) {
         console.error("Error loading upload metadata:", e);
       }
@@ -108,20 +110,34 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes, com
     );
   }, [workOrders, searchQuery]);
 
+  // Use the most recent timestamp from either manual upload or webhook sync
+  const lastDataUpdate = useMemo(() => {
+    const dates: Date[] = [];
+    if (lastUploaded) dates.push(new Date(lastUploaded));
+    if (lastWebhookSync) dates.push(new Date(lastWebhookSync));
+    if (dates.length === 0) return null;
+    return dates.reduce((a, b) => a > b ? a : b);
+  }, [lastUploaded, lastWebhookSync]);
+
+  const syncSource = useMemo(() => {
+    if (!lastUploaded && !lastWebhookSync) return null;
+    if (!lastWebhookSync) return 'upload';
+    if (!lastUploaded) return 'auto-sync';
+    return new Date(lastWebhookSync) >= new Date(lastUploaded) ? 'auto-sync' : 'upload';
+  }, [lastUploaded, lastWebhookSync]);
+
   // Stale data check (>7 days)
   const isStale = useMemo(() => {
-    if (!lastUploaded) return false;
-    const uploadDate = new Date(lastUploaded);
+    if (!lastDataUpdate) return false;
     const now = new Date();
-    const diffDays = Math.ceil((now.getTime() - uploadDate.getTime()) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil((now.getTime() - lastDataUpdate.getTime()) / (1000 * 60 * 60 * 24));
     return diffDays > 7;
-  }, [lastUploaded]);
+  }, [lastDataUpdate]);
 
   const formattedUploadDate = useMemo(() => {
-    if (!lastUploaded) return null;
-    const d = new Date(lastUploaded);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
-  }, [lastUploaded]);
+    if (!lastDataUpdate) return null;
+    return lastDataUpdate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }, [lastDataUpdate]);
 
   return (
     <div className="space-y-4">
@@ -131,11 +147,11 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes, com
           <h2 className="text-2xl font-medium text-foreground">T1-T3 Dashboard</h2>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Last uploaded timestamp */}
+          {/* Last synced/uploaded timestamp */}
           {formattedUploadDate && (
             <div className={`text-xs px-3 py-1.5 rounded-full ${isStale ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
               <Clock className="h-3 w-3 inline mr-1" />
-              {isStale ? 'Stale data — ' : 'Updated '}
+              {isStale ? 'Stale data — ' : syncSource === 'auto-sync' ? 'Auto-synced ' : 'Uploaded '}
               {formattedUploadDate}
             </div>
           )}

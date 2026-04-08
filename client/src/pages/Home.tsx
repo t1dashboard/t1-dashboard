@@ -23,6 +23,7 @@ import {
   getDeferralWorkOrders, uploadDeferralWorkOrdersFile,
   DeferralWorkOrder, DeferralCategory,
   uploadCommentsFile, getComments, CommentData,
+  getUploadMetadata, UploadMetadata,
 } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -44,6 +45,7 @@ export default function Home() {
   const [uploadUnlocked, setUploadUnlocked] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
+  const [uploadMetadata, setUploadMetadata] = useState<UploadMetadata | null>(null);
 
   const UPLOAD_PIN = import.meta.env.VITE_UPLOAD_PIN || "1171";
 
@@ -74,6 +76,11 @@ export default function Home() {
         setPmCodes(pm);
         setDeferralWorkOrders(dwo);
         setCommentsMap(cm);
+        // Load upload metadata for sync status
+        try {
+          const meta = await getUploadMetadata();
+          setUploadMetadata(meta);
+        } catch (e) { /* ignore */ }
         if (wo.length > 0) {
           setActiveView("t1t3");
         }
@@ -422,6 +429,31 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">
                   Upload your work order spreadsheets to populate the dashboards. Data is stored on the server so all team members see the same information.
                 </p>
+                {/* Sync Status Indicator */}
+                {uploadMetadata && (
+                  <div className="flex flex-wrap gap-3 mt-2">
+                    {uploadMetadata.webhookSync?.work_orders && (
+                      <div className="text-xs px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        <span className="font-medium">Auto-sync:</span> {new Date(uploadMetadata.webhookSync.work_orders).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      </div>
+                    )}
+                    {uploadMetadata.workOrders && (
+                      <div className="text-xs px-3 py-1.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                        <span className="font-medium">Work Orders:</span> {new Date(uploadMetadata.workOrders).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      </div>
+                    )}
+                    {uploadMetadata.webhookSync?.comments && (
+                      <div className="text-xs px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        <span className="font-medium">Comments sync:</span> {new Date(uploadMetadata.webhookSync.comments).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      </div>
+                    )}
+                    {uploadMetadata.webhookSync?.scheduled_labor && (
+                      <div className="text-xs px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        <span className="font-medium">Labor sync:</span> {new Date(uploadMetadata.webhookSync.scheduled_labor).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-3 gap-6">

@@ -240,3 +240,6 @@
 - [x] Create webhook endpoint POST /api/webhook/sheets-update for Google Sheets auto-sync
 - [x] Generate Google Apps Script for user to install on the Google Sheet
 - [x] Handle work orders, scheduled labor, and comments data from webhook
+- [ ] Create server-side Google Sheets pull (read CSV export from public sheet URL)
+- [ ] Set up scheduled sync: every 4 hours + Tue/Thu at 1:25 PM EST
+- [x] Add sync status indicator showing when data was last synced from Google Sheets
