@@ -237,3 +237,6 @@
 - [x] Reorganize Production Impact tab: sort by date first, then by building within each date (remove separate building group sections)
 - [x] Filter out work orders with description containing "MSME/VENDOR] PROCESS WATER / WASTEWATER S" from Locked Schedule Review
 - [x] One-time removal: remove WO 2613203 from Sched Start Date Moved section
+- [x] Create webhook endpoint POST /api/webhook/sheets-update for Google Sheets auto-sync
+- [x] Generate Google Apps Script for user to install on the Google Sheet
+- [x] Handle work orders, scheduled labor, and comments data from webhook

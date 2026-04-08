@@ -1,6 +1,7 @@
-import { Router, Request, Response } from "express";
+import express, { Router, Request, Response } from "express";
 import multer from "multer";
 import * as XLSX from "xlsx";
+import Papa from "papaparse";
 import { query, execute } from "./db.js";
 
 const router = Router();
@@ -933,5 +934,210 @@ router.get("/comments", async (_req: Request, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ============================================================
+// Google Sheets Webhook - Auto-sync from Metamate
+// ============================================================
+
+router.post("/webhook/sheets-update", async (req: Request, res: Response) => {
+  try {
+    const { csvData, tableName, token } = req.body;
+
+    if (!csvData) {
+      return res.status(400).json({ error: "No csvData provided" });
+    }
+
+    const dataType = tableName || "work_orders";
+    console.log(`[Webhook] Received ${dataType} update, CSV length: ${csvData.length}`);
+
+    // Parse CSV
+    const parsed = Papa.parse(csvData, {
+      skipEmptyLines: true,
+      header: true,
+      transform: (value: string) => value.trim(),
+    });
+
+    const rows = parsed.data as Record<string, string>[];
+    if (rows.length === 0) {
+      return res.status(400).json({ error: "No data found in CSV" });
+    }
+
+    console.log(`[Webhook] Parsed ${rows.length} rows for ${dataType}`);
+    console.log(`[Webhook] Headers: ${Object.keys(rows[0]).join(", ")}`);
+
+    let count = 0;
+
+    if (dataType === "work_orders") {
+      count = await processWorkOrdersWebhook(rows);
+    } else if (dataType === "scheduled_labor") {
+      count = await processScheduledLaborWebhook(rows);
+    } else if (dataType === "comments") {
+      count = await processCommentsWebhook(rows);
+    } else {
+      return res.status(400).json({ error: `Unknown table name: ${dataType}` });
+    }
+
+    // Update upload metadata
+    await execute(`CREATE TABLE IF NOT EXISTS upload_metadata (
+      data_type VARCHAR(50) PRIMARY KEY,
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+    await execute(
+      `INSERT INTO upload_metadata (data_type, uploaded_at) VALUES (?, NOW()) ON DUPLICATE KEY UPDATE uploaded_at = NOW()`,
+      [dataType]
+    );
+
+    console.log(`[Webhook] Successfully synced ${count} ${dataType} records`);
+    res.json({
+      success: true,
+      count,
+      tableName: dataType,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error("[Webhook Error]", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Process work orders from webhook CSV
+async function processWorkOrdersWebhook(rows: Record<string, string>[]): Promise<number> {
+  // Clear existing work orders
+  await execute("DELETE FROM work_orders");
+
+  // Map CSV headers to our DB columns - flexible header matching
+  function getVal(row: Record<string, string>, ...keys: string[]): string | null {
+    for (const key of keys) {
+      // Try exact match first
+      if (row[key] !== undefined && row[key] !== "") return row[key];
+      // Try case-insensitive match
+      const found = Object.keys(row).find(k => k.toLowerCase() === key.toLowerCase());
+      if (found && row[found] !== undefined && row[found] !== "") return row[found];
+    }
+    return null;
+  }
+
+  const batchSize = 100;
+  let totalInserted = 0;
+
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    const values = batch.flatMap((wo) => [
+      getVal(wo, "Work Order", "work_order", "WO", "WO #", "work_order_id") || "",
+      getVal(wo, "Description", "description"),
+      getVal(wo, "Data Center", "data_center", "Building"),
+      getVal(wo, "Sched. Start Date", "sched_start_date", "Scheduled Start Date"),
+      getVal(wo, "Assigned To Name", "assigned_to_name", "Assigned To"),
+      getVal(wo, "Status", "status"),
+      getVal(wo, "Type", "type"),
+      getVal(wo, "Equipment Description", "equipment_description"),
+      getVal(wo, "Priority", "priority"),
+      getVal(wo, "Shift", "shift"),
+      getVal(wo, "EHS LOR", "ehs_lor"),
+      getVal(wo, "Operational LOR", "operational_lor"),
+      getVal(wo, "Deferral Reason Selected", "deferral_reason_selected"),
+      getVal(wo, "Trade", "trade"),
+      getVal(wo, "Route", "route"),
+      getVal(wo, "Sched. End Date", "sched_end_date", "Scheduled End Date"),
+      getVal(wo, "Production Impact", "production_impact"),
+      getVal(wo, "Compliance Window Start Date", "compliance_window_start_date"),
+      getVal(wo, "Compliance Window End Date", "compliance_window_end_date"),
+      getVal(wo, "Discipline", "discipline"),
+      getVal(wo, "Organization", "organization"),
+      getVal(wo, "Department", "department"),
+      getVal(wo, "Equipment", "equipment"),
+      getVal(wo, "Class", "class"),
+      getVal(wo, "Reported By", "reported_by"),
+      getVal(wo, "PM Code", "pm_code"),
+      getVal(wo, "Assigned To", "assigned_to"),
+      getVal(wo, "Date Created", "date_created"),
+      getVal(wo, "Supervisor", "supervisor"),
+      getVal(wo, "Date Completed", "date_completed"),
+      getVal(wo, "FacOps Suite", "facops_suite"),
+      getVal(wo, "Type Code", "type_code"),
+      getVal(wo, "Estimated Hours", "estimated_hours"),
+      getVal(wo, "Hours Remaining", "hours_remaining"),
+      getVal(wo, "Asset ID", "asset_id"),
+      getVal(wo, "Last Saved", "last_saved"),
+    ]);
+
+    const sql = `INSERT INTO work_orders (
+      work_order_number, description, data_center, sched_start_date, assigned_to_name,
+      status, type, equipment_description, priority, shift,
+      ehs_lor, operational_lor, deferral_reason_selected, trade,
+      route, sched_end_date, production_impact,
+      compliance_window_start_date, compliance_window_end_date,
+      discipline, organization, department, equipment, class,
+      reported_by, pm_code, assigned_to, date_created, supervisor,
+      date_completed, facops_suite, type_code, estimated_hours, hours_remaining, asset_id, last_saved,
+      uploaded_by
+    ) VALUES ${batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)").join(", ")}`;
+
+    await execute(sql, values);
+    totalInserted += batch.length;
+  }
+
+  return totalInserted;
+}
+
+// Process scheduled labor from webhook CSV
+async function processScheduledLaborWebhook(rows: Record<string, string>[]): Promise<number> {
+  await execute("DELETE FROM scheduled_labor");
+
+  const laborData = rows.map((row) => {
+    const woNum = row["Work Order"] || row["work_order"] || row["WO"] || row["WO #"] || Object.values(row)[0] || "";
+    return String(woNum).trim();
+  }).filter(wo => wo);
+
+  const batchSize = 200;
+  for (let i = 0; i < laborData.length; i += batchSize) {
+    const batch = laborData.slice(i, i + batchSize);
+    const sql = `INSERT INTO scheduled_labor (work_order_number, uploaded_by) VALUES ${batch.map(() => "(?, 0)").join(", ")}`;
+    await execute(sql, batch);
+  }
+
+  return laborData.length;
+}
+
+// Process comments from webhook CSV
+async function processCommentsWebhook(rows: Record<string, string>[]): Promise<number> {
+  await execute(`CREATE TABLE IF NOT EXISTS work_order_comments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    work_order_number VARCHAR(50) NOT NULL,
+    latest_comment MEDIUMTEXT,
+    comment_date VARCHAR(50),
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_wo (work_order_number)
+  )`);
+  try { await execute(`ALTER TABLE work_order_comments ADD COLUMN comment_date VARCHAR(50)`); } catch(e) { /* exists */ }
+
+  await execute("DELETE FROM work_order_comments");
+
+  const comments = rows.map((row) => {
+    let woRaw = row["work_order_id"] ?? row["Work Order"] ?? row["WO"] ?? row["WO #"] ?? Object.values(row)[0] ?? "";
+    let woNum = String(woRaw).trim();
+    if (woNum.match(/^\d+\.0$/)) woNum = woNum.replace(/\.0$/, "");
+
+    let comment = String(
+      row["latest_comment"] ?? row["Latest Comment"] ?? row["Most Recent Comment"] ?? row["Comment"] ?? row["Comments"] ?? ""
+    ).trim();
+    // Filter out eamprod hyperlinks
+    if (/eamprod\.thefacebook\.com/i.test(comment)) comment = "";
+
+    const commentDate = String(row["Last Comment Date"] ?? row["Comment Date"] ?? "").trim();
+
+    return { workOrderNumber: woNum, comment, commentDate };
+  }).filter(c => c.workOrderNumber && c.comment);
+
+  const batchSize = 200;
+  for (let i = 0; i < comments.length; i += batchSize) {
+    const batch = comments.slice(i, i + batchSize);
+    const values = batch.flatMap(c => [c.workOrderNumber, c.comment, c.commentDate || null]);
+    const sql = `INSERT INTO work_order_comments (work_order_number, latest_comment, comment_date) VALUES ${batch.map(() => "(?, ?, ?)").join(", ")} ON DUPLICATE KEY UPDATE latest_comment = VALUES(latest_comment), comment_date = VALUES(comment_date), uploaded_at = CURRENT_TIMESTAMP`;
+    await execute(sql, values);
+  }
+
+  return comments.length;
+}
 
 export default router;
