@@ -258,3 +258,4 @@
 - [x] Remove Scheduled Labor from Google Sheets auto-sync (manual upload only)
 - [x] Store all comments per work order (not possible — Google Sheet only has most recent comment per WO)
 - [x] Show most recent comment in table (full history not available from source data)
+- [x] Remove Tue/Thu 1:25 PM EST sync, keep only 4-hour interval sync

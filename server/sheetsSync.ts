@@ -417,51 +417,12 @@ function getNextScheduledSync(): string | null {
   if (!syncTimerId) return null;
   const now = new Date();
   const next4h = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-
-  // Check if next Tue/Thu 1:25 PM EST is sooner
-  const estOffset = -5;
-  const nowEST = new Date(now.getTime() + estOffset * 60 * 60 * 1000);
-
-  const candidates: Date[] = [];
-  for (let daysAhead = 0; daysAhead <= 7; daysAhead++) {
-    const candidate = new Date(nowEST);
-    candidate.setDate(candidate.getDate() + daysAhead);
-    candidate.setHours(13, 25, 0, 0);
-    const dayOfWeek = candidate.getDay();
-    if ((dayOfWeek === 2 || dayOfWeek === 4) && candidate > nowEST) {
-      candidates.push(new Date(candidate.getTime() - estOffset * 60 * 60 * 1000));
-    }
-  }
-
-  const nextTueThu = candidates.length > 0 ? candidates[0] : null;
-
-  if (nextTueThu && nextTueThu < next4h) {
-    return nextTueThu.toISOString();
-  }
   return next4h.toISOString();
-}
-
-/**
- * Check if current time matches Tue/Thu 1:25 PM EST schedule
- */
-function isTueThurScheduledTime(): boolean {
-  const now = new Date();
-  const estHours = (now.getUTCHours() - 5 + 24) % 24;
-  const estMinutes = now.getUTCMinutes();
-  const dayOfWeek = now.getUTCDay();
-
-  let estDay = dayOfWeek;
-  if (now.getUTCHours() < 5) {
-    estDay = (dayOfWeek - 1 + 7) % 7;
-  }
-
-  return (estDay === 2 || estDay === 4) && estHours === 13 && estMinutes === 25;
 }
 
 /**
  * Start the automatic sync timer
  * - Every 4 hours
- * - Also checks for Tue/Thu 1:25 PM EST
  */
 export function startSyncTimer(): void {
   if (syncTimerId) {
@@ -483,15 +444,7 @@ export function startSyncTimer(): void {
     runFullSync().catch(err => console.error("[SheetsSync] Scheduled sync error:", err));
   }, FOUR_HOURS_MS);
 
-  // Also check every minute for Tue/Thu 1:25 PM EST
-  setInterval(() => {
-    if (isTueThurScheduledTime()) {
-      console.log("[SheetsSync] Running Tue/Thu 1:25 PM EST sync...");
-      runFullSync().catch(err => console.error("[SheetsSync] Tue/Thu sync error:", err));
-    }
-  }, 60_000);
-
-  console.log("[SheetsSync] Sync timer started: every 4 hours + Tue/Thu 1:25 PM EST");
+  console.log("[SheetsSync] Sync timer started: every 4 hours");
 }
 
 /**
