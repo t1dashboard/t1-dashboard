@@ -28,13 +28,20 @@ router.post("/work-orders/upload", upload.single("file"), async (req: Request, r
       return res.status(400).json({ error: "No data found in spreadsheet" });
     }
 
+    // Filter out MEC (Multiple Equipment Child) work orders
+    const filteredWOs = workOrders.filter((wo: any) => {
+      const woType = String(wo["Type"] || "").toLowerCase();
+      return woType !== "multiple equipment child";
+    });
+    console.log(`[Upload] Filtered out ${workOrders.length - filteredWOs.length} MEC work orders. Remaining: ${filteredWOs.length}`);
+
     // Clear existing work orders
     await execute("DELETE FROM work_orders");
 
     // Insert in batches of 100
     const batchSize = 100;
-    for (let i = 0; i < workOrders.length; i += batchSize) {
-      const batch = workOrders.slice(i, i + batchSize);
+    for (let i = 0; i < filteredWOs.length; i += batchSize) {
+      const batch = filteredWOs.slice(i, i + batchSize);
       const values = batch.flatMap((wo: any) => [
         String(wo["Work Order"] || ""),
         wo["Description"] || null,
@@ -89,7 +96,7 @@ router.post("/work-orders/upload", upload.single("file"), async (req: Request, r
       await execute(sql, values);
     }
 
-    res.json({ success: true, count: workOrders.length });
+    res.json({ success: true, count: filteredWOs.length });
   } catch (error: any) {
     console.error("Error uploading work orders:", error);
     res.status(500).json({ error: error.message });
@@ -1017,6 +1024,13 @@ router.post("/webhook/sheets-update", async (req: Request, res: Response) => {
 
 // Process work orders from webhook CSV
 async function processWorkOrdersWebhook(rows: Record<string, string>[]): Promise<number> {
+  // Filter out MEC (Multiple Equipment Child) work orders
+  const filteredRows = rows.filter(wo => {
+    const woType = String(wo["Type"] || wo["type"] || "").toLowerCase();
+    return woType !== "multiple equipment child";
+  });
+  console.log(`[Webhook] Filtered out ${rows.length - filteredRows.length} MEC work orders. Remaining: ${filteredRows.length}`);
+
   // Clear existing work orders
   await execute("DELETE FROM work_orders");
 
@@ -1035,8 +1049,8 @@ async function processWorkOrdersWebhook(rows: Record<string, string>[]): Promise
   const batchSize = 100;
   let totalInserted = 0;
 
-  for (let i = 0; i < rows.length; i += batchSize) {
-    const batch = rows.slice(i, i + batchSize);
+  for (let i = 0; i < filteredRows.length; i += batchSize) {
+    const batch = filteredRows.slice(i, i + batchSize);
     const values = batch.flatMap((wo) => [
       getVal(wo, "Work Order", "work_order", "WO", "WO #", "work_order_id") || "",
       getVal(wo, "Description", "description"),

@@ -247,3 +247,4 @@
 - [x] Set up automatic timer-based sync (every 4 hours + Tue/Thu 1:25 PM EST)
 - [x] Add manual sync trigger button and UI status updates
 - [x] Write tests for Google Sheets pull logic (23 tests)
+- [x] Exclude MEC (Multiple Equipment Child) work orders from all dashboard views

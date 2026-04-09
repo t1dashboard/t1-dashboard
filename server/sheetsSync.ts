@@ -138,14 +138,21 @@ async function syncWorkOrders(): Promise<SyncResult> {
 
     console.log(`[SheetsSync] Parsed ${rows.length} work orders. Headers: ${Object.keys(rows[0]).join(", ")}`);
 
+    // Filter out MEC (Multiple Equipment Child) work orders — they are sub-WOs and not needed
+    const filteredRows = rows.filter(wo => {
+      const woType = (wo["Type"] || "").toLowerCase();
+      return woType !== "multiple equipment child";
+    });
+    console.log(`[SheetsSync] Filtered out ${rows.length - filteredRows.length} MEC work orders. Remaining: ${filteredRows.length}`);
+
     // Clear existing work orders
     await execute("DELETE FROM work_orders");
 
     const batchSize = 100;
     let totalInserted = 0;
 
-    for (let i = 0; i < rows.length; i += batchSize) {
-      const batch = rows.slice(i, i + batchSize);
+    for (let i = 0; i < filteredRows.length; i += batchSize) {
+      const batch = filteredRows.slice(i, i + batchSize);
       const values = batch.flatMap((wo) => [
         wo["Work Order"] || "",
         wo["Description"] || null,
