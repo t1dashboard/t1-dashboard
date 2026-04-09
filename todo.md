@@ -259,3 +259,5 @@
 - [x] Store all comments per work order (not possible — Google Sheet only has most recent comment per WO)
 - [x] Show most recent comment in table (full history not available from source data)
 - [x] Remove Tue/Thu 1:25 PM EST sync, keep only 4-hour interval sync
+- [x] Ignore Deferral Reason column from Google Sheets sync (only populated via manual Excel upload)
+- [x] Add CFT Performed toggle to T4-T8 Not in Approved tab (excludes specific PM WOs by default)

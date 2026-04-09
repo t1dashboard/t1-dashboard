@@ -166,7 +166,7 @@ async function syncWorkOrders(): Promise<SyncResult> {
         wo["Shift"] || null,
         null, // ehs_lor
         null, // operational_lor
-        null, // deferral_reason_selected
+        null, // deferral_reason_selected — INTENTIONALLY ignored from Google Sheets (inaccurate); only populated via manual Excel upload
         null, // trade
         null, // route
         null, // sched_end_date

@@ -1,5 +1,6 @@
 /**
  * Swiss Rationalism: Clean data presentation for T4-T8 week work orders not in Approved status
+ * Includes CFT Performed toggle — excluded by default, must be explicitly enabled
  */
 
 import { useMemo, useState } from "react";
@@ -16,9 +17,34 @@ interface T4T8NotInApprovedTabProps {
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
+/**
+ * CFT Performed descriptions — work orders matching these are excluded by default.
+ * User must explicitly toggle "CFT Performed" ON to include them.
+ */
+const CFT_PERFORMED_DESCRIPTIONS = [
+  "[VENDOR] CAMPUS FUSION/SOFT SERVICES MONTHLY PM",
+  "SPCC INSPECTION MONTHLY PM",
+  "DISPOSABLE EYE WASH MONTHLY PM",
+  "FIRE EXTINGUISHER MONTHLY PM",
+  "ELEVATOR MONTHLY PM",
+  "NITROGEN SYSTEM MONTHLY PM",
+  "EMERGENCY GENERATOR WEEKLY PM",
+  "NFPA110 EMERGENCY GENERATOR WEEKLY PM",
+  "ELECTRIC FIRE PUMP WEEKLY",
+  "PLUMBED EYE WASH WEEKLY PM",
+  "DIESEL FIRE PUMP WEEKLY",
+].map(d => d.toUpperCase().trim());
+
+function isCFTPerformed(description: string | undefined): boolean {
+  if (!description) return false;
+  const upper = description.toUpperCase().trim();
+  return CFT_PERFORMED_DESCRIPTIONS.some(cft => upper.includes(cft));
+}
+
 export default function T4T8NotInApprovedTab({ workOrders, commentsMap = {} }: T4T8NotInApprovedTabProps) {
   const [selectedDCs, setSelectedDCs] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [showCFTPerformed, setShowCFTPerformed] = useState(false);
 
   const toggleRow = (woNum: string) => {
     setExpandedRows((prev) => {
@@ -29,8 +55,9 @@ export default function T4T8NotInApprovedTab({ workOrders, commentsMap = {} }: T
     });
   };
 
-  const groupedOrders = useMemo(() => {
-    const filtered = workOrders.filter((wo) => {
+  // Base filtered orders (status/type/date filtering, before CFT toggle)
+  const baseFilteredOrders = useMemo(() => {
+    return workOrders.filter((wo) => {
       const status = wo["Status"]?.toUpperCase() || "";
       const isCancelled = status === "CANCELLED";
       const isClosed = status === "CLOSED";
@@ -39,8 +66,22 @@ export default function T4T8NotInApprovedTab({ workOrders, commentsMap = {} }: T
       const isCMCC = wo["Description"]?.toUpperCase().includes("CMCC");
       return !isCancelled && !isClosed && !isInProcess && !isCMCC && isPlanning && isT4T8Week(wo["Sched. Start Date"]);
     });
-    
-    const grouped = filtered.reduce((acc, wo) => {
+  }, [workOrders]);
+
+  // Count CFT items for the badge
+  const cftCount = useMemo(() => {
+    return baseFilteredOrders.filter(wo => isCFTPerformed(wo["Description"])).length;
+  }, [baseFilteredOrders]);
+
+  // Apply CFT filter
+  const filteredAfterCFT = useMemo(() => {
+    if (showCFTPerformed) return baseFilteredOrders;
+    return baseFilteredOrders.filter(wo => !isCFTPerformed(wo["Description"]));
+  }, [baseFilteredOrders, showCFTPerformed]);
+
+  // Group by data center
+  const groupedOrders = useMemo(() => {
+    const grouped = filteredAfterCFT.reduce((acc, wo) => {
       const dc = wo["Data Center"] || "Unknown";
       if (!acc[dc]) acc[dc] = [];
       acc[dc].push(wo);
@@ -57,9 +98,9 @@ export default function T4T8NotInApprovedTab({ workOrders, commentsMap = {} }: T
       });
 
     return sortedGroups;
-  }, [workOrders]);
+  }, [filteredAfterCFT]);
 
-  const totalCount = Object.values(groupedOrders).reduce((sum, orders) => sum + orders.length, 0);
+  const totalCount = filteredAfterCFT.length;
   const allDataCenters = useMemo(() => Object.keys(groupedOrders), [groupedOrders]);
 
   const filteredGroupedOrders = useMemo(() => {
@@ -81,12 +122,52 @@ export default function T4T8NotInApprovedTab({ workOrders, commentsMap = {} }: T
             <div className="text-4xl font-bold text-primary">{filteredTotalCount}</div>
             <div className="text-sm text-muted-foreground mt-2">
               Total Work Orders Not in Approved Status
-              {selectedDCs.size > 0 && (
-                <span className="text-xs ml-1">(filtered from {totalCount} total)</span>
+              {(selectedDCs.size > 0 || !showCFTPerformed) && (
+                <span className="text-xs ml-1">
+                  (filtered from {baseFilteredOrders.length} total)
+                </span>
               )}
             </div>
             <div className="text-xs text-muted-foreground mt-1">{Object.keys(filteredGroupedOrders).length} Data Centers</div>
           </div>
+
+          {/* CFT Performed Toggle */}
+          <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-center gap-3">
+            <button
+              onClick={() => setShowCFTPerformed(!showCFTPerformed)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                showCFTPerformed
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted/60 text-muted-foreground border border-border hover:bg-muted"
+              }`}
+            >
+              <span className={`inline-block w-3 h-3 rounded-sm border-2 transition-colors ${
+                showCFTPerformed
+                  ? "bg-primary-foreground border-primary-foreground"
+                  : "border-muted-foreground"
+              }`}>
+                {showCFTPerformed && (
+                  <svg viewBox="0 0 12 12" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M2 6l3 3 5-5" className={showCFTPerformed ? "text-primary" : ""} />
+                  </svg>
+                )}
+              </span>
+              CFT Performed
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                showCFTPerformed
+                  ? "bg-primary-foreground/20 text-primary-foreground"
+                  : "bg-muted-foreground/20 text-muted-foreground"
+              }`}>
+                {cftCount}
+              </span>
+            </button>
+            {!showCFTPerformed && (
+              <span className="text-xs text-muted-foreground">
+                {cftCount} CFT work orders hidden
+              </span>
+            )}
+          </div>
+
           {allDataCenters.length > 0 && (
             <div className="mt-4 pt-4 border-t border-border/50">
               <DataCenterFilter
@@ -151,11 +232,14 @@ export default function T4T8NotInApprovedTab({ workOrders, commentsMap = {} }: T
                     const comment = commentData?.comment || "N/A";
                     const commentDate = commentData?.date || null;
                     const isExpanded = expandedRows.has(woNum);
+                    const isCFT = isCFTPerformed(wo["Description"]);
                     return (
                       <>
                         <tr 
                           key={woNum} 
-                          className="border-b border-border/50 hover:bg-muted/20 transition-colors cursor-pointer"
+                          className={`border-b border-border/50 hover:bg-muted/20 transition-colors cursor-pointer ${
+                            isCFT ? "bg-amber-50/50 dark:bg-amber-950/10" : ""
+                          }`}
                           style={{ borderBottomWidth: isExpanded ? '0px' : '0.5px' }}
                           onClick={(e) => {
                             if ((e.target as HTMLElement).closest('a')) return;
@@ -172,7 +256,14 @@ export default function T4T8NotInApprovedTab({ workOrders, commentsMap = {} }: T
                               {woNum}
                             </a>
                           </td>
-                          <td className="py-3 px-4 text-sm truncate">{wo["Description"]}</td>
+                          <td className="py-3 px-4 text-sm truncate">
+                            {wo["Description"]}
+                            {isCFT && (
+                              <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-medium">
+                                CFT
+                              </span>
+                            )}
+                          </td>
                           <td className="py-3 px-4 text-sm">{formatDate(wo["Sched. Start Date"])}</td>
                           <td className="py-3 px-4 text-sm">{wo["Shift"]}</td>
                           <td className="py-3 px-4 text-sm">{wo["Assigned To Name"]}</td>
