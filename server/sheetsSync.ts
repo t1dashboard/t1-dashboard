@@ -359,15 +359,8 @@ export async function runFullSync(): Promise<FullSyncResult> {
       console.error(`[SheetsSync] ✗ Work orders error: ${woResult.error}`);
     }
 
-    // Sync scheduled labor
-    const slResult = await syncScheduledLabor();
-    results.push(slResult);
-    if (!slResult.error) {
-      await updateSyncMetadata("scheduled_labor");
-      console.log(`[SheetsSync] ✓ Scheduled labor: ${slResult.rowCount} rows in ${slResult.durationMs}ms`);
-    } else {
-      console.error(`[SheetsSync] ✗ Scheduled labor error: ${slResult.error}`);
-    }
+    // NOTE: Scheduled Labor is NOT auto-synced from Google Sheets.
+    // The sheet data may be inaccurate, so scheduled labor relies on manual Excel upload only.
 
     // Sync comments
     const cmResult = await syncComments();

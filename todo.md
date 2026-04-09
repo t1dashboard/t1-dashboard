@@ -248,3 +248,13 @@
 - [x] Add manual sync trigger button and UI status updates
 - [x] Write tests for Google Sheets pull logic (23 tests)
 - [x] Exclude MEC (Multiple Equipment Child) work orders from all dashboard views
+- [ ] Fix Risk Identification tab (EHS/Operational LOR data missing)
+- [ ] Fix Compliance Check tab (data missing)
+- [ ] Fix LOTO Review tab (missing LOR data)
+- [ ] Fix >30 Days with no deferral tab (data missing)
+- [ ] Fix WOs Awaiting Closure tab (data missing)
+- [ ] Fix WO Closure SLA tab (data missing)
+- [ ] Fix Production Impact tab (data missing)
+- [x] Remove Scheduled Labor from Google Sheets auto-sync (manual upload only)
+- [x] Store all comments per work order (not possible — Google Sheet only has most recent comment per WO)
+- [x] Show most recent comment in table (full history not available from source data)
