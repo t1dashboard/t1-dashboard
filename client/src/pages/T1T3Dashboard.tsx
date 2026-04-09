@@ -18,8 +18,10 @@ import DeconflictionTab from "@/components/DeconflictionTab";
 import { getTWeekRange, isTWeek } from "@/lib/dateUtils";
 import { getUploadMetadata, getComplianceAlerts, ComplianceAlert, CommentData } from "@/lib/api";
 import {
-  Search, ClipboardList, AlertTriangle, CheckCircle2, Clock, Bell, X, Shield
+  Search, ClipboardList, AlertTriangle, CheckCircle2, Clock, Bell, X, Shield, RefreshCw
 } from "lucide-react";
+import { triggerSync, getSyncStatus as fetchSyncStatus } from "@/lib/api";
+import { toast } from "sonner";
 
 interface T1T3DashboardProps {
   workOrders: WorkOrder[];
@@ -36,6 +38,7 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes, com
   const [complianceAlerts, setComplianceAlerts] = useState<ComplianceAlert[]>([]);
   const [alertsDismissed, setAlertsDismissed] = useState(false);
   const [workloadWeek, setWorkloadWeek] = useState<WeekFilter>("t1");
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Load upload metadata and compliance alerts
   useEffect(() => {
@@ -147,14 +150,50 @@ export default function T1T3Dashboard({ workOrders, scheduledLabor, pmCodes, com
           <h2 className="text-2xl font-medium text-foreground">T1-T3 Dashboard</h2>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Last synced/uploaded timestamp */}
-          {formattedUploadDate && (
-            <div className={`text-xs px-3 py-1.5 rounded-full ${isStale ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
-              <Clock className="h-3 w-3 inline mr-1" />
-              {isStale ? 'Stale data — ' : syncSource === 'auto-sync' ? 'Auto-synced ' : 'Uploaded '}
-              {formattedUploadDate}
-            </div>
-          )}
+          {/* Last synced/uploaded timestamp with manual sync button */}
+          <button
+            onClick={async () => {
+              if (isSyncing) return;
+              setIsSyncing(true);
+              try {
+                await triggerSync();
+                toast.info("Sync started — refreshing data...");
+                // Poll for completion
+                const poll = setInterval(async () => {
+                  try {
+                    const status = await fetchSyncStatus();
+                    if (!status.isSyncing) {
+                      clearInterval(poll);
+                      setIsSyncing(false);
+                      if (status.lastSyncResult?.success) {
+                        toast.success(`Sync complete — ${status.lastSyncResult.results.map(r => `${r.rowCount} ${r.tableName}`).join(", ")}`);
+                      } else {
+                        toast.error("Sync completed with errors");
+                      }
+                      // Reload the page to get fresh data
+                      window.location.reload();
+                    }
+                  } catch (e) {
+                    // keep polling
+                  }
+                }, 3000);
+              } catch (e: any) {
+                setIsSyncing(false);
+                toast.error(e.message || "Failed to trigger sync");
+              }
+            }}
+            disabled={isSyncing}
+            className={`text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-colors cursor-pointer ${
+              isStale
+                ? 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'
+                : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+            } ${isSyncing ? 'opacity-60' : ''}`}
+            title="Click to sync from Google Sheets"
+          >
+            <RefreshCw className={`h-3 w-3 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Syncing...' : isStale ? 'Stale data — ' : syncSource === 'auto-sync' ? 'Auto-synced ' : 'Uploaded '}
+            {!isSyncing && formattedUploadDate}
+          </button>
           {/* Search bar */}
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

@@ -12,7 +12,9 @@ import DeferralDashboard from "@/pages/DeferralDashboard";
 import ComplianceCheckTab from "@/components/ComplianceCheckTab";
 import DeconflictionTab from "@/components/DeconflictionTab";
 import { useState, useEffect, useMemo } from "react";
-import { Clock } from "lucide-react";
+import { Clock, RefreshCw } from "lucide-react";
+import { triggerSync, getSyncStatus as fetchSyncStatus } from "@/lib/api";
+import { toast } from "sonner";
 
 interface T4T8DashboardProps {
   workOrders: WorkOrder[];
@@ -23,6 +25,7 @@ export default function T4T8Dashboard({ workOrders, commentsMap = {} }: T4T8Dash
   const [activeTab, setActiveTab] = useState("t1notready");
   const [lastUploaded, setLastUploaded] = useState<string | null>(null);
   const [lastWebhookSync, setLastWebhookSync] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     async function loadMetadata() {
@@ -73,13 +76,45 @@ export default function T4T8Dashboard({ workOrders, commentsMap = {} }: T4T8Dash
             Extended planning and aging work order tracking
           </p>
         </div>
-        {formattedUploadDate && (
-          <div className={`text-xs px-3 py-1.5 rounded-full flex-shrink-0 ${isStale ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
-            <Clock className="h-3 w-3 inline mr-1" />
-            {isStale ? 'Stale data — ' : syncSource === 'auto-sync' ? 'Auto-synced ' : 'Uploaded '}
-            {formattedUploadDate}
-          </div>
-        )}
+        <button
+          onClick={async () => {
+            if (isSyncing) return;
+            setIsSyncing(true);
+            try {
+              await triggerSync();
+              toast.info("Sync started — refreshing data...");
+              const poll = setInterval(async () => {
+                try {
+                  const status = await fetchSyncStatus();
+                  if (!status.isSyncing) {
+                    clearInterval(poll);
+                    setIsSyncing(false);
+                    if (status.lastSyncResult?.success) {
+                      toast.success(`Sync complete — ${status.lastSyncResult.results.map(r => `${r.rowCount} ${r.tableName}`).join(", ")}`);
+                    } else {
+                      toast.error("Sync completed with errors");
+                    }
+                    window.location.reload();
+                  }
+                } catch (e) { /* keep polling */ }
+              }, 3000);
+            } catch (e: any) {
+              setIsSyncing(false);
+              toast.error(e.message || "Failed to trigger sync");
+            }
+          }}
+          disabled={isSyncing}
+          className={`text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0 ${
+            isStale
+              ? 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200'
+              : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+          } ${isSyncing ? 'opacity-60' : ''}`}
+          title="Click to sync from Google Sheets"
+        >
+          <RefreshCw className={`h-3 w-3 ${isSyncing ? 'animate-spin' : ''}`} />
+          {isSyncing ? 'Syncing...' : isStale ? 'Stale data — ' : syncSource === 'auto-sync' ? 'Auto-synced ' : 'Uploaded '}
+          {!isSyncing && formattedUploadDate}
+        </button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

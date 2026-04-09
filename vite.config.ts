@@ -170,9 +170,15 @@ function vitePluginExpressApi(): Plugin {
           env: { ...process.env },
         });
         
-        // Suppress API server output to avoid confusing port detection
-        apiProcess.stdout?.on("data", () => {});
-        apiProcess.stderr?.on("data", () => {});
+        // Forward API server output for debugging
+        apiProcess.stdout?.on("data", (data: Buffer) => {
+          const msg = data.toString().trim();
+          if (msg) console.log(`[API] ${msg}`);
+        });
+        apiProcess.stderr?.on("data", (data: Buffer) => {
+          const msg = data.toString().trim();
+          if (msg) console.error(`[API] ${msg}`);
+        });
         
         apiProcess.on("error", (err) => {
           console.error("[API] Failed to start API server:", err);

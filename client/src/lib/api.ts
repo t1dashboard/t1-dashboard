@@ -331,3 +331,38 @@ export async function getComments(): Promise<Record<string, CommentData>> {
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
+
+// ============================================================
+// Google Sheets Sync
+// ============================================================
+
+export interface SyncResult {
+  tableName: string;
+  rowCount: number;
+  durationMs: number;
+  error?: string;
+}
+
+export interface SyncStatus {
+  isSyncing: boolean;
+  lastSyncResult: {
+    success: boolean;
+    results: SyncResult[];
+    totalDurationMs: number;
+    timestamp: string;
+  } | null;
+  nextScheduledSync: string | null;
+  timerActive: boolean;
+}
+
+export async function getSyncStatus(): Promise<SyncStatus> {
+  const res = await fetch(`${API_BASE}/sync/status`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function triggerSync(): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`${API_BASE}/sync/trigger`, { method: "POST" });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}

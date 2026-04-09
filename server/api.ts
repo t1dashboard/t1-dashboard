@@ -3,6 +3,7 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import { query, execute } from "./db.js";
+import { runFullSync, getSyncStatus, startSyncTimer } from "./sheetsSync.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
@@ -1153,5 +1154,36 @@ async function processCommentsWebhook(rows: Record<string, string>[]): Promise<n
 
   return comments.length;
 }
+
+// ============================================================
+// Google Sheets Pull Sync
+// ============================================================
+
+// Manual sync trigger
+router.post("/sync/trigger", async (_req: Request, res: Response) => {
+  try {
+    const status = getSyncStatus();
+    if (status.isSyncing) {
+      return res.status(409).json({ error: "Sync already in progress" });
+    }
+    // Run sync in background, return immediately
+    runFullSync().catch(err => console.error("[Sync] Manual sync error:", err));
+    res.json({ success: true, message: "Sync started" });
+  } catch (error: any) {
+    console.error("Error triggering sync:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get sync status
+router.get("/sync/status", async (_req: Request, res: Response) => {
+  try {
+    const status = getSyncStatus();
+    res.json(status);
+  } catch (error: any) {
+    console.error("Error getting sync status:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default router;
