@@ -261,3 +261,5 @@
 - [x] Remove Tue/Thu 1:25 PM EST sync, keep only 4-hour interval sync
 - [x] Ignore Deferral Reason column from Google Sheets sync (only populated via manual Excel upload)
 - [x] Add CFT Performed toggle to T4-T8 Not in Approved tab (excludes specific PM WOs by default)
+- [x] Add 3 more CFT descriptions (WET AND DRY PRE-ACTION NICV PM, RESTAURANT FIRE SUPPRESSION, Wet & Dry PRE-ACTION SYSTEM MONTHLY PM)
+- [x] Fix empty Deconfliction tab (requires Route + Sched End Date columns from Metamate or manual Excel upload)
