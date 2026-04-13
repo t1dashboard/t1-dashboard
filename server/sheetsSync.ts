@@ -44,27 +44,17 @@ let syncTimerId: ReturnType<typeof setInterval> | null = null;
 const TOKEN_FILE = path.resolve("/home/ubuntu/t1-dashboard", ".google-token");
 
 /**
- * Get a fresh OAuth token. Tries multiple sources:
- * 1. Environment variable (if available in the process)
- * 2. Token file on disk (written by a helper cron/script)
- * 3. Shell environment fallback
+ * Get a fresh OAuth token. Tries multiple sources in order:
+ * 1. Shell environment (login shell — picks up the latest refreshed token)
+ * 2. Environment variable on the current process
+ * 3. Token file on disk (written by a previous successful lookup)
+ *
+ * Whichever source succeeds, the token file is updated so the next call
+ * can fall back to it if the shell/env sources become unavailable.
  */
 function getToken(): string {
-  // 1. Direct env var
-  const envToken = process.env.GOOGLE_WORKSPACE_CLI_TOKEN || process.env.GOOGLE_DRIVE_TOKEN;
-  if (envToken) return envToken;
-
-  // 2. Token file on disk
-  try {
-    if (fs.existsSync(TOKEN_FILE)) {
-      const fileToken = fs.readFileSync(TOKEN_FILE, "utf-8").trim();
-      if (fileToken) return fileToken;
-    }
-  } catch (e) {
-    // ignore
-  }
-
-  // 3. Try to read from a login shell (picks up env vars set in .bashrc/.profile)
+  // 1. Try to read from a login shell first — this picks up tokens that were
+  //    refreshed after the Node process started (e.g. by the platform).
   try {
     const result = execSync('bash -lc "echo \\$GOOGLE_WORKSPACE_CLI_TOKEN"', {
       encoding: "utf-8",
@@ -74,6 +64,23 @@ function getToken(): string {
       // Cache it to the token file for next time
       try { fs.writeFileSync(TOKEN_FILE, result); } catch (e) { /* ignore */ }
       return result;
+    }
+  } catch (e) {
+    // ignore — shell may not be available in production
+  }
+
+  // 2. Direct env var on the current process
+  const envToken = process.env.GOOGLE_WORKSPACE_CLI_TOKEN || process.env.GOOGLE_DRIVE_TOKEN;
+  if (envToken) {
+    try { fs.writeFileSync(TOKEN_FILE, envToken); } catch (e) { /* ignore */ }
+    return envToken;
+  }
+
+  // 3. Token file on disk (fallback)
+  try {
+    if (fs.existsSync(TOKEN_FILE)) {
+      const fileToken = fs.readFileSync(TOKEN_FILE, "utf-8").trim();
+      if (fileToken) return fileToken;
     }
   } catch (e) {
     // ignore

@@ -265,3 +265,4 @@
 - [x] Fix empty Deconfliction tab (requires Route + Sched End Date columns from Metamate or manual Excel upload)
 - [x] Fix shift code rotation on workload calendar (BHN=orange Sun-Tue, FHD=blue Sun-Tue+Wed, BHD=green Wed-Sat, FHN=yellow Wed-Sat)
 - [x] Fix shift rotation parity — week of Apr 12-18 is now odd (BHD+FHN on Wed, BHN on Sat)
+- [x] Fix OAuth token refresh: prioritize login shell token over stale cached file so auto-sync doesn't fail with 401
