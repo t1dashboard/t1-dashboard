@@ -64,11 +64,13 @@ export const TEAMS: Record<TeamCode, TeamInfo> = {
 
 /**
  * Reference Sunday for week-parity calculation.
- * The week starting Sun Mar 15, 2026:
- *   - FHD has Wed (so this is an "FHD-Wed week", week parity 0)
- *   - FHN has Sat (so this is a "FHN-Sat week", week parity 0)
+ * The week starting Sun Mar 22, 2026 is an "even" week where:
+ *   - FHD has Wed (Mar 25)
+ *   - FHN has Sat (Mar 28)
+ * This makes the week of Apr 12-18 an ODD week (BHD has Wed, BHN has Sat),
+ * which matches the actual shift calendar.
  */
-const REFERENCE_SUNDAY = new Date(2026, 2, 15); // Mar 15, 2026 (Sunday)
+const REFERENCE_SUNDAY = new Date(2026, 2, 22); // Mar 22, 2026 (Sunday)
 REFERENCE_SUNDAY.setHours(0, 0, 0, 0);
 
 /**
