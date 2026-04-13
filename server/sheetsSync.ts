@@ -171,32 +171,32 @@ async function syncWorkOrders(): Promise<SyncResult> {
         wo["Equipment Description"] || null,
         wo["Priority"] || null,
         wo["Shift"] || null,
-        null, // ehs_lor
-        null, // operational_lor
+        wo["EHS LOR"] || null,
+        wo["Operational LOR"] || null,
         null, // deferral_reason_selected — INTENTIONALLY ignored from Google Sheets (inaccurate); only populated via manual Excel upload
-        null, // trade
-        null, // route
-        null, // sched_end_date
-        null, // production_impact
-        null, // compliance_window_start_date
-        null, // compliance_window_end_date
-        null, // discipline
+        null, // trade — not in Google Sheet
+        wo["Route"] || null,
+        wo["Sched End Date"] || wo["Sched. End Date"] || null,
+        wo["Production Impact"] != null && wo["Production Impact"] !== "" ? wo["Production Impact"] : null,
+        null, // compliance_window_start_date — not in Google Sheet
+        wo["Compliance Window End Date"] || null,
+        null, // discipline — not in Google Sheet
         wo["Organization"] || null,
-        null, // department
-        null, // equipment
-        null, // class
-        null, // reported_by
-        null, // pm_code
-        null, // assigned_to (code)
-        null, // date_created
+        null, // department — not in Google Sheet
+        null, // equipment — not in Google Sheet
+        null, // class — not in Google Sheet
+        null, // reported_by — not in Google Sheet
+        wo["PM Code"] || null,
+        null, // assigned_to (code) — not in Google Sheet
+        wo["Date Created"] || null,
         wo["Supervisor"] || null,
-        null, // date_completed
-        null, // facops_suite
-        null, // type_code
-        null, // estimated_hours
-        null, // hours_remaining
-        null, // asset_id
-        null, // last_saved
+        wo["Date Completed"] || null,
+        null, // facops_suite — not in Google Sheet
+        null, // type_code — not in Google Sheet
+        null, // estimated_hours — not in Google Sheet
+        null, // hours_remaining — not in Google Sheet
+        null, // asset_id — not in Google Sheet
+        null, // last_saved — not in Google Sheet
       ]);
 
       const sql = `INSERT INTO work_orders (

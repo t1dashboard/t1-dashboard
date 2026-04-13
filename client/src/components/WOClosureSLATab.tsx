@@ -167,13 +167,14 @@ export default function WOClosureSLATab({ workOrders }: WOClosureSLATabProps) {
     return set;
   }, [invoiceOverrides]);
 
-  // Filter and compute SLA for closed work orders (March only for now)
+  // Filter and compute SLA for closed/work-complete work orders
   const slaWorkOrders = useMemo(() => {
     const results: SLAWorkOrder[] = [];
     
     workOrders.forEach(wo => {
       const status = (wo["Status"] || "").toUpperCase();
-      if (status !== "CLOSED") return;
+      // Include Closed, Work Complete, and QA Rejected statuses (all have completion dates)
+      if (status !== "CLOSED" && status !== "WORK COMPLETE" && status !== "WORKCOMPLETE" && status !== "QA REJECTED") return;
       
       const supervisor = (wo["Supervisor"] || "").trim();
       if (EXCLUDED_SUPERVISORS.has(supervisor.toUpperCase())) return;
@@ -182,11 +183,6 @@ export default function WOClosureSLATab({ workOrders }: WOClosureSLATabProps) {
       const dateCompleted = parseExcelDate(wo["Date Completed"]);
       
       if (!schedEndDate || !dateCompleted) return;
-
-      // Filter to March only for now
-      const completedMonth = dateCompleted.getMonth(); // 0-indexed, March = 2
-      const completedYear = dateCompleted.getFullYear();
-      if (completedMonth !== 2 || completedYear !== 2026) return;
       
       // Detect likely wrong-year data entry (365 ± 30 days)
       const calendarDaysApart = Math.abs(
@@ -341,7 +337,7 @@ export default function WOClosureSLATab({ workOrders }: WOClosureSLATabProps) {
       <Card>
         <CardContent className="py-12 text-center">
           <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No closed work orders with both Sched End Date and Date Completed found for March 2026.</p>
+          <p className="text-muted-foreground">No completed work orders with both Sched End Date and Date Completed found.</p>
         </CardContent>
       </Card>
     );
@@ -357,7 +353,7 @@ export default function WOClosureSLATab({ workOrders }: WOClosureSLATabProps) {
             WO Closure SLA Adherence
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            SLA: 2 business days from work complete to closure. Invoice/vendor WOs get 21 business days. Currently showing March 2026 only.
+            SLA: 2 business days from work complete to closure. Invoice/vendor WOs get 21 business days. Showing all months with completed work orders.
           </p>
         </CardHeader>
         <CardContent>

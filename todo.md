@@ -248,13 +248,13 @@
 - [x] Add manual sync trigger button and UI status updates
 - [x] Write tests for Google Sheets pull logic (23 tests)
 - [x] Exclude MEC (Multiple Equipment Child) work orders from all dashboard views
-- [ ] Fix Risk Identification tab (EHS/Operational LOR data missing)
-- [ ] Fix Compliance Check tab (data missing)
-- [ ] Fix LOTO Review tab (missing LOR data)
+- [ ] Fix Risk Identification tab (EHS/Operational LOR data missing — columns blank in Google Sheet, awaiting Metamate)
+- [x] Fix Compliance Check tab (data missing) — fixed via Google Sheets sync column mapping
+- [ ] Fix LOTO Review tab (missing LOR data — columns blank in Google Sheet, awaiting Metamate)
 - [ ] Fix >30 Days with no deferral tab (data missing)
-- [ ] Fix WOs Awaiting Closure tab (data missing)
-- [ ] Fix WO Closure SLA tab (data missing)
-- [ ] Fix Production Impact tab (data missing)
+- [x] Fix WOs Awaiting Closure tab (data missing) — changed to show all Work Complete WOs
+- [x] Fix WO Closure SLA tab (data missing) — expanded to include Work Complete and QA Rejected statuses, removed March-only filter
+- [x] Fix Production Impact tab (data missing) — fixed via Google Sheets sync column mapping
 - [x] Remove Scheduled Labor from Google Sheets auto-sync (manual upload only)
 - [x] Store all comments per work order (not possible — Google Sheet only has most recent comment per WO)
 - [x] Show most recent comment in table (full history not available from source data)
@@ -266,3 +266,9 @@
 - [x] Fix shift code rotation on workload calendar (BHN=orange Sun-Tue, FHD=blue Sun-Tue+Wed, BHD=green Wed-Sat, FHN=yellow Wed-Sat)
 - [x] Fix shift rotation parity — week of Apr 12-18 is now odd (BHD+FHN on Wed, BHN on Sat)
 - [x] Fix OAuth token refresh: prioritize login shell token over stale cached file so auto-sync doesn't fail with 401
+- [ ] Fix Risk Identification tab showing no work orders (EHS LOR & Operational LOR blank in Google Sheet — data issue, not code)
+- [ ] Fix LOTO Review tab missing EHS LOR and Operational LOR values (blank in Google Sheet — data issue, not code)
+- [x] Fix Compliance Check tab showing no work orders — fixed by mapping Compliance Window End Date from Google Sheet
+- [x] Fix WOs Awaiting Closure tab showing no work orders — changed filter to show all Work Complete status WOs
+- [x] Fix WO Closure SLA tab showing no work orders — expanded status filter and removed March-only restriction
+- [x] Fix Production Impact tab showing no work orders — fixed by mapping Production Impact from Google Sheet

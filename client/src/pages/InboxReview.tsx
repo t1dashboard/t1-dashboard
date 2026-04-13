@@ -47,17 +47,21 @@ export default function InboxReview({ workOrders, scheduledLabor, commentsMap = 
       });
   }, [workOrders]);
 
-  // WOs Awaiting Closure: Work Complete status + Deferral Reason Selected = "No"
+  // WOs Awaiting Closure: All Work Complete status WOs (need to be closed out)
   const awaitingClosureOrders = useMemo(() => {
     return workOrders
       .filter((wo) => {
         const status = (wo["Status"] || "").toUpperCase();
-        const deferral = (wo["Deferral Reason Selected"] || "").toUpperCase().trim();
         const isWorkComplete = status === "WORK COMPLETE" || status === "WORKCOMPLETE";
-        const deferralNo = deferral === "NO";
-        return isWorkComplete && deferralNo;
+        return isWorkComplete;
       })
       .sort((a, b) => {
+        // Sort by Date Completed (oldest first), then by work order number
+        const dateA = parseExcelDate(a["Date Completed"]);
+        const dateB = parseExcelDate(b["Date Completed"]);
+        if (dateA && dateB) return dateA.getTime() - dateB.getTime();
+        if (dateA) return -1;
+        if (dateB) return 1;
         const woA = Number(a["Work Order"]) || 0;
         const woB = Number(b["Work Order"]) || 0;
         return woA - woB;
@@ -249,7 +253,7 @@ export default function InboxReview({ workOrders, scheduledLabor, commentsMap = 
             <CardHeader>
               <CardTitle>WOs Awaiting Closure</CardTitle>
               <p className="text-sm text-muted-foreground">
-                {awaitingClosureOrders.length} work orders in "Work Complete" status with Deferral Reason Selected = "No"
+                {awaitingClosureOrders.length} work orders in "Work Complete" status awaiting closure
               </p>
             </CardHeader>
             <CardContent className="p-0">
@@ -308,7 +312,7 @@ export default function InboxReview({ workOrders, scheduledLabor, commentsMap = 
                 ))
               ) : (
                 <p className="text-muted-foreground text-center py-8">
-                  No work orders found in "Work Complete" status with Deferral Reason = "No"
+                  No work orders found in "Work Complete" status
                 </p>
               )}
             </CardContent>
