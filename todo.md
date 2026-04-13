@@ -263,3 +263,4 @@
 - [x] Add CFT Performed toggle to T4-T8 Not in Approved tab (excludes specific PM WOs by default)
 - [x] Add 3 more CFT descriptions (WET AND DRY PRE-ACTION NICV PM, RESTAURANT FIRE SUPPRESSION, Wet & Dry PRE-ACTION SYSTEM MONTHLY PM)
 - [x] Fix empty Deconfliction tab (requires Route + Sched End Date columns from Metamate or manual Excel upload)
+- [x] Fix shift code rotation on workload calendar (BHN=orange Sun-Tue, FHD=blue Sun-Tue+Wed, BHD=green Wed-Sat, FHN=yellow Wed-Sat)

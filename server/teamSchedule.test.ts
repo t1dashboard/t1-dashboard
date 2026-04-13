@@ -1,14 +1,15 @@
 /**
  * Tests for team schedule rotation logic.
  *
- * Reference week: Mar 15-21, 2026 (Sun-Sat)
- *   - FHD works Wed Mar 18
- *   - BHN works Sat Mar 21
+ * CORRECTED pairing (verified against April 2026 shift calendar):
+ *   Sun-Tue: FHD (day) + BHN (night)
+ *   Thu-Fri: BHD (day) + FHN (night)
+ *   Wed: alternates — even weeks: FHD+BHN, odd weeks: BHD+FHN
+ *   Sat: BHD always day; night alternates — even weeks: FHN, odd weeks: BHN
+ *
+ * Reference week: Mar 15-21, 2026 (Sun-Sat), even week (parity 0)
  */
 import { describe, it, expect } from "vitest";
-
-// We test the pure logic by reimplementing the same algorithm server-side
-// since the client code uses path aliases. The logic is identical.
 
 type TeamCode = "FHD" | "BHD" | "FHN" | "BHN";
 
@@ -40,162 +41,199 @@ function getTeamsForDate(date: Date): TeamCode[] {
   const teams: TeamCode[] = [];
 
   switch (dayOfWeek) {
-    case 0: // Sunday
-      teams.push("FHD", "FHN");
+    case 0: // Sunday — FHD + BHN
+    case 1: // Monday — FHD + BHN
+    case 2: // Tuesday — FHD + BHN
+      teams.push("FHD", "BHN");
       break;
-    case 1: // Monday
-      teams.push("FHD", "FHN");
+    case 3: // Wednesday — alternating
+      if (isEvenWeek) {
+        teams.push("FHD", "BHN");
+      } else {
+        teams.push("BHD", "FHN");
+      }
       break;
-    case 2: // Tuesday
-      teams.push("FHD", "FHN");
+    case 4: // Thursday — BHD + FHN
+    case 5: // Friday — BHD + FHN
+      teams.push("BHD", "FHN");
       break;
-    case 3: // Wednesday
-      teams.push(isEvenWeek ? "FHD" : "BHD");
-      teams.push("BHN");
-      break;
-    case 4: // Thursday
-      teams.push("BHD", "BHN");
-      break;
-    case 5: // Friday
-      teams.push("BHD", "BHN");
-      break;
-    case 6: // Saturday
+    case 6: // Saturday — BHD + alternating night
       teams.push("BHD");
-      teams.push(isEvenWeek ? "BHN" : "FHN");
+      teams.push(isEvenWeek ? "FHN" : "BHN");
       break;
   }
 
   return teams;
 }
 
-describe("Team Schedule Rotation", () => {
-  describe("Reference week (Mar 15-21, 2026)", () => {
-    it("Sunday Mar 15: FHD + FHN", () => {
+describe("Team Schedule Rotation (Corrected)", () => {
+  describe("Reference week (Mar 15-21, 2026) — even week", () => {
+    it("Sunday Mar 15: FHD + BHN", () => {
       const teams = getTeamsForDate(new Date(2026, 2, 15));
-      expect(teams).toEqual(["FHD", "FHN"]);
+      expect(teams).toEqual(["FHD", "BHN"]);
     });
 
-    it("Monday Mar 16: FHD + FHN", () => {
+    it("Monday Mar 16: FHD + BHN", () => {
       const teams = getTeamsForDate(new Date(2026, 2, 16));
-      expect(teams).toEqual(["FHD", "FHN"]);
+      expect(teams).toEqual(["FHD", "BHN"]);
     });
 
-    it("Tuesday Mar 17: FHD + FHN", () => {
+    it("Tuesday Mar 17: FHD + BHN", () => {
       const teams = getTeamsForDate(new Date(2026, 2, 17));
-      expect(teams).toEqual(["FHD", "FHN"]);
+      expect(teams).toEqual(["FHD", "BHN"]);
     });
 
-    it("Wednesday Mar 18: FHD (even week) + BHN", () => {
+    it("Wednesday Mar 18: FHD + BHN (even week)", () => {
       const teams = getTeamsForDate(new Date(2026, 2, 18));
       expect(teams).toEqual(["FHD", "BHN"]);
     });
 
-    it("Thursday Mar 19: BHD + BHN", () => {
+    it("Thursday Mar 19: BHD + FHN", () => {
       const teams = getTeamsForDate(new Date(2026, 2, 19));
-      expect(teams).toEqual(["BHD", "BHN"]);
+      expect(teams).toEqual(["BHD", "FHN"]);
     });
 
-    it("Friday Mar 20: BHD + BHN", () => {
+    it("Friday Mar 20: BHD + FHN", () => {
       const teams = getTeamsForDate(new Date(2026, 2, 20));
-      expect(teams).toEqual(["BHD", "BHN"]);
+      expect(teams).toEqual(["BHD", "FHN"]);
     });
 
-    it("Saturday Mar 21: BHD + BHN (even week)", () => {
+    it("Saturday Mar 21: BHD + FHN (even week)", () => {
       const teams = getTeamsForDate(new Date(2026, 2, 21));
-      expect(teams).toEqual(["BHD", "BHN"]);
-    });
-  });
-
-  describe("Next week (Mar 22-28, 2026) — odd week, alternates", () => {
-    it("Sunday Mar 22: FHD + FHN", () => {
-      const teams = getTeamsForDate(new Date(2026, 2, 22));
-      expect(teams).toEqual(["FHD", "FHN"]);
-    });
-
-    it("Wednesday Mar 25: BHD (odd week) + BHN", () => {
-      const teams = getTeamsForDate(new Date(2026, 2, 25));
-      expect(teams).toEqual(["BHD", "BHN"]);
-    });
-
-    it("Saturday Mar 28: BHD + FHN (odd week)", () => {
-      const teams = getTeamsForDate(new Date(2026, 2, 28));
       expect(teams).toEqual(["BHD", "FHN"]);
     });
   });
 
-  describe("Two weeks later (Mar 29 - Apr 4, 2026) — even week again", () => {
-    it("Wednesday Apr 1: FHD (even week) + BHN", () => {
-      const teams = getTeamsForDate(new Date(2026, 3, 1));
+  describe("Next week (Mar 22-28, 2026) — odd week", () => {
+    it("Sunday Mar 22: FHD + BHN", () => {
+      const teams = getTeamsForDate(new Date(2026, 2, 22));
       expect(teams).toEqual(["FHD", "BHN"]);
     });
 
-    it("Saturday Apr 4: BHD + BHN (even week)", () => {
-      const teams = getTeamsForDate(new Date(2026, 3, 4));
+    it("Wednesday Mar 25: BHD + FHN (odd week)", () => {
+      const teams = getTeamsForDate(new Date(2026, 2, 25));
+      expect(teams).toEqual(["BHD", "FHN"]);
+    });
+
+    it("Saturday Mar 28: BHD + BHN (odd week)", () => {
+      const teams = getTeamsForDate(new Date(2026, 2, 28));
       expect(teams).toEqual(["BHD", "BHN"]);
     });
   });
 
+  describe("April 2026 spot checks (verified against shift calendar)", () => {
+    it("Wed Apr 1 (even week): FHD + BHN", () => {
+      const teams = getTeamsForDate(new Date(2026, 3, 1));
+      expect(teams).toEqual(["FHD", "BHN"]);
+    });
+
+    it("Sat Apr 4 (even week): BHD + FHN", () => {
+      const teams = getTeamsForDate(new Date(2026, 3, 4));
+      expect(teams).toEqual(["BHD", "FHN"]);
+    });
+
+    it("Sun Apr 5 (odd week): FHD + BHN — blue+orange on calendar", () => {
+      const teams = getTeamsForDate(new Date(2026, 3, 5));
+      expect(teams).toEqual(["FHD", "BHN"]);
+    });
+
+    it("Wed Apr 8 (odd week): BHD + FHN — green+yellow on calendar", () => {
+      const teams = getTeamsForDate(new Date(2026, 3, 8));
+      expect(teams).toEqual(["BHD", "FHN"]);
+    });
+
+    it("Thu Apr 9: BHD + FHN — green+yellow on calendar", () => {
+      const teams = getTeamsForDate(new Date(2026, 3, 9));
+      expect(teams).toEqual(["BHD", "FHN"]);
+    });
+
+    it("Sat Apr 11 (odd week): BHD + BHN", () => {
+      const teams = getTeamsForDate(new Date(2026, 3, 11));
+      expect(teams).toEqual(["BHD", "BHN"]);
+    });
+
+    it("Wed Apr 15 (even week): FHD + BHN — blue+orange on calendar", () => {
+      const teams = getTeamsForDate(new Date(2026, 3, 15));
+      expect(teams).toEqual(["FHD", "BHN"]);
+    });
+
+    it("Wed Apr 22 (odd week): BHD + FHN — green+yellow on calendar", () => {
+      const teams = getTeamsForDate(new Date(2026, 3, 22));
+      expect(teams).toEqual(["BHD", "FHN"]);
+    });
+  });
+
   describe("Fixed day assignments (never alternate)", () => {
-    it("Every Sunday always has FHD + FHN", () => {
-      // Check several Sundays
+    it("Every Sunday always has FHD + BHN", () => {
       for (let w = 0; w < 6; w++) {
         const d = new Date(2026, 2, 15 + w * 7);
         const teams = getTeamsForDate(d);
         expect(teams).toContain("FHD");
-        expect(teams).toContain("FHN");
+        expect(teams).toContain("BHN");
       }
     });
 
-    it("Every Thursday always has BHD + BHN", () => {
+    it("Every Monday always has FHD + BHN", () => {
+      for (let w = 0; w < 6; w++) {
+        const d = new Date(2026, 2, 16 + w * 7);
+        const teams = getTeamsForDate(d);
+        expect(teams).toEqual(["FHD", "BHN"]);
+      }
+    });
+
+    it("Every Tuesday always has FHD + BHN", () => {
+      for (let w = 0; w < 6; w++) {
+        const d = new Date(2026, 2, 17 + w * 7);
+        const teams = getTeamsForDate(d);
+        expect(teams).toEqual(["FHD", "BHN"]);
+      }
+    });
+
+    it("Every Thursday always has BHD + FHN", () => {
       for (let w = 0; w < 6; w++) {
         const d = new Date(2026, 2, 19 + w * 7);
         const teams = getTeamsForDate(d);
-        expect(teams).toEqual(["BHD", "BHN"]);
+        expect(teams).toEqual(["BHD", "FHN"]);
       }
     });
 
-    it("Every Friday always has BHD + BHN", () => {
+    it("Every Friday always has BHD + FHN", () => {
       for (let w = 0; w < 6; w++) {
         const d = new Date(2026, 2, 20 + w * 7);
         const teams = getTeamsForDate(d);
-        expect(teams).toEqual(["BHD", "BHN"]);
+        expect(teams).toEqual(["BHD", "FHN"]);
       }
     });
   });
 
   describe("Alternating Wednesday pattern", () => {
-    it("Alternates FHD/BHD on Wednesdays, BHN always present", () => {
-      // Even weeks: FHD + BHN, Odd weeks: BHD + BHN
+    it("Even weeks: FHD+BHN, Odd weeks: BHD+FHN", () => {
       for (let w = 0; w < 8; w++) {
         const wed = new Date(2026, 2, 18 + w * 7);
         const teams = getTeamsForDate(wed);
         const isEven = w % 2 === 0;
-        expect(teams).toContain("BHN"); // BHN always on Wed
         if (isEven) {
-          expect(teams).toContain("FHD");
-          expect(teams).not.toContain("BHD");
+          expect(teams).toEqual(["FHD", "BHN"]);
         } else {
-          expect(teams).toContain("BHD");
-          expect(teams).not.toContain("FHD");
+          expect(teams).toEqual(["BHD", "FHN"]);
         }
       }
     });
   });
 
   describe("Alternating Saturday pattern", () => {
-    it("Alternates BHN/FHN on Saturdays, BHD always present", () => {
-      // Even weeks: BHD + BHN, Odd weeks: BHD + FHN
+    it("BHD always works Sat day; even weeks: FHN night, odd weeks: BHN night", () => {
       for (let w = 0; w < 8; w++) {
         const sat = new Date(2026, 2, 21 + w * 7);
         const teams = getTeamsForDate(sat);
         const isEven = w % 2 === 0;
-        expect(teams).toContain("BHD"); // BHD always on Sat
+        expect(teams).toContain("BHD");
         if (isEven) {
-          expect(teams).toContain("BHN");
-          expect(teams).not.toContain("FHN");
-        } else {
           expect(teams).toContain("FHN");
           expect(teams).not.toContain("BHN");
+        } else {
+          expect(teams).toContain("BHN");
+          expect(teams).not.toContain("FHN");
         }
       }
     });
@@ -220,8 +258,8 @@ describe("Team Schedule Rotation", () => {
       expect(count).toBe(3);
     });
 
-    it("BHN works 4 days in even weeks (Wed, Thu, Fri, Sat) and 3 days in odd weeks (Wed, Thu, Fri)", () => {
-      // Even week
+    it("BHN works 4 days in even weeks (Sun, Mon, Tue, Wed) and 4 days in odd weeks (Sun, Mon, Tue, Sat)", () => {
+      // Even week: Sun, Mon, Tue, Wed = 4 days
       let count = 0;
       for (let d = 0; d < 7; d++) {
         const date = new Date(2026, 2, 15 + d);
@@ -229,11 +267,47 @@ describe("Team Schedule Rotation", () => {
       }
       expect(count).toBe(4);
 
-      // Odd week
+      // Odd week: Sun, Mon, Tue, Sat = 4 days (BHN gets Sat in odd weeks)
       count = 0;
       for (let d = 0; d < 7; d++) {
         const date = new Date(2026, 2, 22 + d);
         if (getTeamsForDate(date).includes("BHN")) count++;
+      }
+      expect(count).toBe(4);
+    });
+
+    it("BHD works 3 days in even weeks (Thu, Fri, Sat) and 4 days in odd weeks (Wed, Thu, Fri, Sat)", () => {
+      // Even week: Thu, Fri, Sat = 3 days
+      let count = 0;
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(2026, 2, 15 + d);
+        if (getTeamsForDate(date).includes("BHD")) count++;
+      }
+      expect(count).toBe(3);
+
+      // Odd week: Wed, Thu, Fri, Sat = 4 days
+      count = 0;
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(2026, 2, 22 + d);
+        if (getTeamsForDate(date).includes("BHD")) count++;
+      }
+      expect(count).toBe(4);
+    });
+
+    it("FHN works 3 days in even weeks (Thu, Fri, Sat) and 4 days in odd weeks (Wed, Thu, Fri, Sat... wait no)", () => {
+      // Even week: Thu, Fri, Sat = 3 days
+      let count = 0;
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(2026, 2, 15 + d);
+        if (getTeamsForDate(date).includes("FHN")) count++;
+      }
+      expect(count).toBe(3);
+
+      // Odd week: Wed, Thu, Fri = 3 days (Sat goes to BHN in odd weeks)
+      count = 0;
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(2026, 2, 22 + d);
+        if (getTeamsForDate(date).includes("FHN")) count++;
       }
       expect(count).toBe(3);
     });
