@@ -4,7 +4,7 @@
  * Compares Date Completed (closed date) vs Sched End Date (work complete date)
  * SLA: 2 business days for normal WOs, 21 business days for WOs in the invoice SLA overrides DB
  *      or matching the description pattern "[MSME/VENDOR] PROCESS WATER / WASTEWATER SAMPLING"
- * Currently filtered to March only
+ * Filtered to March 2026 and beyond (no earlier data)
  * Groups by month and quarter, then by supervisor within each month
  */
 
@@ -184,6 +184,10 @@ export default function WOClosureSLATab({ workOrders }: WOClosureSLATabProps) {
       
       if (!schedEndDate || !dateCompleted) return;
       
+      // Only include March 2026 and beyond
+      const MARCH_2026 = new Date(2026, 2, 1); // Month is 0-indexed: 2 = March
+      if (dateCompleted < MARCH_2026) return;
+      
       // Detect likely wrong-year data entry (365 ± 30 days)
       const calendarDaysApart = Math.abs(
         (dateCompleted.getTime() - schedEndDate.getTime()) / (1000 * 60 * 60 * 24)
@@ -353,7 +357,7 @@ export default function WOClosureSLATab({ workOrders }: WOClosureSLATabProps) {
             WO Closure SLA Adherence
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            SLA: 2 business days from work complete to closure. Invoice/vendor WOs get 21 business days. Showing all months with completed work orders.
+            SLA: 2 business days from work complete to closure. Invoice/vendor WOs get 21 business days. Showing March 2026 and beyond.
           </p>
         </CardHeader>
         <CardContent>
