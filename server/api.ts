@@ -652,6 +652,7 @@ const VALID_ADHERENCE_REASONS = [
   "XFN Partner Request",
   "Risk Mitigation",
   "SOW Changed",
+  "On-going Maintenance Affecting Equipment",
 ];
 
 // One-time exclusion of specific work orders from schedule adherence data

@@ -18,6 +18,7 @@ const VALID_REASONS = [
   "XFN Partner Request",
   "Risk Mitigation",
   "SOW Changed",
+  "On-going Maintenance Affecting Equipment",
 ];
 
 describe("Schedule Adherence - Reason Validation", () => {
@@ -330,8 +331,8 @@ describe("Schedule Adherence - Reason Categories", () => {
     expect(VALID_REASONS.includes("SOW Changed")).toBe(true);
   });
 
-  it("should have 7 total reason categories", () => {
-    expect(VALID_REASONS).toHaveLength(7);
+  it("should have 8 total reason categories", () => {
+    expect(VALID_REASONS).toHaveLength(8);
   });
 
   it("should NOT have separate Vendor not Available or Vendor Not Prepared", () => {
