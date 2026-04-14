@@ -44,6 +44,7 @@ const ADHERENCE_REASONS = [
   "XFN Partner Request",
   "Risk Mitigation",
   "SOW Changed",
+  "On-going Maintenance Affecting Equipment",
 ] as const;
 
 // One-time exclusion of specific work orders from Schedule Lock Review
