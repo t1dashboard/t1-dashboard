@@ -184,7 +184,7 @@ export default function WOClosureSLATab({ workOrders }: WOClosureSLATabProps) {
       if (status !== "CLOSED" && status !== "WORK COMPLETE" && status !== "WORKCOMPLETE" && status !== "QA REJECTED") return;
       
       const supervisor = (wo["Supervisor"] || "").trim();
-      if (EXCLUDED_SUPERVISORS.has(supervisor.toUpperCase())) return;
+      if (!supervisor || EXCLUDED_SUPERVISORS.has(supervisor.toUpperCase())) return;
       
       const schedEndDate = parseExcelDate(wo["Sched. End Date"]);
       const dateCompleted = parseExcelDate(wo["Date Completed"]);
