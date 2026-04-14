@@ -275,3 +275,4 @@
 - [ ] Fix auto-sync token refresh: OAuth token expires after ~60 min, causing all scheduled syncs to fail with 401 in production
 - [x] Set up recurring scheduled task (every 4 hours) to wake sandbox, refresh OAuth token, and trigger Google Sheets sync
 - [x] Fix WO Closure SLA to show March 2026 and beyond (not just current month)
+- [x] Remove supervisors from WO Closure SLA: Unassigned, michael.mash, matina.holloway, garry.miller, oldbenkenobi

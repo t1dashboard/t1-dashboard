@@ -135,7 +135,14 @@ function matchesInvoiceDescription(description: string): boolean {
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
 // Supervisors to exclude (no longer employed)
-const EXCLUDED_SUPERVISORS = new Set(["ABOSTWICK"]);
+const EXCLUDED_SUPERVISORS = new Set([
+  "ABOSTWICK",
+  "UNASSIGNED",
+  "MICHAEL.MASH",
+  "MATINA.HOLLOWAY",
+  "GARRY.MILLER",
+  "OLDBENKENOBI",
+]);
 
 export default function WOClosureSLATab({ workOrders }: WOClosureSLATabProps) {
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
