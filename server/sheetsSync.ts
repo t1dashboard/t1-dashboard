@@ -76,7 +76,42 @@ function getToken(): string {
     return envToken;
   }
 
-  // 3. Token file on disk (fallback)
+  // 3. Rclone config — the platform manages this token and refreshes it automatically.
+  //    It has Drive scope which also covers Sheets API.
+  //    We first run a quick rclone command to force token refresh if expired.
+  const RCLONE_CONFIG = "/home/ubuntu/.gdrive-rclone.ini";
+  try {
+    if (fs.existsSync(RCLONE_CONFIG)) {
+      // Force rclone to refresh the token by running a lightweight command.
+      // rclone will automatically refresh an expired token when it makes an API call.
+      try {
+        execSync('rclone lsd manus_google_drive: --config /home/ubuntu/.gdrive-rclone.ini --max-depth 0', {
+          encoding: "utf-8",
+          timeout: 15000,
+          stdio: "pipe",
+        });
+      } catch (e) {
+        console.log("[SheetsSync] rclone refresh command failed (non-fatal):", (e as Error).message?.slice(0, 100));
+      }
+
+      // Now read the (potentially refreshed) token from the config
+      const iniContent = fs.readFileSync(RCLONE_CONFIG, "utf-8");
+      const tokenMatch = iniContent.match(/token\s*=\s*(.+)/i);
+      if (tokenMatch) {
+        const tokenObj = JSON.parse(tokenMatch[1].trim());
+        const accessToken = tokenObj.access_token;
+        if (accessToken) {
+          console.log("[SheetsSync] Using rclone token (expires:", tokenObj.expiry || "unknown", ")");
+          try { fs.writeFileSync(TOKEN_FILE, accessToken); } catch (e) { /* ignore */ }
+          return accessToken;
+        }
+      }
+    }
+  } catch (e) {
+    // ignore — rclone config may not exist or be malformed
+  }
+
+  // 4. Token file on disk (last resort fallback)
   try {
     if (fs.existsSync(TOKEN_FILE)) {
       const fileToken = fs.readFileSync(TOKEN_FILE, "utf-8").trim();
@@ -86,7 +121,7 @@ function getToken(): string {
     // ignore
   }
 
-  throw new Error("No Google OAuth token available. GOOGLE_WORKSPACE_CLI_TOKEN is not set and no token file found.");
+  throw new Error("No Google OAuth token available. GOOGLE_WORKSPACE_CLI_TOKEN is not set, rclone config not found, and no token file found.");
 }
 
 /**

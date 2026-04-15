@@ -272,7 +272,7 @@
 - [x] Fix WOs Awaiting Closure tab showing no work orders — changed filter to show all Work Complete status WOs
 - [x] Fix WO Closure SLA tab showing no work orders — expanded status filter and removed March-only restriction
 - [x] Fix Production Impact tab showing no work orders — fixed by mapping Production Impact from Google Sheet
-- [ ] Fix auto-sync token refresh: OAuth token expires after ~60 min, causing all scheduled syncs to fail with 401 in production
+- [x] Fix auto-sync token refresh: added rclone token as fallback source with auto-refresh before each sync + scheduled task every 4 hours
 - [x] Set up recurring scheduled task (every 4 hours) to wake sandbox, refresh OAuth token, and trigger Google Sheets sync
 - [x] Fix WO Closure SLA to show March 2026 and beyond (not just current month)
 - [x] Remove supervisors from WO Closure SLA: Unassigned, michael.mash, matina.holloway, garry.miller, oldbenkenobi
