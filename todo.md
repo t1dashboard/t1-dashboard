@@ -277,3 +277,4 @@
 - [x] Fix WO Closure SLA to show March 2026 and beyond (not just current month)
 - [x] Remove supervisors from WO Closure SLA: Unassigned, michael.mash, matina.holloway, garry.miller, oldbenkenobi
 - [x] Add deferral reason category: "On-going Maintenance Affecting Equipment" to Schedule Adherence + Schedule Lock Review dropdown
+- [x] Fix >30 Days No Deferral tab: treat blank/null deferral reason as "no deferral" instead of requiring literal "NO"

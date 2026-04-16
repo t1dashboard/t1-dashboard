@@ -39,8 +39,8 @@ export default function WOsOver30DaysTab({ workOrders, commentsMap = {} }: WOsOv
       const isValidStatus = status === "PLANNING" || status === "READY TO SCHEDULE";
       const schedDate = parseExcelDate(wo["Sched. Start Date"]);
       const isOlderThan30Days = schedDate && schedDate <= thirtyDaysAgo;
-      const deferralCode = wo["Deferral Reason Selected"]?.toUpperCase();
-      const hasDeferralNo = deferralCode === "NO";
+      const deferralCode = (wo["Deferral Reason Selected"] || "").trim().toUpperCase();
+      const hasDeferralNo = deferralCode === "NO" || deferralCode === "";
       const woNumber = String(wo["Work Order"]);
       const isNumericOnly = /^\d+$/.test(woNumber);
       
