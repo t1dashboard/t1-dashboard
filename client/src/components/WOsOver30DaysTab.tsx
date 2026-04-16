@@ -39,13 +39,15 @@ export default function WOsOver30DaysTab({ workOrders, commentsMap = {} }: WOsOv
       const isValidStatus = status === "PLANNING" || status === "READY TO SCHEDULE";
       const schedDate = parseExcelDate(wo["Sched. Start Date"]);
       const isOlderThan30Days = schedDate && schedDate <= thirtyDaysAgo;
-      const deferralCode = (wo["Deferral Reason Selected"] || "").trim().toUpperCase();
-      const hasDeferralNo = deferralCode === "NO" || deferralCode === "";
+      const deferralCode = (wo["Deferral Reason Selected"] || "").trim();
+      const hasNoDeferral = deferralCode === "" || deferralCode.toUpperCase() === "NO";
       const woNumber = String(wo["Work Order"]);
       const isNumericOnly = /^\d+$/.test(woNumber);
       
+      // Show WOs >30 days old with no deferral reason selected
+      // Deferral reasons come from manual Excel upload only (Google Sheet column is ignored as inaccurate)
       return !isCancelled && !isCMCC && isCorrective && isValidStatus && 
-             isOlderThan30Days && hasDeferralNo && isNumericOnly;
+             isOlderThan30Days && hasNoDeferral && isNumericOnly;
     });
     
     const grouped = filtered.reduce((acc, wo) => {
