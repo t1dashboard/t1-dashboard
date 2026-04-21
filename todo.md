@@ -278,3 +278,4 @@
 - [x] Remove supervisors from WO Closure SLA: Unassigned, michael.mash, matina.holloway, garry.miller, oldbenkenobi
 - [x] Add deferral reason category: "On-going Maintenance Affecting Equipment" to Schedule Adherence + Schedule Lock Review dropdown
 - [x] Fix >30 Days No Deferral tab: treat blank/null deferral reason as "no deferral" instead of requiring literal "NO"
+- [x] Add "Remove" button next to each reason dropdown in Schedule Lock Review incomplete orders section

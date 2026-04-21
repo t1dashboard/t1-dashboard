@@ -9,8 +9,8 @@ import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, parseExcelDate } from "@/lib/dateUtils";
 import { getWorkWeekLeaders } from "@/lib/workWeekLeaders";
-import { getScheduleLocks, ScheduleLock, submitScheduleAdherence, getScheduleAdherenceByWeek, AdherenceRecord } from "@/lib/api";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { getScheduleLocks, ScheduleLock, submitScheduleAdherence, getScheduleAdherenceByWeek, AdherenceRecord, unlockWorkOrders } from "@/lib/api";
+import { Loader2, CheckCircle2, X } from "lucide-react";
 import { toast } from "sonner";
 
 interface ScheduleLockReviewTabProps {
@@ -66,6 +66,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
   const [reasonSelections, setReasonSelections] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [removedWOs, setRemovedWOs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function loadLocks() {
@@ -376,6 +377,19 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     setSubmitted(false);
   };
 
+  const handleRemoveWO = async (woNumber: string) => {
+    try {
+      await unlockWorkOrders([woNumber]);
+      setRemovedWOs(prev => { const next = new Set(Array.from(prev)); next.add(woNumber); return next; });
+      // Also remove from server locks state so it disappears immediately
+      setServerLocks(prev => prev.filter(lock => String(lock.workOrderNumber) !== woNumber));
+      toast.success(`Removed work order ${woNumber} from locked schedule.`);
+    } catch (error: any) {
+      console.error("Error removing work order:", error);
+      toast.error("Failed to remove work order: " + error.message);
+    }
+  };
+
   // Combine incomplete + date-moved for submission
   const allReasonableOrders = useMemo(() => {
     const incompleteNums = new Set(incompleteLockedOrders.map(o => String(o.workOrderNumber)));
@@ -527,16 +541,25 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
         <td className="py-3 px-4 text-sm">{locked.shift}</td>
         {extraColumns}
         <td className="py-3 px-3">
-          <select
-            value={selectedReason}
-            onChange={(e) => handleReasonChange(woNum, e.target.value)}
-            className="w-full text-sm border border-border rounded-sm px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="">Select reason...</option>
-            {ADHERENCE_REASONS.map(reason => (
-              <option key={reason} value={reason}>{reason}</option>
-            ))}
-          </select>
+          <div className="flex items-center gap-1.5">
+            <select
+              value={selectedReason}
+              onChange={(e) => handleReasonChange(woNum, e.target.value)}
+              className="flex-1 text-sm border border-border rounded-sm px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">Select reason...</option>
+              {ADHERENCE_REASONS.map(reason => (
+                <option key={reason} value={reason}>{reason}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => handleRemoveWO(woNum)}
+              className="flex-shrink-0 px-2 py-1.5 text-xs font-medium text-destructive border border-destructive/30 rounded-sm hover:bg-destructive/10 transition-colors"
+              title={`Remove WO ${woNum} from locked schedule`}
+            >
+              Remove
+            </button>
+          </div>
         </td>
       </tr>
     );
@@ -798,16 +821,25 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                           <td className="py-3 px-4 text-sm text-muted-foreground line-through">{formatDate(order.schedStartDate)}</td>
                           <td className="py-3 px-4 text-sm font-medium text-amber-600">{formatDate(order.currentSchedStartDate)}</td>
                           <td className="py-3 px-3">
-                            <select
-                              value={selectedReason}
-                              onChange={(e) => handleReasonChange(woNum, e.target.value)}
-                              className="w-full text-sm border border-border rounded-sm px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                            >
-                              <option value="">Select reason...</option>
-                              {ADHERENCE_REASONS.map(reason => (
-                                <option key={reason} value={reason}>{reason}</option>
-                              ))}
-                            </select>
+                            <div className="flex items-center gap-1.5">
+                              <select
+                                value={selectedReason}
+                                onChange={(e) => handleReasonChange(woNum, e.target.value)}
+                                className="flex-1 text-sm border border-border rounded-sm px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                              >
+                                <option value="">Select reason...</option>
+                                {ADHERENCE_REASONS.map(reason => (
+                                  <option key={reason} value={reason}>{reason}</option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={() => handleRemoveWO(woNum)}
+                                className="flex-shrink-0 px-2 py-1.5 text-xs font-medium text-destructive border border-destructive/30 rounded-sm hover:bg-destructive/10 transition-colors"
+                                title={`Remove WO ${woNum} from locked schedule`}
+                              >
+                                Remove
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
