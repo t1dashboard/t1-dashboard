@@ -9,7 +9,13 @@ import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, parseExcelDate } from "@/lib/dateUtils";
 import { getWorkWeekLeaders } from "@/lib/workWeekLeaders";
-import { getScheduleLocks, ScheduleLock, submitScheduleAdherence, getScheduleAdherenceByWeek, AdherenceRecord, unlockWorkOrders } from "@/lib/api";
+import { getScheduleLocks, ScheduleLock, submitScheduleAdherence, getScheduleAdherenceByWeek, AdherenceRecord, unlockWorkOrders, CommentData } from "@/lib/api";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Loader2, CheckCircle2, X } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -25,6 +31,7 @@ import {
 
 interface ScheduleLockReviewTabProps {
   workOrders: WorkOrder[];
+  commentsMap: Record<string, CommentData>;
 }
 
 interface LockedWorkOrder {
@@ -70,7 +77,7 @@ const EXCLUDED_DESCRIPTIONS = [
 
 const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_MP_1&FROMEMAIL=YES&SYSTEM_FUNCTION_NAME=WSJOBS&workordernum=";
 
-export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReviewTabProps) {
+export default function ScheduleLockReviewTab({ workOrders, commentsMap }: ScheduleLockReviewTabProps) {
   const [serverLocks, setServerLocks] = useState<ScheduleLock[]>([]);
   const [loadingLocks, setLoadingLocks] = useState(true);
   const [reasonSelections, setReasonSelections] = useState<Record<string, string>>({});
@@ -78,6 +85,12 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
   const [submitted, setSubmitted] = useState(false);
   const [removedWOs, setRemovedWOs] = useState<Set<string>>(new Set());
   const [removeConfirm, setRemoveConfirm] = useState<{ open: boolean; woNumber: string; description: string }>({ open: false, woNumber: "", description: "" });
+  const [commentDialog, setCommentDialog] = useState<{ open: boolean; woNumber: string; comment: string }>({ open: false, woNumber: "", comment: "" });
+
+  const getComment = (woNumber: string | number): string => {
+    const key = String(woNumber);
+    return commentsMap[key]?.comment || "";
+  };
 
   useEffect(() => {
     async function loadLocks() {
@@ -531,6 +544,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
   const renderReasonRow = (locked: LockedWorkOrder, currentStatus: string, extraColumns?: React.ReactNode) => {
     const woNum = String(locked.workOrderNumber);
     const selectedReason = reasonSelections[woNum] || "";
+    const comment = getComment(locked.workOrderNumber);
     
     return (
       <tr 
@@ -556,6 +570,19 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
         <td className="py-3 px-4 text-sm">{locked.priority}</td>
         <td className="py-3 px-4 text-sm">{locked.shift}</td>
         {extraColumns}
+        <td className="py-3 px-4 text-sm">
+          {comment ? (
+            <button
+              onClick={() => setCommentDialog({ open: true, woNumber: woNum, comment })}
+              className="text-left text-xs text-muted-foreground hover:text-foreground cursor-pointer truncate block max-w-full"
+              title="Click to view full comment"
+            >
+              {comment.length > 40 ? comment.substring(0, 40) + "..." : comment}
+            </button>
+          ) : (
+            <span className="text-xs text-muted-foreground/50">—</span>
+          )}
+        </td>
         <td className="py-3 px-3">
           <div className="flex items-center gap-1.5">
             <select
@@ -708,15 +735,16 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
               <div className="overflow-x-auto">
                 <table className="w-full table-fixed">
                   <colgroup>
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "17%" }} />
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "11%" }} />
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "5%" }} />
+                    <col style={{ width: "5%" }} />
                     <col style={{ width: "8%" }} />
                     <col style={{ width: "13%" }} />
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "6%" }} />
-                    <col style={{ width: "6%" }} />
-                    <col style={{ width: "9%" }} />
                     <col style={{ width: "20%" }} />
                   </colgroup>
                   <thead>
@@ -730,6 +758,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Priority</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Sched Start Date</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Comment</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Reason</th>
                     </tr>
                   </thead>
@@ -779,16 +808,17 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
               <div className="overflow-x-auto">
                 <table className="w-full table-fixed">
                   <colgroup>
+                    <col style={{ width: "5%" }} />
+                    <col style={{ width: "13%" }} />
                     <col style={{ width: "6%" }} />
-                    <col style={{ width: "15%" }} />
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "11%" }} />
-                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "10%" }} />
                     <col style={{ width: "6%" }} />
                     <col style={{ width: "5%" }} />
                     <col style={{ width: "5%" }} />
-                    <col style={{ width: "9%" }} />
-                    <col style={{ width: "9%" }} />
+                    <col style={{ width: "4%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "12%" }} />
                     <col style={{ width: "20%" }} />
                   </colgroup>
                   <thead>
@@ -803,6 +833,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Shift</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Locked Date</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Current Date</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Comment</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-foreground">Reason</th>
                     </tr>
                   </thead>
@@ -810,6 +841,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                     {dateMovedOrders.map((order) => {
                       const woNum = String(order.workOrderNumber);
                       const selectedReason = reasonSelections[woNum] || "";
+                      const comment = getComment(order.workOrderNumber);
                       
                       return (
                         <tr 
@@ -836,6 +868,19 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                           <td className="py-3 px-4 text-sm">{order.shift}</td>
                           <td className="py-3 px-4 text-sm text-muted-foreground line-through">{formatDate(order.schedStartDate)}</td>
                           <td className="py-3 px-4 text-sm font-medium text-amber-600">{formatDate(order.currentSchedStartDate)}</td>
+                          <td className="py-3 px-4 text-sm">
+                            {comment ? (
+                              <button
+                                onClick={() => setCommentDialog({ open: true, woNumber: woNum, comment })}
+                                className="text-left text-xs text-muted-foreground hover:text-foreground cursor-pointer truncate block max-w-full"
+                                title="Click to view full comment"
+                              >
+                                {comment.length > 40 ? comment.substring(0, 40) + "..." : comment}
+                              </button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/50">—</span>
+                            )}
+                          </td>
                           <td className="py-3 px-3">
                             <div className="flex items-center gap-1.5">
                               <select
@@ -932,6 +977,18 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Comment Dialog */}
+      <Dialog open={commentDialog.open} onOpenChange={(open) => { if (!open) setCommentDialog({ open: false, woNumber: "", comment: "" }); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Comment — WO {commentDialog.woNumber}</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">
+            {commentDialog.comment}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

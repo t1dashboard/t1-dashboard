@@ -286,6 +286,25 @@ export default function Home() {
           </button>
           
           <button
+            onClick={() => { setActiveView("inbox-review"); setMobileMenuOpen(false); }}
+            className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
+              activeView === "inbox-review"
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted text-foreground"
+            }`}
+            title={sidebarCollapsed ? "Inbox Review" : ""}
+          >
+            {!sidebarCollapsed ? (
+              <>
+                <div className="font-medium">Inbox Review</div>
+                <div className="text-xs opacity-80 mt-1">Campaigns, labor & closure</div>
+              </>
+            ) : (
+              <div className="font-medium text-center text-xs">Inbox</div>
+            )}
+          </button>
+          
+          <button
             onClick={() => { setActiveView("schedule-lock"); setMobileMenuOpen(false); }}
             className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
               activeView === "schedule-lock"
@@ -320,25 +339,6 @@ export default function Home() {
               </>
             ) : (
               <div className="font-medium text-center text-xs">Review</div>
-            )}
-          </button>
-          
-          <button
-            onClick={() => { setActiveView("inbox-review"); setMobileMenuOpen(false); }}
-            className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
-              activeView === "inbox-review"
-                ? "bg-primary text-primary-foreground"
-                : "hover:bg-muted text-foreground"
-            }`}
-            title={sidebarCollapsed ? "Inbox Review" : ""}
-          >
-            {!sidebarCollapsed ? (
-              <>
-                <div className="font-medium">Inbox Review</div>
-                <div className="text-xs opacity-80 mt-1">Campaigns, labor & closure</div>
-              </>
-            ) : (
-              <div className="font-medium text-center text-xs">Inbox</div>
             )}
           </button>
           
@@ -688,7 +688,7 @@ export default function Home() {
           )}
 
           {activeView === "schedule-lock-review" && workOrders.length > 0 && (
-            <ScheduleLockReviewTab workOrders={workOrders} />
+            <ScheduleLockReviewTab workOrders={workOrders} commentsMap={commentsMap} />
           )}
 
           {activeView === "scheduled-labor-review" && workOrders.length > 0 && (

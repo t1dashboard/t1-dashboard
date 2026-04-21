@@ -24,7 +24,7 @@ const BASE_URL = "https://eamprod.thefacebook.com/web/base/logindisp?tenant=DS_M
 // Production Impact values to include (exclude 40)
 const INCLUDED_PRODUCTION_IMPACTS = [10, 15, 20, 25, 30];
 
-export default function InboxReview({ workOrders, scheduledLabor, commentsMap = {} }: InboxReviewProps) {
+export default function InboxReview({ workOrders, scheduledLabor, deferralWorkOrders, commentsMap = {} }: InboxReviewProps) {
   const [activeTab, setActiveTab] = useState("wo-campaign");
 
   // WO Campaign: filter work orders whose description contains "WO Campaign" (case-insensitive)
@@ -47,13 +47,30 @@ export default function InboxReview({ workOrders, scheduledLabor, commentsMap = 
       });
   }, [workOrders]);
 
+  // Build a set of WO numbers that have deferral reasons (these are not truly awaiting closure)
+  const deferralWONumbers = useMemo(() => {
+    const set = new Set<string>();
+    deferralWorkOrders.forEach(dwo => {
+      const reason = (dwo["Deferral Reason Selected"] || "").trim();
+      if (reason) {
+        set.add(String(dwo["Work Order"]));
+      }
+    });
+    return set;
+  }, [deferralWorkOrders]);
+
   // WOs Awaiting Closure: All Work Complete status WOs (need to be closed out)
+  // Exclude WOs that have a deferral reason — they are deferred, not awaiting closure
   const awaitingClosureOrders = useMemo(() => {
     return workOrders
       .filter((wo) => {
         const status = (wo["Status"] || "").toUpperCase();
         const isWorkComplete = status === "WORK COMPLETE" || status === "WORKCOMPLETE";
-        return isWorkComplete;
+        if (!isWorkComplete) return false;
+        // Exclude WOs with deferral reasons
+        const woNum = String(wo["Work Order"]);
+        if (deferralWONumbers.has(woNum)) return false;
+        return true;
       })
       .sort((a, b) => {
         // Sort by Date Completed (oldest first), then by work order number

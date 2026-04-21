@@ -281,3 +281,8 @@
 - [x] Add "Remove" button next to each reason dropdown in Schedule Lock Review incomplete orders section
 - [x] Add confirmation dialog before removing a work order from Schedule Lock Review
 - [x] Schedule Adherence: put current month at the top of the list
+- [x] Reorganize sidebar: move Inbox Review under T4-T8 Dashboard
+- [x] Schedule Lock Review: add comments column showing most recent comment
+- [x] Schedule Lock Review: click on work order to see full comment (same as other tabs)
+- [x] WOs Awaiting Closure: exclude WOs that have a deferral reason (they are not truly awaiting closure)
+- [x] Investigate Deconfliction tab showing 0 — confirmed 0 is accurate (no conflicts in current data)
