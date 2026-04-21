@@ -12,6 +12,16 @@ import { getWorkWeekLeaders } from "@/lib/workWeekLeaders";
 import { getScheduleLocks, ScheduleLock, submitScheduleAdherence, getScheduleAdherenceByWeek, AdherenceRecord, unlockWorkOrders } from "@/lib/api";
 import { Loader2, CheckCircle2, X } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ScheduleLockReviewTabProps {
   workOrders: WorkOrder[];
@@ -67,6 +77,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [removedWOs, setRemovedWOs] = useState<Set<string>>(new Set());
+  const [removeConfirm, setRemoveConfirm] = useState<{ open: boolean; woNumber: string; description: string }>({ open: false, woNumber: "", description: "" });
 
   useEffect(() => {
     async function loadLocks() {
@@ -377,11 +388,16 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
     setSubmitted(false);
   };
 
-  const handleRemoveWO = async (woNumber: string) => {
+  const handleRemoveWO = (woNumber: string, description: string) => {
+    setRemoveConfirm({ open: true, woNumber, description });
+  };
+
+  const confirmRemoveWO = async () => {
+    const woNumber = removeConfirm.woNumber;
+    setRemoveConfirm({ open: false, woNumber: "", description: "" });
     try {
       await unlockWorkOrders([woNumber]);
       setRemovedWOs(prev => { const next = new Set(Array.from(prev)); next.add(woNumber); return next; });
-      // Also remove from server locks state so it disappears immediately
       setServerLocks(prev => prev.filter(lock => String(lock.workOrderNumber) !== woNumber));
       toast.success(`Removed work order ${woNumber} from locked schedule.`);
     } catch (error: any) {
@@ -553,7 +569,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
               ))}
             </select>
             <button
-              onClick={() => handleRemoveWO(woNum)}
+              onClick={() => handleRemoveWO(woNum, locked.description)}
               className="flex-shrink-0 px-2 py-1.5 text-xs font-medium text-destructive border border-destructive/30 rounded-sm hover:bg-destructive/10 transition-colors"
               title={`Remove WO ${woNum} from locked schedule`}
             >
@@ -833,7 +849,7 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
                                 ))}
                               </select>
                               <button
-                                onClick={() => handleRemoveWO(woNum)}
+                                onClick={() => handleRemoveWO(woNum, order.description)}
                                 className="flex-shrink-0 px-2 py-1.5 text-xs font-medium text-destructive border border-destructive/30 rounded-sm hover:bg-destructive/10 transition-colors"
                                 title={`Remove WO ${woNum} from locked schedule`}
                               >
@@ -895,6 +911,27 @@ export default function ScheduleLockReviewTab({ workOrders }: ScheduleLockReview
           </CardContent>
         </Card>
       )}
+      {/* Remove Confirmation Dialog */}
+      <AlertDialog open={removeConfirm.open} onOpenChange={(open) => { if (!open) setRemoveConfirm({ open: false, woNumber: "", description: "" }); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Work Order?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove <span className="font-semibold">{removeConfirm.woNumber}</span> from the locked schedule?
+              {removeConfirm.description && (
+                <span className="block mt-1 text-muted-foreground">{removeConfirm.description}</span>
+              )}
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemoveWO} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
