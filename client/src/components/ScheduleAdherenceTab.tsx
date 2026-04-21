@@ -644,45 +644,6 @@ export default function ScheduleAdherenceTab() {
         </Card>
       )}
 
-      {/* Quarterly Breakdown */}
-      {quarterlyData.length > 0 && (
-        <>
-          <h2 className="text-lg font-semibold text-foreground pt-2">Quarterly Breakdown</h2>
-          {quarterlyData.map(qData => {
-            const qAdherence = quarterlyAdherence.find(qa => qa.quarter === qData.quarter);
-            return (
-              <Card key={qData.quarter}>
-                <CardHeader className="border-b border-border pb-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <CardTitle className="text-xl font-medium">{qData.label}</CardTitle>
-                        {qAdherence && renderAdherenceBadge(qAdherence.adherencePercent, qAdherence.totalLocked, qAdherence.adhered)}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {qData.total} incomplete work order{qData.total !== 1 ? "s" : ""} tracked
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleExportQuarter(qData.quarter)}
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      Export
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  {renderPieChart(qData.reasons, qData.total)}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </>
-      )}
-
       {/* Monthly Breakdown */}
       <h2 className="text-lg font-semibold text-foreground pt-2">Monthly Breakdown</h2>
       {monthlyData.map(monthData => {
@@ -738,6 +699,45 @@ export default function ScheduleAdherenceTab() {
             </CardContent>
           </Card>
         ))}
+
+      {/* Quarterly Breakdown */}
+      {quarterlyData.length > 0 && (
+        <>
+          <h2 className="text-lg font-semibold text-foreground pt-2">Quarterly Breakdown</h2>
+          {quarterlyData.map(qData => {
+            const qAdherence = quarterlyAdherence.find(qa => qa.quarter === qData.quarter);
+            return (
+              <Card key={qData.quarter}>
+                <CardHeader className="border-b border-border pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <CardTitle className="text-xl font-medium">{qData.label}</CardTitle>
+                        {qAdherence && renderAdherenceBadge(qAdherence.adherencePercent, qAdherence.totalLocked, qAdherence.adhered)}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {qData.total} incomplete work order{qData.total !== 1 ? "s" : ""} tracked
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleExportQuarter(qData.quarter)}
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Export
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  {renderPieChart(qData.reasons, qData.total)}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }

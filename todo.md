@@ -280,3 +280,4 @@
 - [x] Fix >30 Days No Deferral tab: treat blank/null deferral reason as "no deferral" instead of requiring literal "NO"
 - [x] Add "Remove" button next to each reason dropdown in Schedule Lock Review incomplete orders section
 - [x] Add confirmation dialog before removing a work order from Schedule Lock Review
+- [x] Schedule Adherence: put current month at the top of the list
