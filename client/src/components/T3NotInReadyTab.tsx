@@ -2,7 +2,7 @@
  * Swiss Rationalism: Clean data presentation for T3 week work orders not in Ready status
  */
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { WorkOrder } from "@/types/workOrder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, isT3Week, getT3WeekRange } from "@/lib/dateUtils";
@@ -141,9 +141,8 @@ export default function T3NotInReadyTab({ workOrders, commentsMap = {} }: T3NotI
                   const commentDate = commentData?.date || null;
                   const isExpanded = expandedRows.has(woNum);
                   return (
-                    <>
+                    <React.Fragment key={woNum}>
                       <tr 
-                        key={woNum} 
                         className="border-b border-border/50 hover:bg-muted/20 transition-colors cursor-pointer"
                         style={{ borderBottomWidth: isExpanded ? '0px' : '0.5px' }}
                         onClick={(e) => {
@@ -188,7 +187,7 @@ export default function T3NotInReadyTab({ workOrders, commentsMap = {} }: T3NotI
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   );
                 })}
               </tbody>
