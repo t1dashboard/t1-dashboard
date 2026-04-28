@@ -286,3 +286,5 @@
 - [x] Schedule Lock Review: click on work order to see full comment (same as other tabs)
 - [x] WOs Awaiting Closure: exclude WOs that have a deferral reason (they are not truly awaiting closure)
 - [x] Investigate Deconfliction tab showing 0 — confirmed 0 is accurate (no conflicts in current data)
+- [x] Fix data flow: uploaded Excel is source of truth, Google Sheet only supplements comments + missing columns
+- [x] Risk Identification: ensure LOR data is preserved from uploaded Excel (not overwritten by Google Sheet sync)

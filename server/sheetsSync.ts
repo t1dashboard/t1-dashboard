@@ -164,7 +164,12 @@ function rowsToObjects(rows: string[][]): Record<string, string>[] {
 }
 
 /**
- * Process Active Work Orders tab into the work_orders table
+ * Supplement work orders from Google Sheet.
+ * The manually uploaded Excel is the source of truth.
+ * This function ONLY:
+ *   1. Updates columns that are NULL/blank in existing rows (gap-filling)
+ *   2. Inserts NEW work orders that don't exist in the DB yet (from Google Sheet)
+ * It NEVER overwrites data that was set by the manual Excel upload.
  */
 async function syncWorkOrders(): Promise<SyncResult> {
   const start = Date.now();
@@ -178,79 +183,135 @@ async function syncWorkOrders(): Promise<SyncResult> {
       return { tableName, rowCount: 0, durationMs: Date.now() - start, error: "No data found" };
     }
 
-    console.log(`[SheetsSync] Parsed ${rows.length} work orders. Headers: ${Object.keys(rows[0]).join(", ")}`);
+    console.log(`[SheetsSync] Parsed ${rows.length} work orders from Google Sheet. Headers: ${Object.keys(rows[0]).join(", ")}`);
 
-    // Filter out MEC (Multiple Equipment Child) work orders — they are sub-WOs and not needed
+    // Filter out MEC (Multiple Equipment Child) work orders
     const filteredRows = rows.filter(wo => {
       const woType = (wo["Type"] || "").toLowerCase();
       return woType !== "multiple equipment child";
     });
     console.log(`[SheetsSync] Filtered out ${rows.length - filteredRows.length} MEC work orders. Remaining: ${filteredRows.length}`);
 
-    // Clear existing work orders
-    await execute("DELETE FROM work_orders");
+    // Get existing work order numbers from DB
+    const existingRows = await query("SELECT work_order_number FROM work_orders");
+    const existingWOs = new Set(existingRows.map((r: any) => String(r.work_order_number)));
+    console.log(`[SheetsSync] ${existingWOs.size} work orders already in DB from manual upload`);
 
-    const batchSize = 100;
-    let totalInserted = 0;
+    // Columns that the Google Sheet can supplement (only fill if currently NULL/blank)
+    // NEVER overwrite: ehs_lor, operational_lor, deferral_reason_selected, trade, and other Excel-only columns
+    const SUPPLEMENT_COLUMNS: { sheetKey: string; dbCol: string }[] = [
+      { sheetKey: "Status", dbCol: "status" },
+      { sheetKey: "Description", dbCol: "description" },
+      { sheetKey: "Data Center", dbCol: "data_center" },
+      { sheetKey: "Sched Start Date", dbCol: "sched_start_date" },
+      { sheetKey: "Sched End Date", dbCol: "sched_end_date" },
+      { sheetKey: "Assigned To", dbCol: "assigned_to_name" },
+      { sheetKey: "Type", dbCol: "type" },
+      { sheetKey: "Equipment Description", dbCol: "equipment_description" },
+      { sheetKey: "Priority", dbCol: "priority" },
+      { sheetKey: "Shift", dbCol: "shift" },
+      { sheetKey: "Route", dbCol: "route" },
+      { sheetKey: "Production Impact", dbCol: "production_impact" },
+      { sheetKey: "Compliance Window End Date", dbCol: "compliance_window_end_date" },
+      { sheetKey: "Organization", dbCol: "organization" },
+      { sheetKey: "PM Code", dbCol: "pm_code" },
+      { sheetKey: "Date Created", dbCol: "date_created" },
+      { sheetKey: "Supervisor", dbCol: "supervisor" },
+      { sheetKey: "Date Completed", dbCol: "date_completed" },
+    ];
 
-    for (let i = 0; i < filteredRows.length; i += batchSize) {
-      const batch = filteredRows.slice(i, i + batchSize);
-      const values = batch.flatMap((wo) => [
-        wo["Work Order"] || "",
-        wo["Description"] || null,
-        wo["Data Center"] || null,
-        wo["Sched Start Date"] || wo["Sched. Start Date"] || null,
-        wo["Assigned To"] || wo["Assigned To Name"] || null,
-        wo["Status"] || null,
-        wo["Type"] || null,
-        wo["Equipment Description"] || null,
-        wo["Priority"] || null,
-        wo["Shift"] || null,
-        wo["EHS LOR"] || null,
-        wo["Operational LOR"] || null,
-        null, // deferral_reason_selected — INTENTIONALLY ignored from Google Sheets (inaccurate component names, not real deferral reasons); only populated via manual Excel upload
-        null, // trade — not in Google Sheet
-        wo["Route"] || null,
-        wo["Sched End Date"] || wo["Sched. End Date"] || null,
-        wo["Production Impact"] != null && wo["Production Impact"] !== "" ? wo["Production Impact"] : null,
-        null, // compliance_window_start_date — not in Google Sheet
-        wo["Compliance Window End Date"] || null,
-        null, // discipline — not in Google Sheet
-        wo["Organization"] || null,
-        null, // department — not in Google Sheet
-        null, // equipment — not in Google Sheet
-        null, // class — not in Google Sheet
-        null, // reported_by — not in Google Sheet
-        wo["PM Code"] || null,
-        null, // assigned_to (code) — not in Google Sheet
-        wo["Date Created"] || null,
-        wo["Supervisor"] || null,
-        wo["Date Completed"] || null,
-        null, // facops_suite — not in Google Sheet
-        null, // type_code — not in Google Sheet
-        null, // estimated_hours — not in Google Sheet
-        null, // hours_remaining — not in Google Sheet
-        null, // asset_id — not in Google Sheet
-        null, // last_saved — not in Google Sheet
-      ]);
+    let updatedCount = 0;
+    let insertedCount = 0;
 
-      const sql = `INSERT INTO work_orders (
-        work_order_number, description, data_center, sched_start_date, assigned_to_name,
-        status, type, equipment_description, priority, shift,
-        ehs_lor, operational_lor, deferral_reason_selected, trade,
-        route, sched_end_date, production_impact,
-        compliance_window_start_date, compliance_window_end_date,
-        discipline, organization, department, equipment, class,
-        reported_by, pm_code, assigned_to, date_created, supervisor,
-        date_completed, facops_suite, type_code, estimated_hours, hours_remaining, asset_id, last_saved,
-        uploaded_by
-      ) VALUES ${batch.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)").join(", ")}`;
+    for (const wo of filteredRows) {
+      const woNumber = wo["Work Order"] || "";
+      if (!woNumber) continue;
 
-      await execute(sql, values);
-      totalInserted += batch.length;
+      if (existingWOs.has(woNumber)) {
+        // UPDATE: Only fill in NULL/blank columns (gap-filling)
+        const setClauses: string[] = [];
+        const setValues: any[] = [];
+
+        for (const col of SUPPLEMENT_COLUMNS) {
+          const sheetVal = wo[col.sheetKey] || wo[col.sheetKey.replace("Sched ", "Sched. ")];
+          if (sheetVal && String(sheetVal).trim() !== "") {
+            // Only update if current DB value is NULL or empty
+            setClauses.push(`${col.dbCol} = CASE WHEN ${col.dbCol} IS NULL OR ${col.dbCol} = '' THEN ? ELSE ${col.dbCol} END`);
+            setValues.push(String(sheetVal).trim());
+          }
+        }
+
+        if (setClauses.length > 0) {
+          const sql = `UPDATE work_orders SET ${setClauses.join(", ")} WHERE work_order_number = ?`;
+          setValues.push(woNumber);
+          await execute(sql, setValues);
+          updatedCount++;
+        }
+      } else {
+        // INSERT: New WO not in manual upload — insert from Google Sheet
+        const values = [
+          woNumber,
+          wo["Description"] || null,
+          wo["Data Center"] || null,
+          wo["Sched Start Date"] || wo["Sched. Start Date"] || null,
+          wo["Assigned To"] || wo["Assigned To Name"] || null,
+          wo["Status"] || null,
+          wo["Type"] || null,
+          wo["Equipment Description"] || null,
+          wo["Priority"] || null,
+          wo["Shift"] || null,
+          null, // ehs_lor — not in Google Sheet
+          null, // operational_lor — not in Google Sheet
+          null, // deferral_reason_selected — only from manual upload
+          null, // trade — not in Google Sheet
+          wo["Route"] || null,
+          wo["Sched End Date"] || wo["Sched. End Date"] || null,
+          wo["Production Impact"] != null && wo["Production Impact"] !== "" ? wo["Production Impact"] : null,
+          null, // compliance_window_start_date
+          wo["Compliance Window End Date"] || null,
+          null, // discipline
+          wo["Organization"] || null,
+          null, // department
+          null, // equipment
+          null, // class
+          null, // reported_by
+          wo["PM Code"] || null,
+          null, // assigned_to
+          wo["Date Created"] || null,
+          wo["Supervisor"] || null,
+          wo["Date Completed"] || null,
+          null, // facops_suite
+          null, // type_code
+          null, // estimated_hours
+          null, // hours_remaining
+          null, // asset_id
+          null, // last_saved
+        ];
+
+        const sql = `INSERT INTO work_orders (
+          work_order_number, description, data_center, sched_start_date, assigned_to_name,
+          status, type, equipment_description, priority, shift,
+          ehs_lor, operational_lor, deferral_reason_selected, trade,
+          route, sched_end_date, production_impact,
+          compliance_window_start_date, compliance_window_end_date,
+          discipline, organization, department, equipment, class,
+          reported_by, pm_code, assigned_to, date_created, supervisor,
+          date_completed, facops_suite, type_code, estimated_hours, hours_remaining, asset_id, last_saved,
+          uploaded_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`;
+
+        try {
+          await execute(sql, values);
+          insertedCount++;
+        } catch (err: any) {
+          // Skip duplicate key errors
+          if (!err.message?.includes("Duplicate")) throw err;
+        }
+      }
     }
 
-    return { tableName, rowCount: totalInserted, durationMs: Date.now() - start };
+    console.log(`[SheetsSync] Work orders: ${updatedCount} gap-filled, ${insertedCount} new inserted (${existingWOs.size} preserved from manual upload)`);
+    return { tableName, rowCount: updatedCount + insertedCount, durationMs: Date.now() - start };
   } catch (error: any) {
     console.error(`[SheetsSync] Error syncing work orders:`, error);
     return { tableName, rowCount: 0, durationMs: Date.now() - start, error: error.message };
